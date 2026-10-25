@@ -9,7 +9,7 @@ class Field extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'vanue_id', 'sport_id', 'nama_lapangan', 'harga_perjam', 
+        'venue_id', 'sport_id', 'nama_lapangan', 'harga_perjam', 
         'meta_harga', 'status_lapangan', 'alasan_penolakan'
     ];
 
@@ -18,6 +18,11 @@ class Field extends Model
     ];
 
     public function vanue()
+    {
+        return $this->venue();
+    }
+
+    public function venue()
     {
         return $this->belongsTo(Venue::class, 'venue_id');
     }

@@ -2,14 +2,32 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class MitraProfile extends Model
 {
-    public $timestamps = false; // Karena di tabel tidak ada created_at/updated_at
-    
+    use HasFactory;
+
+    public $timestamps = true;
+
     protected $fillable = [
-        'user_id', 'no_ktp', 'npwp', 'status', 'alasan_penolakan'
+        'user_id',
+        'nama_usaha',
+        'bentuk_badan_usaha',
+        'kota_operasional',
+        'deskripsi_usaha',
+        'bank_nama',
+        'nomor_rekening',
+        'nama_rekening',
+        'no_ktp',
+        'npwp',
+        'status',
+        'alasan_penolakan',
+        'file_ktp',
+        'file_npwp',
+        'file_nib',
+        'file_sewa_lahan',
     ];
 
     public function user()
@@ -20,5 +38,20 @@ class MitraProfile extends Model
     public function venues()
     {
         return $this->hasMany(Venue::class, 'mitra_id');
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
     }
 }

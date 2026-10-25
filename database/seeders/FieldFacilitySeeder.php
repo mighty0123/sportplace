@@ -9,11 +9,23 @@ class FieldFacilitySeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('field_facilities')->insert([
-            ['field_id' => 1, 'facilities_id' => 1], // Lapangan A punya Bola
-            ['field_id' => 1, 'facilities_id' => 2], // Lapangan A punya Papan Skor
-            ['field_id' => 2, 'facilities_id' => 1], // Lapangan B punya Bola
-            ['field_id' => 2, 'facilities_id' => 2], // Lapangan B punya Papan Skor
-        ]);
+        $fields = DB::table('fields')->get();
+        $facilities = DB::table('master_facilities')->take(2)->get();
+
+        if ($fields->isEmpty() || $facilities->isEmpty()) {
+            return;
+        }
+
+        foreach ($fields as $field) {
+            foreach ($facilities as $facility) {
+                DB::table('field_facilities')->updateOrInsert(
+                    [
+                        'field_id' => $field->id,
+                        'facilities_id' => $facility->id,
+                    ],
+                    []
+                );
+            }
+        }
     }
 }

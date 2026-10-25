@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Migration penyelesaian GAP-14 (Audit Log untuk pelacakan perubahan status penting NFR-LOG-001 / BR-028).
+ */
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('audit_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('aktor_role', 50)->default('mitra');
+            $table->string('entitas_type', 100); // e.g. MitraProfile, Venue, Field, Booking
+            $table->unsignedBigInteger('entitas_id');
+            $table->string('aksi', 100); // e.g. pendaftaran, ajukan_ulang, disetujui, ditolak
+            $table->string('status_lama', 50)->nullable();
+            $table->string('status_baru', 50)->nullable();
+            $table->text('catatan')->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('audit_logs');
+    }
+};
+

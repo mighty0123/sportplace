@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Venue extends Model
 {
     public $timestamps = false;
-    protected $table = 'vanues';
+    protected $table = 'venues';
 
     protected $fillable = [
         'mitra_id', 'city_id', 'nama_venue', 'alamat_lengkap', 
@@ -26,6 +26,6 @@ class Venue extends Model
 
     public function fields()
     {
-        return $this->hasMany(Field::class, 'vanue_id');
+        return $this->hasMany(Field::class, 'venue_id');
     }
 }

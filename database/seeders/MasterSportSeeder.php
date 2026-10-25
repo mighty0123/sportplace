@@ -9,11 +9,18 @@ class MasterSportSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('master_sports')->insert([
+        $sports = [
             ['nama_olahraga' => 'Futsal', 'slug' => 'futsal', 'icon_url' => '/icons/futsal.png', 'status_olahraga' => 'aktif'],
             ['nama_olahraga' => 'Badminton', 'slug' => 'badminton', 'icon_url' => '/icons/badminton.png', 'status_olahraga' => 'aktif'],
             ['nama_olahraga' => 'Mini Soccer', 'slug' => 'mini-soccer', 'icon_url' => '/icons/minisoccer.png', 'status_olahraga' => 'aktif'],
             ['nama_olahraga' => 'Basket', 'slug' => 'basket', 'icon_url' => '/icons/basket.png', 'status_olahraga' => 'aktif'],
-        ]);
+        ];
+
+        foreach ($sports as $sport) {
+            DB::table('master_sports')->updateOrInsert(
+                ['slug' => $sport['slug']],
+                $sport
+            );
+        }
     }
 }
