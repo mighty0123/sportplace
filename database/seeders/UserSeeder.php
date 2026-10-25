@@ -66,6 +66,17 @@ class UserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Dimas Pratama',
+                'email' => 'dimas@sportplace.com',
+                'password' => Hash::make('password123'),
+                'no_hp' => '08333333334',
+                'role' => 'customer',
+                'status_akun' => 'aktif',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
         foreach ($users as $user) {

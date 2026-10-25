@@ -39,6 +39,18 @@ Route::middleware('auth')->group(function () {
     Route::match(['get', 'post'], '/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
+// Area Penyewa — Dashboard & fitur penyewa lapangan.
+Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/lapangan', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('lapangan');
+    Route::get('/booking/baru', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('booking.baru');
+    Route::get('/kalender', [\App\Http\Controllers\Penyewa\CalendarController::class, 'index'])->name('kalender');
+    Route::get('/booking/{id}', [\App\Http\Controllers\Penyewa\CalendarController::class, 'index'])->name('booking.detail');
+    Route::get('/riwayat', [\App\Http\Controllers\Penyewa\BookingHistoryController::class, 'index'])->name('riwayat');
+    Route::get('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'update'])->name('profil.update');
+});
+
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.
 // MTR-03 ke atas wajib mitra.approved (EC-17, BR-002, PRD §12.2/§12.6).
 Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
