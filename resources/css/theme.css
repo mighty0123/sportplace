@@ -1,0 +1,201 @@
+@theme {
+    /* ============ FONT ============ */
+    --font-sans:
+        "Poppins", Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+        sans-serif;
+
+    --font-weight-*: initial;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Pakai skala dasar Tailwind */
+    --text-2xs: 0.6875rem;
+    --text-2xs--line-height: 1.4;
+    --text-6xl: initial;
+    --text-7xl: initial;
+    --text-8xl: initial;
+    --text-9xl: initial;
+
+    /* ============ WARNA ============ */
+    /* Primary — hijau sport */
+    --color-primary-50: #f1f9f7;
+    --color-primary-100: #ddf4ef;
+    --color-primary-200: #bbede3;
+    --color-primary-300: #88e7d4;
+    --color-primary-400: #43e5c5;
+    --color-primary-500: #0a7660;
+    --color-primary-600: #0b604f;
+    --color-primary-700: #0c4e40;
+    --color-primary-800: #0c3e34;
+    --color-primary-900: #0b322a;
+    --color-primary-950: #06231d;
+
+    /* Secondary — lime */
+    --color-secondary-50: #fbfcee;
+    --color-secondary-100: #f6f9d8;
+    --color-secondary-200: #eff4b8;
+    --color-secondary-300: #e8f089;
+    --color-secondary-400: #e2ee58;
+    --color-secondary-500: #deef25;
+    --color-secondary-600: #bfcf17;
+    --color-secondary-700: #939e1a;
+    --color-secondary-800: #6d751a;
+    --color-secondary-900: #4f5516;
+    --color-secondary-950: #333611;
+
+    /* Neutral */
+    --color-neutral-0: #fcfbf5;
+    --color-neutral-50: #f8f7f0;
+    --color-neutral-100: #efefe6;
+    --color-neutral-200: #e1e3d9;
+    --color-neutral-300: #c9cec0;
+    --color-neutral-400: #a5ae9e;
+    --color-neutral-500: #7d8c78;
+    --color-neutral-600: #5a6c5b;
+    --color-neutral-700: #425248;
+    --color-neutral-800: #2b3b35;
+    --color-neutral-900: #1b2724;
+    --color-neutral-950: #0e1816;
+
+    /* Success */
+    --color-success-50: #effbf3;
+    --color-success-100: #daf6e4;
+    --color-success-200: #baeecd;
+    --color-success-300: #8ae0aa;
+    --color-success-400: #56d283;
+    --color-success-500: #2dbe62;
+    --color-success-600: #239f50;
+    --color-success-700: #1a7f3f;
+    --color-success-800: #146130;
+    --color-success-900: #104624;
+    --color-success-950: #0b2816;
+
+    /* Warning */
+    --color-warning-50: #fef7ec;
+    --color-warning-100: #fceccf;
+    --color-warning-200: #f9dca9;
+    --color-warning-300: #f8c772;
+    --color-warning-400: #f7b645;
+    --color-warning-500: #f9a410;
+    --color-warning-600: #da8e0b;
+    --color-warning-700: #af740e;
+    --color-warning-800: #845910;
+    --color-warning-900: #5f4311;
+    --color-warning-950: #36270d;
+
+    /* Danger */
+    --color-danger-50: #fdedec;
+    --color-danger-100: #fcd7d5;
+    --color-danger-200: #f8b9b5;
+    --color-danger-300: #f28f88;
+    --color-danger-400: #ed645a;
+    --color-danger-500: #e62719;
+    --color-danger-600: #c0261b;
+    --color-danger-700: #9e231a;
+    --color-danger-800: #791c15;
+    --color-danger-900: #581713;
+    --color-danger-950: #35100d;
+
+    /* Info */
+    --color-info-50: #ecf5fd;
+    --color-info-100: #d5e8fc;
+    --color-info-200: #b5d6f8;
+    --color-info-300: #88bdf2;
+    --color-info-400: #53a1ee;
+    --color-info-500: #1d85ed;
+    --color-info-600: #1670ca;
+    --color-info-700: #195ea4;
+    --color-info-800: #184a7c;
+    --color-info-900: #15385b;
+    --color-info-950: #0e2134;
+
+    /* Chart */
+    --color-chart-1: #0b604f;
+    --color-chart-2: #deef25;
+    --color-chart-3: #3092a6;
+    --color-chart-4: #1d85ed;
+    --color-chart-5: #f9a410;
+    --color-chart-6: #8a59cf;
+    --color-chart-7: #ed645a;
+    --color-chart-8: #c7966b;
+
+    /* ============ BENTUK ============ */
+    --radius-*: initial;
+    --radius-xs: 0.25rem; /*  4px  */
+    --radius-sm: 0.375rem; /*  6px  */
+    --radius-md: 0.5rem; /*  8px  */
+    --radius-lg: 0.75rem; /* 12px  */
+    --radius-full: 9999px; /* chip, avatar */
+
+    --shadow-*: initial; /* tanpa bayangan dekoratif */
+    --shadow-float: 0 2px 8px rgb(27 39 36 / 0.1); /* tooltip, toast, dropdown */
+    --shadow-modal: 0 8px 24px rgb(27 39 36 / 0.18);
+
+    /* ============ LAYOUT ============ */
+    --spacing-sidebar: 15.5rem; /* 248px */
+    --spacing-rail: 4.5rem; /*  72px */
+    --container-page: 85rem; /* 1360px, lebar maks konten */
+
+    /* ============ MOTION ============ */
+    --ease-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --ease-draw: cubic-bezier(0.3, 0.6, 0.2, 1);
+    --animate-rise: rise 0.45s var(--ease-soft) both;
+    --animate-fade: fade 0.15s ease both;
+    --animate-draw: draw 0.7s var(--ease-draw) both; /* garis grafik tergambar */
+
+    @keyframes rise {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+    @keyframes fade {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    @keyframes draw {
+        from {
+            clip-path: inset(0 100% 0 0);
+        }
+        to {
+            clip-path: inset(0);
+        }
+    }
+}
+
+/* ============ ALIAS SEMANTIK ============
+    "inline" = nilainya diacu langsung dari palet di atas.
+    Komponen memakai alias ini untuk peran umum (latar, garis, teks, brand).
+    Status dan warna khusus tetap memakai langkah palet langsung.
+*/
+@theme inline {
+    --color-canvas: var(--color-neutral-0);
+    --color-surface: var(--color-neutral-0);
+    --color-surface-muted: var(--color-neutral-50);
+    --color-surface-sunken: var(--color-neutral-100);
+
+    --color-line: var(--color-neutral-200);
+    --color-line-strong: var(--color-neutral-300);
+
+    --color-ink: var(--color-neutral-900); /* heading */
+    --color-ink-strong: var(--color-neutral-800);
+    --color-ink-body: var(--color-neutral-700); /* paragraf */
+    --color-ink-muted: var(--color-neutral-600); /* teks sekunder */
+    --color-ink-faint: var(--color-neutral-500); /* teks besar */
+
+    --color-brand: var(--color-primary-500);
+    --color-brand-hover: var(--color-primary-600);
+    --color-brand-active: var(--color-primary-700);
+    --color-brand-soft: var(--color-primary-100);
+    --color-brand-link: var(--color-primary-600);
+}
