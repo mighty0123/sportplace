@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -24,10 +27,13 @@ class AuthenticatedSessionController extends Controller
         $request->ensureIsNotRateLimited();
 
         $credentials = $request->only('email', 'password');
-        $user = \App\Models\User::where('email', $credentials['email'])->first();
+        $loginInput = $credentials['email'];
+        $user = User::where('email', $loginInput)
+            ->orWhere('no_hp', $loginInput)
+            ->first();
 
         // Pesan galat generik: tidak membedakan email tidak ada vs password salah (Usulan).
-        if (! $user || ! \Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             $request->hitRateLimiter();
 
             throw ValidationException::withMessages([
@@ -62,7 +68,7 @@ class AuthenticatedSessionController extends Controller
         return redirect()->intended($this->redirectPathFor($user));
     }
 
-    public function destroy(\Illuminate\Http\Request $request): RedirectResponse
+    public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
 
@@ -75,7 +81,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * FR-AUTH-003 alur utama #4: redirect berdasarkan role & status mitra_profiles.
      */
-    private function redirectPathFor(\App\Models\User $user): string
+    private function redirectPathFor(User $user): string
     {
         if ($user->role === 'admin') {
             // ADM-01 belum ada — placeholder, TODO untuk pemilik modul Admin.

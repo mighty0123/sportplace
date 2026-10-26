@@ -4,11 +4,13 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Mitra\DashboardController;
+use App\Http\Controllers\Mitra\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
-});
+    return view('user-public.welcome');
+})->name('home');
 
 // FR-AUTH-001..005 (PUB-04/05/06). Dipakai bersama 3 peran — lihat CLAUDE.md §1.
 Route::middleware('guest')->group(function () {
@@ -43,20 +45,20 @@ Route::middleware('auth')->group(function () {
 // MTR-03 ke atas wajib mitra.approved (EC-17, BR-002, PRD §12.2/§12.6).
 Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
     // MTR-01: Pendaftaran Mitra
-    Route::get('/pendaftaran', [\App\Http\Controllers\Mitra\OnboardingController::class, 'create'])->name('onboarding.create');
-    Route::post('/pendaftaran', [\App\Http\Controllers\Mitra\OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('/pendaftaran', [OnboardingController::class, 'create'])->name('onboarding.create');
+    Route::post('/pendaftaran', [OnboardingController::class, 'store'])->name('onboarding.store');
 
     // MTR-02: Status Verifikasi Akun
-    Route::get('/status', [\App\Http\Controllers\Mitra\OnboardingController::class, 'showStatus'])->name('status');
+    Route::get('/status', [OnboardingController::class, 'showStatus'])->name('status');
 
     // MTR-12: Edit & Ajukan Ulang jika ditolak
-    Route::get('/resubmit', [\App\Http\Controllers\Mitra\OnboardingController::class, 'editResubmit'])->name('resubmit');
-    Route::post('/resubmit', [\App\Http\Controllers\Mitra\OnboardingController::class, 'resubmit'])->name('resubmit.store');
+    Route::get('/resubmit', [OnboardingController::class, 'editResubmit'])->name('resubmit');
+    Route::post('/resubmit', [OnboardingController::class, 'resubmit'])->name('resubmit.store');
 
     // Akses Dokumen Privat Terproteksi
-    Route::get('/dokumen/{type}', [\App\Http\Controllers\Mitra\OnboardingController::class, 'downloadDocument'])->name('document.download');
+    Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
     Route::middleware('mitra.approved')->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Mitra\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     });
 });
