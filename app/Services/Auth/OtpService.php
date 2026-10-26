@@ -13,9 +13,7 @@ use Illuminate\Support\Str;
  */
 class OtpService
 {
-    public function __construct(private OtpSender $sender)
-    {
-    }
+    public function __construct(private OtpSender $sender) {}
 
     /**
      * Buat kode OTP baru untuk user+tujuan, menggantikan baris aktif sebelumnya,

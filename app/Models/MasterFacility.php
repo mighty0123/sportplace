@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class MasterFacility extends Model
 {
     public $timestamps = false;
+
     protected $table = 'master_facilities'; // Agar tidak salah mendeteksi nama tabel plural
 
     protected $fillable = [
-        'nama', 'kategori', 'icon_url', 'status_fasilitas'
+        'nama', 'kategori', 'icon_url', 'status_fasilitas',
     ];
 
     public function fields()

@@ -56,7 +56,8 @@ class OtpVerificationController extends Controller
         $request->session()->forget('otp_user_id');
 
         return redirect()->route('login')
-            ->with('status', 'Verifikasi berhasil. Silakan masuk.');
+            ->with('status', 'Verifikasi berhasil. Silakan masuk.')
+            ->with('verified_email', $user->email);
     }
 
     public function resend(Request $request, OtpService $otpService): RedirectResponse

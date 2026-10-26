@@ -31,4 +31,3 @@ class MitraProfilePolicy
         return $profile->user_id === $user->id;
     }
 }
-

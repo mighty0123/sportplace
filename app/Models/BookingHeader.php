@@ -9,7 +9,7 @@ class BookingHeader extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'penyewa_id', 'total_tagihan', 'status', 'created_at'
+        'penyewa_id', 'total_tagihan', 'status', 'created_at',
     ];
 
     public function user()

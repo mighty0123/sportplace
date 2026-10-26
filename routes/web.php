@@ -6,11 +6,14 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Mitra\DashboardController;
 use App\Http\Controllers\Mitra\OnboardingController;
+use App\Http\Controllers\Mitra\VenueController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('user-public.welcome');
 })->name('home');
+
+Route::redirect('/beranda', '/')->name('beranda');
 
 // FR-AUTH-001..005 (PUB-04/05/06). Dipakai bersama 3 peran — lihat CLAUDE.md §1.
 Route::middleware('guest')->group(function () {
@@ -60,5 +63,16 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
 
     Route::middleware('mitra.approved')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // MTR-04 & MTR-05b: Manajemen Venue (FR-VENUE-001..004)
+        Route::get('/venues', [VenueController::class, 'index'])->name('venues.index');
+        Route::get('/venues/create', [VenueController::class, 'create'])->name('venues.create');
+        Route::post('/venues', [VenueController::class, 'store'])->name('venues.store');
+        Route::get('/venues/{venue}/edit', [VenueController::class, 'edit'])->name('venues.edit');
+        Route::put('/venues/{venue}', [VenueController::class, 'update'])->name('venues.update');
+        Route::delete('/venues/{venue}', [VenueController::class, 'destroy'])->name('venues.destroy');
+        Route::post('/venues/{venue}/submit', [VenueController::class, 'submitForReview'])->name('venues.submit');
+        Route::post('/venues/{venue}/deactivate', [VenueController::class, 'deactivate'])->name('venues.deactivate');
+        Route::post('/venues/{venue}/activate', [VenueController::class, 'activate'])->name('venues.activate');
     });
 });

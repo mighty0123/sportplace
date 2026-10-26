@@ -50,7 +50,7 @@
                             type="text" 
                             name="email" 
                             id="email" 
-                            value="{{ old('email') }}" 
+                            value="{{ old('email', session('verified_email')) }}" 
                             placeholder="Masukkan email atau nomor HP" 
                             required 
                             autofocus

@@ -9,7 +9,7 @@ class Refund extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'header_id', 'detail_id', 'payment_id', 'alasan_refund', 'nominal_refund', 'metode_refund', 'rekening_tujuan', 'status_refund', 'diproses_oleh', 'complated_at'
+        'header_id', 'detail_id', 'payment_id', 'alasan_refund', 'nominal_refund', 'metode_refund', 'rekening_tujuan', 'status_refund', 'diproses_oleh', 'complated_at',
     ];
 
     public function header()

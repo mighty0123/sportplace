@@ -101,7 +101,7 @@ class AuthenticatedSessionController extends Controller
             };
         }
 
-        // customer → REN-01 belum ada — placeholder, TODO untuk pemilik modul Penyewa.
-        return '/beranda';
+        // customer → halaman utama / welcome
+        return route('home', absolute: false);
     }
 }
