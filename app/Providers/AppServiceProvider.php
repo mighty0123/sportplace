@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\OtpSender;
-use App\Services\Auth\LogOtpSender;
+use App\Services\Auth\MailOtpSender;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,8 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Penyedia OTP belum ditentukan (DEP-02) — default log driver untuk dev.
-        $this->app->bind(OtpSender::class, LogOtpSender::class);
+        // Driver pengirim OTP: Mengirim email via MailOtpSender (dan fallback ke log dev)
+        $this->app->bind(OtpSender::class, MailOtpSender::class);
     }
 
     /**

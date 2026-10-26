@@ -263,11 +263,11 @@ Rujukan: FR-REPORT-001, BR-016/BR-023.
 
 Rujukan: FR-VENUE-001…004, UJ-05, BR-023/BR-025.
 
-- [ ] **T4.1 Daftar venue** milik mitra + status badge + CTA "Tambah Venue"; empty state *"Belum ada venue"* + CTA.
-- [ ] **T4.2 Buat venue (draft)** (FR-VENUE-001): `city_id` (kota `aktif`), `nama_venue` (≤200, wajib), `alamat_lengkap` (wajib), `map_url` (opsional ≤255), `jam_buka`, `jam_tutup` (wajib), deskripsi. `mitra_id` = profil mitra login (**jangan** dari input). Validasi jam tutup > jam buka (lintas tengah malam = Perlu Konfirmasi; default tolak). AC: VENUE-001-01/02.
-- [ ] **T4.3 Ajukan venue** (FR-VENUE-002): validasi kelengkapan; status asal ∈ {`draft`,`rejected`} → `pending_review`; tampilkan daftar field yang kurang. AC: VENUE-002-01.
-- [ ] **T4.4 Edit venue** (FR-VENUE-003) + Policy. Edit venue `aktif` kembali ke moderasi atau tidak = OQ-011 → default: **tidak** memicu moderasi ulang (konfigurabel). Tampilkan `alasan_penolakan` bila `rejected`. AC: VENUE-003-01 (mitra A tidak bisa mengedit venue mitra B).
-- [ ] **T4.5 Nonaktifkan venue** (FR-VENUE-004, **S**) dengan **dialog konfirmasi**. Cascade ke lapangan & perlakuan booking `confirmed` mendatang = OQ-012 → default: **tolak penonaktifan bila ada booking mendatang berstatus aktif**, tampilkan pesan. AC: VENUE-004-01.
+- [x] **T4.1 Daftar venue** milik mitra + status badge + CTA "Tambah Venue"; empty state *"Belum ada venue"* + CTA.
+- [x] **T4.2 Buat venue (draft)** (FR-VENUE-001): `city_id` (kota `aktif`), `nama_venue` (≤200, wajib), `alamat_lengkap` (wajib), `map_url` (opsional ≤255), `jam_buka`, `jam_tutup` (wajib), deskripsi. `mitra_id` = profil mitra login (**jangan** dari input). Validasi jam tutup > jam buka (lintas tengah malam = Perlu Konfirmasi; default tolak). AC: VENUE-001-01/02.
+- [x] **T4.3 Ajukan venue** (FR-VENUE-002): validasi kelengkapan; status asal ∈ {`draft`,`rejected`} → `pending_review`; tampilkan daftar field yang kurang. AC: VENUE-002-01.
+- [x] **T4.4 Edit venue** (FR-VENUE-003) + Policy. Edit venue `aktif` kembali ke moderasi atau tidak = OQ-011 → default: **tidak** memicu moderasi ulang (konfigurabel). Tampilkan `alasan_penolakan` bila `rejected`. AC: VENUE-003-01 (mitra A tidak bisa mengedit venue mitra B).
+- [x] **T4.5 Nonaktifkan venue** (FR-VENUE-004, **S**) dengan **dialog konfirmasi**. Cascade ke lapangan & perlakuan booking `confirmed` mendatang = OQ-012 → default: **tolak penonaktifan bila ada booking mendatang berstatus aktif**, tampilkan pesan. AC: VENUE-004-01.
 
 ### FASE 5 — Lapangan (MTR-04, MTR-05) — **M**
 
