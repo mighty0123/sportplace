@@ -59,6 +59,17 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
 
     Route::middleware('mitra.approved')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\Mitra\DashboardController::class, 'index'])->name('dashboard');
+
+        // MTR-04 & MTR-05b: Manajemen Venue (FR-VENUE-001..004)
+        Route::get('/venues', [\App\Http\Controllers\Mitra\VenueController::class, 'index'])->name('venues.index');
+        Route::get('/venues/create', [\App\Http\Controllers\Mitra\VenueController::class, 'create'])->name('venues.create');
+        Route::post('/venues', [\App\Http\Controllers\Mitra\VenueController::class, 'store'])->name('venues.store');
+        Route::get('/venues/{venue}/edit', [\App\Http\Controllers\Mitra\VenueController::class, 'edit'])->name('venues.edit');
+        Route::put('/venues/{venue}', [\App\Http\Controllers\Mitra\VenueController::class, 'update'])->name('venues.update');
+        Route::delete('/venues/{venue}', [\App\Http\Controllers\Mitra\VenueController::class, 'destroy'])->name('venues.destroy');
+        Route::post('/venues/{venue}/submit', [\App\Http\Controllers\Mitra\VenueController::class, 'submitForReview'])->name('venues.submit');
+        Route::post('/venues/{venue}/deactivate', [\App\Http\Controllers\Mitra\VenueController::class, 'deactivate'])->name('venues.deactivate');
+        Route::post('/venues/{venue}/activate', [\App\Http\Controllers\Mitra\VenueController::class, 'activate'])->name('venues.activate');
     });
 });
 

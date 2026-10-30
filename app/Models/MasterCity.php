@@ -15,6 +15,11 @@ class MasterCity extends Model
 
     public function vanues()
     {
+        return $this->venues();
+    }
+
+    public function venues()
+    {
         return $this->hasMany(Venue::class, 'city_id');
     }
 }
