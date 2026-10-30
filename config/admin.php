@@ -6,14 +6,15 @@ return [
             ['label' => 'Dashboard', 'icon' => 'layout-grid', 'route' => 'admin.dashboard'],
         ]],
         ['label' => 'Perlu ditinjau', 'items' => [
-            ['label' => 'Verifikasi Mitra', 'icon' => 'user-check', 'route' => null],
-            ['label' => 'Moderasi Listing', 'icon' => 'file-check', 'route' => null],
+            ['key' => 'verifikasi', 'label' => 'Verifikasi Mitra', 'icon' => 'user-check', 'route' => null],
+            ['key' => 'moderasi',   'label' => 'Moderasi Listing', 'icon' => 'file-check', 'route' => null],
         ]],
         ['label' => 'Platform', 'items' => [
-            ['label' => 'Master Data',          'icon' => 'database', 'route' => null],
-            ['label' => 'Monitoring Transaksi', 'icon' => 'receipt',  'route' => null],
-            ['label' => 'Pengaturan Komisi',    'icon' => 'percent',  'route' => null],
-            ['label' => 'Manajemen Pengguna',   'icon' => 'users',    'route' => null],
+            ['label' => 'Master Data',          'icon' => 'database',  'route' => null],
+            ['label' => 'Monitoring Transaksi', 'icon' => 'receipt',   'route' => null],
+            ['label' => 'Laporan',              'icon' => 'file-text', 'route' => null],
+            ['label' => 'Pengaturan Komisi',    'icon' => 'percent',   'route' => null, 'disabled' => true],
+            ['label' => 'Manajemen Pengguna',   'icon' => 'users',     'route' => null],
         ]],
     ],
 ];

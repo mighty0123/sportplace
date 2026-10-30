@@ -24,7 +24,7 @@
                 <hr class="hidden border-primary-800 md:my-2 md:block md:w-6 lg:hidden">
             @endif
             @foreach ($group['items'] as $item)
-                <x-admin.nav-item :item="$item" />
+                <x-admin.nav-item :item="$item" :badge="$navCounts[$item['key'] ?? ''] ?? null" />
             @endforeach
         @endforeach
     </nav>

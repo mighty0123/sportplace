@@ -73,6 +73,6 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     });
 });
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 });

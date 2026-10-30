@@ -4,5 +4,5 @@
         <x-ui.icon name="menu" />
     </button>
     <img src="{{ asset('images/logo.svg') }}" alt="{{ config('app.name') }}" class="h-7.5">
-    <div class="grid size-9 place-items-center rounded-full bg-primary-100 text-[13px] font-semibold text-primary-700">NP</div>
+    <x-admin.account-menu compact dark />
 </header>

@@ -103,7 +103,11 @@
     line-height: 1.5;
     font-weight: 400;
 }
-
+@utility text-card-title {
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 600;
+}
 @utility text-label-lg {
     font-size: 0.9375rem;
     line-height: 1.4;
