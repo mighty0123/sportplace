@@ -5,21 +5,43 @@
     'email'       => 'dimas.pratama@email.com',
     'phone'       => '+62 812-3456-7890',
     'avatar'      => null,
+    'initials'    => null,
 ])
 
 @php
-    $userAvatar = $avatar ?? asset('images/avatars/dimas-pratama.jpg');
+    $userInitials = $initials ?? collect(explode(' ', trim($name)))->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode('');
 @endphp
 
 <div class="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-7 shadow-xs flex flex-col items-center text-center">
-    <!-- User Avatar Photo -->
-    <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-emerald-500/20 shadow-md bg-[#0B7B69] shrink-0 mb-4">
-        <img
-            src="{{ $userAvatar }}"
-            alt="{{ $name }}"
-            class="w-full h-full object-cover"
-            loading="lazy"
+    <!-- User Avatar Photo / Initials Fallback with Camera Trigger -->
+    <div class="relative mb-4 group">
+        <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-emerald-500/20 shadow-md bg-[#0B7B69] shrink-0 flex items-center justify-center text-white text-3xl font-extrabold select-none">
+            @if ($avatar)
+                <img
+                    src="{{ $avatar }}"
+                    alt="{{ $name }}"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                    onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+                >
+                <span class="hidden">{{ $userInitials }}</span>
+            @else
+                <span>{{ $userInitials }}</span>
+            @endif
+        </div>
+
+        <!-- Camera badge trigger for uploading/changing photo -->
+        <button
+            type="button"
+            onclick="document.getElementById('edit-profile-modal')?.classList.remove('hidden'); document.getElementById('foto_profil')?.focus();"
+            class="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white flex items-center justify-center shadow-md ring-2 ring-white transition cursor-pointer"
+            title="Ubah Foto Profil"
         >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+        </button>
     </div>
 
     <!-- Name & Membership -->

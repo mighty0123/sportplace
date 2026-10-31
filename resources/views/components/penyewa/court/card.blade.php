@@ -23,7 +23,7 @@
         'BASKET'    => asset('images/courts/basketball.jpg'),
     ];
     $courtImage = $imageSrc ?? ($defaultImages[$sportUpper] ?? asset('images/courts/futsal.jpg'));
-    $url = $bookingUrl ?? url('/penyewa/booking/' . $id);
+    $url = $bookingUrl ?? url('/penyewa/lapangan/' . $id);
 
     // Sport badge styling
     $sportBadges = [
@@ -121,9 +121,9 @@
 
             <a
                 href="{{ $url }}"
-                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white text-xs font-bold shadow-xs transition duration-150 shrink-0 gap-1"
+                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white text-xs font-bold shadow-xs transition duration-150 shrink-0 gap-1.5"
             >
-                <span>Lihat Jadwal & Booking</span>
+                <span>Lihat Detail</span>
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>

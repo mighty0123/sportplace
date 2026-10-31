@@ -1,21 +1,47 @@
 @props([
     'sportCounts'    => [],
+    'sportsInDb'     => null,
+    'cities'         => null,
     'currentSport'   => 'all',
     'currentCity'    => 'all',
     'currentSurface' => 'all',
     'currentSort'    => 'popular',
     'search'         => '',
-    'totalCount'     => 8,
+    'totalCount'     => 0,
 ])
 
 @php
-    $sports = [
-        'all'       => ['label' => 'Semua Olahraga', 'icon' => '🏆'],
-        'futsal'    => ['label' => 'Futsal', 'icon' => '⚽'],
-        'badminton' => ['label' => 'Badminton', 'icon' => '🏸'],
-        'tenis'     => ['label' => 'Tenis', 'icon' => '🎾'],
-        'basket'    => ['label' => 'Basket', 'icon' => '🏀'],
+    $sportIcons = [
+        'all'         => '🏆',
+        'futsal'      => '⚽',
+        'badminton'   => '🏸',
+        'tenis'       => '🎾',
+        'basket'      => '🏀',
+        'mini-soccer' => '⚽',
     ];
+
+    // Build sports list from database or fallback
+    $sportsList = [
+        'all' => ['label' => 'Semua Olahraga', 'icon' => '🏆', 'slug' => 'all'],
+    ];
+
+    if ($sportsInDb && $sportsInDb->isNotEmpty()) {
+        foreach ($sportsInDb as $s) {
+            $sportsList[$s->slug] = [
+                'label' => $s->nama_olahraga,
+                'icon'  => $sportIcons[$s->slug] ?? '🏅',
+                'slug'  => $s->slug,
+            ];
+        }
+    } else {
+        $sportsList = [
+            'all'       => ['label' => 'Semua Olahraga', 'icon' => '🏆', 'slug' => 'all'],
+            'futsal'    => ['label' => 'Futsal', 'icon' => '⚽', 'slug' => 'futsal'],
+            'badminton' => ['label' => 'Badminton', 'icon' => '🏸', 'slug' => 'badminton'],
+            'tenis'     => ['label' => 'Tenis', 'icon' => '🎾', 'slug' => 'tenis'],
+            'basket'    => ['label' => 'Basket', 'icon' => '🏀', 'slug' => 'basket'],
+        ];
+    }
 
     $hasActiveFilters = !empty($search) || $currentSport !== 'all' || $currentCity !== 'all' || $currentSurface !== 'all' || $currentSort !== 'popular';
 @endphp
@@ -23,7 +49,7 @@
 <div class="space-y-4">
     <!-- 1. Category Pills Strip -->
     <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-        @foreach ($sports as $slug => $data)
+        @foreach ($sportsList as $slug => $data)
             @php
                 $isActive = $currentSport === $slug;
                 $count = $sportCounts[$slug] ?? 0;
@@ -70,10 +96,17 @@
                     class="w-full bg-slate-50 border border-slate-200/80 hover:border-emerald-300 focus:bg-white focus:border-[#0B7B69] rounded-xl px-3 py-2.5 text-xs text-slate-700 outline-none transition cursor-pointer"
                 >
                     <option value="all" {{ $currentCity === 'all' ? 'selected' : '' }}>Semua Lokasi</option>
-                    <option value="denpasar" {{ $currentCity === 'denpasar' ? 'selected' : '' }}>Denpasar</option>
-                    <option value="badung" {{ $currentCity === 'badung' ? 'selected' : '' }}>Badung</option>
-                    <option value="tabanan" {{ $currentCity === 'tabanan' ? 'selected' : '' }}>Tabanan</option>
-                    <option value="gianyar" {{ $currentCity === 'gianyar' ? 'selected' : '' }}>Gianyar</option>
+                    @if ($cities && $cities->isNotEmpty())
+                        @foreach ($cities as $c)
+                            <option value="{{ strtolower($c->nama_kota) }}" {{ $currentCity === strtolower($c->nama_kota) ? 'selected' : '' }}>
+                                {{ $c->nama_kota }}
+                            </option>
+                        @endforeach
+                    @else
+                        <option value="jakarta selatan" {{ $currentCity === 'jakarta selatan' ? 'selected' : '' }}>Jakarta Selatan</option>
+                        <option value="bandung" {{ $currentCity === 'bandung' ? 'selected' : '' }}>Bandung</option>
+                        <option value="surabaya" {{ $currentCity === 'surabaya' ? 'selected' : '' }}>Surabaya</option>
+                    @endif
                 </select>
             </div>
 

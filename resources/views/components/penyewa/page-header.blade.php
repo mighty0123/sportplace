@@ -7,7 +7,7 @@
 ])
 
 @php
-    $defaultTitle = 'Halo, ' . (auth()->user()?->name ?? 'Dimas Pratama') . ' 👋';
+    $defaultTitle = 'Halo, ' . (auth()->user()?->name ?? 'Dimas Pratama');
     $displayTitle = $title ?? $defaultTitle;
 @endphp
 

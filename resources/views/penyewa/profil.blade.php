@@ -20,6 +20,7 @@
                 :email="$profile['email']"
                 :phone="$profile['phone']"
                 :avatar="$profile['avatar']"
+                :initials="$profile['initials']"
             />
         </div>
 
@@ -189,7 +190,7 @@
 
                 <!-- Activities List -->
                 <div class="space-y-3">
-                    @foreach ($recentActivities as $activity)
+                    @forelse ($recentActivities as $activity)
                         <x-penyewa.profile.activity-row
                             :sport="$activity['sport']"
                             :venue-name="$activity['venue_name']"
@@ -198,7 +199,14 @@
                             :payment-method="$activity['payment_method']"
                             :status-label="$activity['status_label']"
                         />
-                    @endforeach
+                    @empty
+                        <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                            <p class="text-xs text-slate-500 font-medium">Belum ada riwayat booking lapangan.</p>
+                            <a href="{{ route('penyewa.lapangan') }}" class="inline-block mt-2 text-xs font-bold text-[#0B7B69] hover:underline">
+                                Cari dan Booking Lapangan Sekarang &rarr;
+                            </a>
+                        </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -233,10 +241,10 @@
             Edit Profil Penyewa
         </h3>
         <p class="text-xs text-slate-500 mb-5">
-            Perbarui data nama dan nomor kontak Anda.
+            Perbarui data nama, kontak, dan foto profil Anda.
         </p>
 
-        <form method="POST" action="{{ route('penyewa.profil.update') }}" class="space-y-4">
+        <form method="POST" action="{{ route('penyewa.profil.update') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             @method('PUT')
 
@@ -270,6 +278,21 @@
                 >
             </div>
 
+            <!-- Foto Profil -->
+            <div>
+                <label for="foto_profil" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Foto Profil Baru (Opsional)
+                </label>
+                <input
+                    type="file"
+                    id="foto_profil"
+                    name="foto_profil"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-[#0B7B69] hover:file:bg-emerald-100 cursor-pointer focus:bg-white focus:border-[#0B7B69] outline-none transition"
+                >
+                <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP (Maksimal 2 MB)</p>
+            </div>
+
             <!-- Action Buttons -->
             <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                 <button
@@ -281,7 +304,7 @@
                 </button>
                 <button
                     type="submit"
-                    class="px-4 py-2 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white text-xs font-bold shadow-xs transition"
+                    class="px-4 py-2 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white text-xs font-bold shadow-xs transition cursor-pointer"
                 >
                     Simpan Perubahan
                 </button>

@@ -10,7 +10,7 @@
          SECTION 1: Greeting Header & Primary CTA Button
     ========================================================= --}}
     <x-penyewa.page-header
-        :title="'Halo, ' . (auth()->user()?->name ?? 'Dimas Pratama') . ' 👋'"
+        :title="'Halo, ' . ($user?->name ?? auth()->user()?->name ?? 'Dimas Pratama')"
         subtitle="Pantau jadwal sewa lapangan dan kelola aktivitas olahragamu di sini."
         action-text="Booking Lapangan Baru"
         :action-url="url('/penyewa/lapangan')"
@@ -18,17 +18,17 @@
     />
 
     {{-- =========================================================
-         SECTION 2: 3 Metrics / Stat Cards Row
+         SECTION 2: 3 Metrics / Stat Cards Row (Data dari Database)
     ========================================================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
         {{-- Stat Card 1: Booking Aktif (Col 1) --}}
         <x-penyewa.stat-card
             label="Booking Aktif"
-            value="2"
-            badge="Hari ini"
+            :value="$stats['active_count'] ?? 0"
+            :badge="$stats['active_badge'] ?? 'Hari ini'"
             badge-type="pill-green"
-            note="1 lapangan sedang berlangsung"
+            :note="$stats['active_note'] ?? 'Tidak ada booking aktif'"
             note-icon="dot"
             icon="flag"
         />
@@ -36,10 +36,10 @@
         {{-- Stat Card 2: Booking Mendatang (Col 2) --}}
         <x-penyewa.stat-card
             label="Booking Mendatang"
-            value="4"
-            badge="jadwal siap"
+            :value="$stats['upcoming_count'] ?? 0"
+            :badge="$stats['upcoming_badge'] ?? 'Jadwal siap'"
             badge-type="text-gray"
-            note="Terjadwal dalam 7 hari ke depan"
+            :note="$stats['upcoming_note'] ?? 'Terjadwal dalam 7 hari ke depan'"
             note-icon="calendar"
             icon="clock"
         />
@@ -47,10 +47,10 @@
         {{-- Stat Card 3: Total Booking Bulan Ini (Col 3) --}}
         <x-penyewa.stat-card
             label="Total Booking Bulan Ini"
-            value="11"
-            badge="+37%"
+            :value="$stats['month_count'] ?? 0"
+            :badge="$stats['month_growth'] ?? '+0%'"
             badge-type="trend-green"
-            note="+3 booking dibanding bulan lalu"
+            :note="$stats['month_note'] ?? '0 booking dibanding bulan lalu'"
             note-icon="check"
             icon="trophy"
         />
@@ -75,68 +75,98 @@
                 </a>
             </div>
 
-            <!-- Booking Cards 2x2 Grid -->
+            <!-- Booking Cards 2x2 Grid (Data dari Database) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                @forelse ($bookings as $booking)
+                    @php
+                        $header = $booking->header;
+                        $field = $booking->field;
+                        $venue = $field?->venue;
+                        $sportName = strtoupper($field?->sport?->nama_olahraga ?? 'FUTSAL');
+                        $tgl = \Carbon\Carbon::parse($booking->tanggal_sewa);
+                        $isPending = $header?->status === 'pending';
+                        $isToday = $tgl->isToday();
 
-                {{-- Booking 1: FUTSAL — Sedang Berlangsung --}}
-                <x-penyewa.booking-card
-                    sport="FUTSAL"
-                    status="ongoing"
-                    venue-name="Viva Arena Futsal"
-                    field-name="Lapangan Vip"
-                    date="Hari ini, 24 Okt 2024"
-                    time-start="19:00"
-                    time-end="21:00"
-                    location="Renon, Denpasar"
-                    :price="450000"
-                    detail-url="{{ url('/penyewa/booking/1') }}"
-                    :image-src="asset('images/courts/futsal.jpg')"
-                />
+                        // Tentukan status badge
+                        if ($isPending) {
+                            $statusType = 'pending';
+                            $payDeadline = '45 menit lagi';
+                            $payUrl = route('penyewa.pembayaran.review', ['id' => $booking->header_id]);
+                        } elseif ($isToday) {
+                            $statusType = 'ongoing';
+                            $payDeadline = null;
+                            $payUrl = null;
+                        } else {
+                            $statusType = 'confirmed';
+                            $payDeadline = null;
+                            $payUrl = null;
+                        }
 
-                {{-- Booking 2: BADMINTON — Terkonfirmasi --}}
-                <x-penyewa.booking-card
-                    sport="BADMINTON"
-                    status="confirmed"
-                    venue-name="Smash Center Arena"
-                    field-name="Lapangan A"
-                    date="Sabtu, 26 Okt 2024"
-                    time-start="08:00"
-                    time-end="10:00"
-                    location="Goa Gong, Jimbaran"
-                    :price="240000"
-                    detail-url="{{ url('/penyewa/booking/2') }}"
-                    :image-src="asset('images/courts/badminton.jpg')"
-                />
+                        // Format waktu
+                        $timeStart = \Carbon\Carbon::parse($booking->jam_mulai)->format('H:i');
+                        $timeEnd = \Carbon\Carbon::parse($booking->jam_selesai)->format('H:i');
 
-                {{-- Booking 3: TENIS — Pending Bayar --}}
-                <x-penyewa.booking-card
-                    sport="TENIS"
-                    status="pending"
-                    venue-name="Champion Tennis Club"
-                    field-name="Court 2"
-                    pay-deadline="45 menit lagi"
-                    location="Kediri, Tabanan"
-                    :price="350000"
-                    pay-url="{{ url('/penyewa/booking/3/bayar') }}"
-                    detail-url="{{ url('/penyewa/booking/3') }}"
-                    :image-src="asset('images/courts/tennis.jpg')"
-                />
+                        // Lokasi
+                        $location = $venue?->alamat_lengkap ?? ($venue?->city?->nama_kota ?? 'Lokasi');
 
-                {{-- Booking 4: BASKET — Terkonfirmasi --}}
-                <x-penyewa.booking-card
-                    sport="BASKET"
-                    status="confirmed"
-                    venue-name="Hoops Hall Jakarta"
-                    field-name="Full Court"
-                    date="Selasa, 29 Okt 2024"
-                    time-start="20:00"
-                    time-end="22:00"
-                    location="Kedonganan, Kuta Selatan"
-                    :price="600000"
-                    detail-url="{{ url('/penyewa/booking/4') }}"
-                    :image-src="asset('images/courts/basketball.jpg')"
-                />
+                        // Resolusi Foto Lapangan yang Tepat
+                        $primaryPhoto = $field?->photos?->firstWhere('is_primary', 1) ?? $field?->photos?->first();
+                        $photoPath = $primaryPhoto?->foto_url;
+                        $sportSlug = strtolower($field?->sport?->slug ?? 'futsal');
 
+                        $defaultSportImages = [
+                            'futsal'      => asset('images/courts/futsal.jpg'),
+                            'badminton'   => asset('images/courts/badminton.jpg'),
+                            'tenis'       => asset('images/courts/tennis.jpg'),
+                            'basket'      => asset('images/courts/basketball.jpg'),
+                            'mini-soccer' => asset('images/courts/futsal.jpg'),
+                        ];
+
+                        if ($photoPath) {
+                            if (str_starts_with($photoPath, 'http://') || str_starts_with($photoPath, 'https://')) {
+                                $imageSrc = $photoPath;
+                            } elseif (str_starts_with($photoPath, 'images/')) {
+                                $imageSrc = asset($photoPath);
+                            } else {
+                                $imageSrc = asset('storage/' . $photoPath);
+                            }
+                        } else {
+                            $imageSrc = $defaultSportImages[$sportSlug] ?? asset('images/courts/futsal.jpg');
+                        }
+
+                        // Link detail mengarah ke Detail Booking & Tiket Check-in
+                        $bookingDetailUrl = route('penyewa.booking.detail', ['id' => $booking->header_id]);
+                    @endphp
+
+                    <x-penyewa.booking-card
+                        :sport="$sportName"
+                        :status="$statusType"
+                        :venue-name="$venue?->nama_venue ?? 'Venue Olahraga'"
+                        :field-name="$field?->nama_lapangan ?? 'Lapangan'"
+                        :date="$tgl"
+                        :time-start="$timeStart"
+                        :time-end="$timeEnd"
+                        :location="$location"
+                        :price="$booking->harga_slot ?? $header?->total_tagihan ?? 0"
+                        :detail-url="$bookingDetailUrl"
+                        :pay-url="$payUrl"
+                        :pay-deadline="$payDeadline"
+                        :image-src="$imageSrc"
+                    />
+                @empty
+                    <div class="col-span-full bg-white rounded-2xl border border-slate-200/90 p-8 text-center space-y-3">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-900">Belum Ada Booking Aktif atau Mendatang</h4>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto">Mulai cari lapangan favoritmu dan jadwalkan aktivitas olahraga sekarang.</p>
+                        <a href="{{ url('/penyewa/lapangan') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0B7B69] text-white text-xs font-semibold hover:bg-[#086354] transition">
+                            Cari & Sewa Lapangan
+                        </a>
+                    </div>
+                @endforelse
             </div>
         </div>
 
@@ -167,20 +197,10 @@
                         icon="receipt"
                     />
                     <x-penyewa.quick-action
-                        href="{{ url('/penyewa/ulasan') }}"
+                        href="{{ url('/penyewa/riwayat?tab=selesai') }}"
                         label="Beri Ulasan Lapangan"
                         icon="star"
                     />
-                </div>
-
-                {{-- Tip Box --}}
-                <div class="mt-5 pt-4 border-t border-slate-100">
-                    <div class="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 text-xs text-emerald-900">
-                        <span class="text-base shrink-0 leading-none">💡</span>
-                        <p class="leading-relaxed">
-                            Booking lebih awal atau sewa multi-jam untuk mendapatkan promo dan slot favorit tanpa antre.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

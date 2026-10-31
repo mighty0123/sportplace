@@ -3,7 +3,7 @@
     Layout  : x-layouts.penyewa (Top navbar-based)
     Features: Category strip, multi-facet filtering (sport, city, surface, sort, search), responsive court grid, pagination
 --}}
-<x-layouts.penyewa title="Cari & Booking Lapangan — SportPlace" active="dashboard">
+<x-layouts.penyewa title="Cari & Booking Lapangan — SportPlace" active="lapangan">
 <div class="space-y-6">
 
     {{-- =========================================================
@@ -12,22 +12,12 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                Cari & Booking Lapangan
+                Daftar Lapangan Olahraga
             </h1>
             <p class="text-sm text-slate-500 mt-1">
-                Temukan lapangan olahraga terbaik di sekitar Anda dengan jadwal yang fleksibel dan booking instan.
+                Pilih lapangan favorit Anda untuk melihat detail fasilitas, tarif, dan memilih jadwal booking.
             </p>
         </div>
-
-        <a
-            href="{{ url('/penyewa/kalender') }}"
-            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200/90 hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition shrink-0"
-        >
-            <svg class="w-4 h-4 text-[#0B7B69]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span>Buka Kalender Jadwal</span>
-        </a>
     </div>
 
     {{-- =========================================================
@@ -35,6 +25,8 @@
     ========================================================= --}}
     <x-penyewa.court.filter-bar
         :sport-counts="$sportCounts"
+        :sports-in-db="$sportsInDb"
+        :cities="$cities"
         :current-sport="$currentSport"
         :current-city="$currentCity"
         :current-surface="$currentSurface"
@@ -74,7 +66,7 @@
                         :facilities="$c['facilities']"
                         :open-hours="$c['open_hours']"
                         :image-src="$c['image_src']"
-                        :booking-url="url('/penyewa/booking/' . $c['id'])"
+                        :booking-url="url('/penyewa/lapangan/' . $c['id'])"
                     />
                 @endforeach
             </div>

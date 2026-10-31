@@ -11,7 +11,7 @@
     <!-- Left: Icon & Details -->
     <div class="flex items-center gap-3 min-w-0">
         <div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/60 text-[#0B7B69] flex items-center justify-center shrink-0 shadow-2xs">
-            @if (strtolower($sport) === 'futsal')
+            @if (strtolower($sport) === 'futsal' || strtolower($sport) === 'mini-soccer')
                 <!-- Futsal Ball SVG -->
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
@@ -21,6 +21,18 @@
                 <!-- Badminton Shuttle SVG -->
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 2l4 7H8l4-7zM9 13a3 3 0 106 0M12 16v6"/>
+                </svg>
+            @elseif (strtolower($sport) === 'basket')
+                <!-- Basketball SVG -->
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                </svg>
+            @elseif (strtolower($sport) === 'tenis' || strtolower($sport) === 'tennis')
+                <!-- Tennis SVG -->
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.36 5.64a9 9 0 00-12.72 0M5.64 18.36a9 9 0 0012.72 0"/>
                 </svg>
             @else
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

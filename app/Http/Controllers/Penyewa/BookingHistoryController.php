@@ -32,8 +32,8 @@ class BookingHistoryController extends Controller
                 'price_sub_type' => 'amber',
                 'status' => 'pending',
                 'action_type' => 'pay',
-                'detail_url' => url('/penyewa/booking/1'),
-                'pay_url' => url('/penyewa/booking/1/bayar'),
+                'detail_url' => route('penyewa.booking.detail', ['id' => 1]),
+                'pay_url' => route('penyewa.pembayaran.review', ['id' => 1]),
                 'image_src' => asset('images/courts/tennis.jpg'),
             ],
             [

@@ -19,12 +19,19 @@
 
     // Default realistic image fallback per sport category
     $defaultImages = [
-        'FUTSAL'    => asset('images/courts/futsal.jpg'),
-        'BADMINTON' => asset('images/courts/badminton.jpg'),
-        'TENIS'     => asset('images/courts/tennis.jpg'),
-        'BASKET'    => asset('images/courts/basketball.jpg'),
+        'FUTSAL'      => asset('images/courts/futsal.jpg'),
+        'BADMINTON'   => asset('images/courts/badminton.jpg'),
+        'TENIS'       => asset('images/courts/tennis.jpg'),
+        'BASKET'      => asset('images/courts/basketball.jpg'),
+        'MINI-SOCCER' => asset('images/courts/futsal.jpg'),
     ];
-    $courtImage = $imageSrc ?? ($defaultImages[$sportUpper] ?? asset('images/courts/futsal.jpg'));
+
+    $fallbackImg = $defaultImages[$sportUpper] ?? asset('images/courts/futsal.jpg');
+    $cleanSrc = $imageSrc;
+    if ($cleanSrc && str_contains($cleanSrc, 'storage/images/')) {
+        $cleanSrc = str_replace('storage/images/', 'images/', $cleanSrc);
+    }
+    $courtImage = $cleanSrc ?: $fallbackImg;
 
     // Status config matching reference mockup
     $statusConfig = [
@@ -79,6 +86,7 @@
                 alt="{{ $venueName }} - {{ $fieldName }}"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
+                onerror="this.onerror=null; this.src='{{ $fallbackImg }}';"
             >
         </a>
 
