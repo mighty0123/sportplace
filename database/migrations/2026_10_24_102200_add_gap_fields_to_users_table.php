@@ -18,9 +18,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropUnique('users_password_unique');
-        });
+        try {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropUnique('users_password_unique');
+            });
+        } catch (\Throwable $e) {
+            // Index does not exist or driver cannot drop unique
+        }
 
         Schema::table('users', function (Blueprint $table) {
             $table->timestamp('email_verified_at')->nullable()->after('email');
