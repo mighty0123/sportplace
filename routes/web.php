@@ -79,11 +79,13 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 
-    Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
+    Route::prefix('verifikasi')->name('verifikasi.')->where(['mitra' => '[0-9]+'])->group(function () {
+        Route::get('/{mitra}', [MitraVerificationController::class, 'show'])->name('show');
         Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
         Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
+        Route::post('/{mitra}/nik', [MitraVerificationController::class, 'revealNik'])
+            ->middleware('throttle:20,1')->name('nik');
         Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
-            ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))
-            ->name('document');
+            ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))->name('document');
     });
 });

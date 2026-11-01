@@ -134,7 +134,6 @@ class MitraVerificationController extends Controller
         return $mitra->nama_usaha ?: "#{$mitra->id}";
     }
 
-    // SEMENTARA: halaman daftar dibuat di langkah berikutnya. Hapus fallback ke dashboard saat itu.
     private function backToList(): RedirectResponse
     {
         return redirect()->route(
