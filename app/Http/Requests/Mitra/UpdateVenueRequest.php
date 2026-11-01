@@ -14,6 +14,7 @@ class UpdateVenueRequest extends FormRequest
     public function authorize(): bool
     {
         $venue = $this->route('venue');
+
         return $venue && $this->user()?->can('update', $venue);
     }
 
@@ -63,4 +64,3 @@ class UpdateVenueRequest extends FormRequest
         ];
     }
 }
-

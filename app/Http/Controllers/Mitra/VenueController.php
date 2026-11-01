@@ -41,7 +41,7 @@ class VenueController extends Controller
         if ($search = $request->input('search')) {
             $venuesQuery->where(function ($q) use ($search) {
                 $q->where('nama_venue', 'like', "%{$search}%")
-                  ->orWhere('alamat_lengkap', 'like', "%{$search}%");
+                    ->orWhere('alamat_lengkap', 'like', "%{$search}%");
             });
         }
 
@@ -206,7 +206,7 @@ class VenueController extends Controller
         if (! empty($missingFields)) {
             return redirect()
                 ->back()
-                ->with('error', 'Data belum lengkap untuk diajukan: ' . implode(', ', $missingFields));
+                ->with('error', 'Data belum lengkap untuk diajukan: '.implode(', ', $missingFields));
         }
 
         $venue->update([
@@ -299,4 +299,3 @@ class VenueController extends Controller
             ->with('success', "Draft venue '{$namaVenue}' berhasil dihapus.");
     }
 }
-

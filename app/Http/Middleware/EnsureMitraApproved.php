@@ -11,7 +11,7 @@ class EnsureMitraApproved
     /**
      * Handle an incoming request for protected mitra areas (MTR-03..MTR-11).
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -41,4 +41,3 @@ class EnsureMitraApproved
         return $next($request);
     }
 }
-

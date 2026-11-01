@@ -54,4 +54,3 @@ class MitraCommandTest extends TestCase
         $this->assertSame('KTP buram', $profile->alasan_penolakan);
     }
 }
-

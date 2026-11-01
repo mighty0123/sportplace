@@ -465,4 +465,3 @@ class VenueTest extends TestCase
         ]);
     }
 }
-

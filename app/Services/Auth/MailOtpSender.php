@@ -30,7 +30,7 @@ class MailOtpSender implements OtpSender
             try {
                 Mail::to($user->email)->send(new OtpMail($user, $plainCode));
             } catch (Exception $e) {
-                Log::error('Gagal mengirim email OTP: ' . $e->getMessage(), [
+                Log::error('Gagal mengirim email OTP: '.$e->getMessage(), [
                     'user_id' => $user->id,
                     'email' => $user->email,
                 ]);
@@ -38,4 +38,3 @@ class MailOtpSender implements OtpSender
         }
     }
 }
-

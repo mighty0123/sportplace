@@ -3,11 +3,13 @@
 namespace Tests\Feature\Mitra;
 
 use App\Models\Field;
+use App\Models\MasterCity;
 use App\Models\MitraProfile;
 use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class PolicyAndMiddlewareTest extends TestCase
@@ -60,7 +62,7 @@ class PolicyAndMiddlewareTest extends TestCase
         [$mitraA, $profileA] = $this->createMitra('approved');
         [$mitraB, $profileB] = $this->createMitra('approved');
 
-        $city = \App\Models\MasterCity::create([
+        $city = MasterCity::create([
             'nama_kota' => 'Jakarta Selatan',
             'provinsi' => 'DKI Jakarta',
             'status_kota' => 'aktif',
@@ -95,10 +97,9 @@ class PolicyAndMiddlewareTest extends TestCase
         parent::setUp();
 
         // Daftarkan route testing ber-middleware
-        \Illuminate\Support\Facades\Route::middleware(['web', 'auth', 'role:mitra', 'mitra.approved'])
+        Route::middleware(['web', 'auth', 'role:mitra', 'mitra.approved'])
             ->get('/mitra/test-protected', function () {
                 return 'OK';
             });
     }
 }
-

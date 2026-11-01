@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Mitra;
 
-use App\Models\AuditLog;
 use App\Models\MitraProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -175,4 +174,3 @@ class OnboardingTest extends TestCase
             ->assertRedirect(route('mitra.dashboard'));
     }
 }
-

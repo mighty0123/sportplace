@@ -29,6 +29,7 @@ class RejectMitra extends Command
     {
         if (app()->isProduction()) {
             $this->error('Perintah ini hanya dapat dijalankan pada lingkungan non-produksi!');
+
             return Command::FAILURE;
         }
 
@@ -37,6 +38,7 @@ class RejectMitra extends Command
 
         if (empty(trim($alasan))) {
             $this->error('Alasan penolakan wajib diisi (BR-004).');
+
             return Command::FAILURE;
         }
 
@@ -44,11 +46,13 @@ class RejectMitra extends Command
 
         if (! $user) {
             $this->error("User dengan email [{$email}] tidak ditemukan.");
+
             return Command::FAILURE;
         }
 
         if ($user->role !== 'mitra') {
             $this->error("User [{$email}] bukan berstatus mitra (role: {$user->role}).");
+
             return Command::FAILURE;
         }
 
@@ -64,7 +68,7 @@ class RejectMitra extends Command
         $profile->save();
 
         $this->info("Mitra [{$email}] berhasil ditolak (status: rejected) dengan alasan: \"{$alasan}\".");
+
         return Command::SUCCESS;
     }
 }
-

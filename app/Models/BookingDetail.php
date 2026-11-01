@@ -9,7 +9,7 @@ class BookingDetail extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'header_id', 'field_id', 'tanggal_sewa', 'jam_mulai', 'jam_selesai', 'harga_slot', 'status_item', 'created_at'
+        'header_id', 'field_id', 'tanggal_sewa', 'jam_mulai', 'jam_selesai', 'harga_slot', 'status_item', 'created_at',
     ];
 
     public function header()

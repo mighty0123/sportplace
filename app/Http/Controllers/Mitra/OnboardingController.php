@@ -211,4 +211,3 @@ class OnboardingController extends Controller
         return Storage::disk('local')->response($path);
     }
 }
-
