@@ -3,7 +3,7 @@
     $disabled = $item['disabled'] ?? false;
     $route  = $item['route'] ?? null;
     $exists = $route && \Illuminate\Support\Facades\Route::has($route);
-    $active = $exists && request()->routeIs($route);
+    $active = $exists && request()->routeIs($item['active'] ?? $route);
 @endphp
 
 @if ($disabled)

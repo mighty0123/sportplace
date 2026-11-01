@@ -27,6 +27,7 @@
         'alert-circle' => '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
         'info'         => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
         'inbox'        => '<path d="M4 13 6 5h12l2 8"/><path d="M4 13v6h16v-6h-5l-1 2h-4l-1-2z"/>',
+        'search' => '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
     ];
 @endphp
 <svg {{ $attributes->merge(['class' => 'size-[18px] shrink-0']) }}

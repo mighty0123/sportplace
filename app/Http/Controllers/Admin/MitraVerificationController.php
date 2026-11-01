@@ -47,6 +47,13 @@ class MitraVerificationController extends Controller
         ]);
     }
 
+    public function index(): View
+    {
+        Gate::authorize('viewAny', MitraProfile::class);
+
+        return view('admin.verifikasi.index');
+    }
+
     public function approve(ApproveMitraRequest $request, MitraProfile $mitra): RedirectResponse
     {
         try {
@@ -94,10 +101,6 @@ class MitraVerificationController extends Controller
         ]);
     }
 
-    /**
-     * NIK lengkap tidak ikut di HTML halaman; baru dikirim saat admin menekan "Tampilkan",
-     * dan setiap permintaan dicatat di audit log.
-     */
     public function revealNik(Request $request, MitraProfile $mitra): JsonResponse
     {
         Gate::authorize('review', $mitra);
@@ -107,7 +110,6 @@ class MitraVerificationController extends Controller
         return response()->json(['nik' => $mitra->no_ktp])->header('Cache-Control', 'no-store');
     }
 
-    /** Data berkas untuk tampilan: tersedia atau tidak, jenis (gambar/PDF), alamat rute privat, ukuran. */
     private function documents(MitraProfile $mitra): Collection
     {
         /** @var FilesystemAdapter $disk */

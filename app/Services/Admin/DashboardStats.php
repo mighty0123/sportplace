@@ -113,7 +113,7 @@ class DashboardStats
             ],
         ];
     }
-
+    
     public function activity(int $limit = 4): array
     {
         $rows = DB::table('audit_logs')

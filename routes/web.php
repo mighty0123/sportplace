@@ -80,6 +80,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::prefix('verifikasi')->name('verifikasi.')->where(['mitra' => '[0-9]+'])->group(function () {
+        Route::get('/', [MitraVerificationController::class, 'index'])->name('index');
         Route::get('/{mitra}', [MitraVerificationController::class, 'show'])->name('show');
         Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
         Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
