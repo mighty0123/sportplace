@@ -58,6 +58,7 @@
             'relative -mt-10 px-4 pb-8 md:-mt-14 md:px-6 md:pb-10 lg:-mt-20 lg:px-10' => $hasHero,
             'px-4 py-5 md:p-6 lg:px-10 lg:py-8' => ! $hasHero,
         ])>
+            <x-ui.flash />
             {{ $slot }}
         </main>
 

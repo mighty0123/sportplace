@@ -1,6 +1,5 @@
 import Chart from "chart.js/auto";
 
-// Warna disalin dari theme.css (hex, supaya tidak bergantung pada CSS variable).
 const C = {
     line: "#0b604f",
     fill: "67, 229, 197",

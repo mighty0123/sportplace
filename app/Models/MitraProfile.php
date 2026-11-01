@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class MitraProfile extends Model
 {
@@ -28,7 +29,58 @@ class MitraProfile extends Model
         'file_npwp',
         'file_nib',
         'file_sewa_lahan',
+        'submitted_at',
     ];
+
+    public const DOCUMENTS = [
+        'ktp'  => 'file_ktp',
+        'npwp' => 'file_npwp',
+        'nib'  => 'file_nib',
+        'sewa' => 'file_sewa_lahan',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'submitted_at'     => 'datetime',
+            'reviewed_at'      => 'datetime',
+            'review_checklist' => 'array',
+        ];
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function hasBusinessDocuments(): bool
+    {
+        return collect(['npwp', 'nib', 'sewa'])->contains(fn ($type) => $this->documentPath($type));
+    }
+
+    /** NIK tersamar: tampil 4 digit awal dan akhir saja. */
+    public function maskedNik(): string
+    {
+        $nik = (string) $this->no_ktp;
+
+        return strlen($nik) > 8 ? Str::mask($nik, '•', 4, -4) : str_repeat('•', strlen($nik));
+    }
+
+    /** Nomor rekening tersamar: hanya 4 digit akhir. */
+    public function maskedAccountNumber(): string
+    {
+        $no = (string) $this->nomor_rekening;
+
+        return strlen($no) > 4 ? Str::mask($no, '•', 0, -4) : str_repeat('•', strlen($no));
+    }
+
+    // Path berkas di disk privat, atau null kalau jenisnya tidak dikenal / belum diunggah
+    public function documentPath(string $type): ?string
+    {
+        $column = self::DOCUMENTS[$type] ?? null;
+
+        return $column ? ($this->{$column} ?: null) : null;
+    }
 
     public function user()
     {

@@ -19,6 +19,8 @@ class DashboardStats
         'ajukan'      => ['diajukan', 'info', 'send'],
         'suspend'     => ['disuspend', 'warning', 'ban'],
         'kedaluwarsa' => ['kedaluwarsa', 'neutral', 'clock'],
+        'pendaftaran'  => ['didaftarkan', 'info', 'send'],
+        'ajukan_ulang' => ['diajukan ulang', 'info', 'send'],
     ];
 
     private const ENTITY_LABELS = [
@@ -83,7 +85,7 @@ class DashboardStats
 
         $oldest = fn ($q) => (clone $q)->selectRaw('MIN(COALESCE(submitted_at, created_at)) as t')->value('t');
 
-        $mitraOldest = (clone $mitra)->min('created_at');
+        $mitraOldest = (clone $mitra)->min('submitted_at');
         $listingOldest = collect([$oldest($venues), $oldest($fields)])->filter()->min();
 
         return [
@@ -116,6 +118,7 @@ class DashboardStats
     {
         $rows = DB::table('audit_logs')
             ->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')
+            ->where('audit_logs.aksi', '!=', 'lihat_dokumen')
             ->orderByDesc('audit_logs.created_at')
             ->limit($limit)
             ->get(['users.name as actor', 'audit_logs.aksi', 'audit_logs.entitas_type',

@@ -20,10 +20,13 @@
         'chevron-down' => '<path d="m6 9 6 6 6-6"/>',
         'user'         => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
         'log-out'      => '<path d="M9 4H5v16h4"/><path d="m16 8 4 4-4 4M20 12H9"/>',
-        'x-circle' => '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
-        'send'     => '<path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
-        'ban'      => '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
-        'clock'    => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        'x-circle'     => '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+        'send'         => '<path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
+        'ban'          => '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+        'clock'        => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        'alert-circle' => '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+        'info'         => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+        'inbox'        => '<path d="M4 13 6 5h12l2 8"/><path d="M4 13v6h16v-6h-5l-1 2h-4l-1-2z"/>',
     ];
 @endphp
 <svg {{ $attributes->merge(['class' => 'size-[18px] shrink-0']) }}

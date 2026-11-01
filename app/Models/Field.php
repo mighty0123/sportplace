@@ -13,9 +13,19 @@ class Field extends Model
         'meta_harga', 'status_lapangan', 'alasan_penolakan'
     ];
 
-    protected $casts = [
-        'meta_harga' => 'array', // Mengubah JSON dari database menjadi array otomatis di PHP
-    ];
+    protected function casts(): array
+    {
+        return [
+            'meta_harga'  => 'array',
+            'submitted_at' => 'datetime',
+            'reviewed_at'  => 'datetime',
+        ];
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
 
     public function vanue()
     {

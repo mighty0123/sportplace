@@ -30,5 +30,10 @@ class MitraProfilePolicy
 
         return $profile->user_id === $user->id;
     }
+
+    public function review(User $user, MitraProfile $mitra): bool
+    {
+        return $user->role === 'admin' && $user->status_akun === 'aktif';
+    }
 }
 

@@ -5,7 +5,10 @@ use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Models\MitraProfile;
 
 Route::get('/', function () {
     return view('welcome');
@@ -75,4 +78,12 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
+        Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
+        Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
+        Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
+            ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))
+            ->name('document');
+    });
 });

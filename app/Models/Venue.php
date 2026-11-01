@@ -22,6 +22,19 @@ class Venue extends Model
         'alasan_penolakan',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'submitted_at' => 'datetime',
+            'reviewed_at'  => 'datetime',
+        ];
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+    
     /**
      * Alias status_venue agar konsisten dengan standar PRD/kode
      */
