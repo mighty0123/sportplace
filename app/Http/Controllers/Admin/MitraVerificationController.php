@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\Admin\MitraAlreadyProcessedException;
+use App\Exceptions\Admin\MitraBlockedByChecksException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveMitraRequest;
 use App\Http\Requests\Admin\RejectMitraRequest;
 use App\Models\AuditLog;
 use App\Models\MitraProfile;
 use App\Services\Admin\MitraVerificationService;
+use App\Services\Admin\MitraDataChecks;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,8 +32,10 @@ class MitraVerificationController extends Controller
         'sewa' => ['Sewa lahan', false],
     ];
 
-    public function __construct(private MitraVerificationService $service)
-    {
+    public function __construct(
+        private MitraVerificationService $service,
+        private MitraDataChecks $checks,
+    ) {
     }
 
     public function show(MitraProfile $mitra): View
@@ -39,11 +43,14 @@ class MitraVerificationController extends Controller
         Gate::authorize('review', $mitra);
 
         $mitra->load(['user', 'reviewer']);
+        $checks = $this->checks->run($mitra);
 
         return view('admin.verifikasi.show', [
             'mitra'     => $mitra,
             'documents' => $this->documents($mitra),
             'history'   => $this->service->history($mitra),
+            'checks'    => $checks,
+            'blocked'   => $this->checks->isBlocked($checks),
         ]);
     }
 
@@ -60,6 +67,9 @@ class MitraVerificationController extends Controller
             $this->service->approve($mitra, $request->user(), $request->validated('checklist'));
         } catch (MitraAlreadyProcessedException $e) {
             return $this->backToList()->with('error', $e->getMessage());
+        } catch (MitraBlockedByChecksException $e) {
+            // Tetap di halaman detail: masalahnya ada di data pengajuan ini
+            return redirect()->route('admin.verifikasi.show', $mitra)->with('error', $e->getMessage());
         }
 
         return $this->backToList()->with('success', "Mitra {$this->nameOf($mitra)} disetujui.");

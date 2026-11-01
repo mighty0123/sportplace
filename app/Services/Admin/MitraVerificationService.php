@@ -3,12 +3,17 @@
 namespace App\Services\Admin;
 
 use App\Exceptions\Admin\MitraAlreadyProcessedException;
+use App\Exceptions\Admin\MitraBlockedByChecksException;
 use App\Models\AuditLog;
 use App\Models\MitraProfile;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Keputusan admin atas pendaftaran mitra. Satu-satunya tempat yang mengubah
+ * status pendaftaran, jadi aturan tidak tersebar di controller.
+ */
 class MitraVerificationService
 {
     /** Butir pemeriksaan manual. Satu sumber untuk validasi, tampilan, dan snapshot. */
@@ -18,7 +23,11 @@ class MitraVerificationService
         'dokumen_usaha' => 'Dokumen usaha yang diunggah terbaca dan sesuai',
     ];
 
-    /** Butir yang berlaku untuk pengajuan ini ("dokumen_usaha" hanya bila ada dokumen usaha). */
+    public function __construct(private MitraDataChecks $checks)
+    {
+    }
+
+    /** Butir manual yang berlaku untuk pengajuan ini ("dokumen_usaha" hanya bila ada dokumen usaha). */
     public function checklistItemsFor(MitraProfile $profile): array
     {
         return collect(self::CHECKLIST)
@@ -28,18 +37,28 @@ class MitraVerificationService
 
     public function approve(MitraProfile $profile, User $admin, array $checklist): MitraProfile
     {
-        return $this->decide($profile, $admin, 'approved', 'setujui', null, $checklist);
+        // Dihitung ulang di server saat keputusan
+        $results = $this->checks->run($profile);
+
+        if ($this->checks->isBlocked($results)) {
+            throw new MitraBlockedByChecksException($this->checks->blockingMessage($results));
+        }
+
+        return $this->decide($profile, $admin, 'approved', 'setujui', null, $checklist, $results);
     }
 
     public function reject(MitraProfile $profile, User $admin, string $reason, array $checklist = []): MitraProfile
     {
-        return $this->decide($profile, $admin, 'rejected', 'tolak', $reason, $checklist);
+        // Menolak tidak pernah diblokir pemeriksaan; hasilnya tetap dicatat sebagai bukti.
+        return $this->decide($profile, $admin, 'rejected', 'tolak', $reason, $checklist, $this->checks->run($profile));
     }
 
+    /** Riwayat pendaftaran */
     public function history(MitraProfile $profile): Collection
     {
         return AuditLog::query()
             ->with('user:id,name')
+            // Dua bentuk nama entitas ada di data: nama pendek (helper aplikasi) dan nama class lengkap.
             ->whereIn('entitas_type', ['MitraProfile', MitraProfile::class])
             ->where('entitas_id', $profile->id)
             ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik'])
@@ -48,11 +67,13 @@ class MitraVerificationService
             ->get();
     }
 
-    private function decide(MitraProfile $profile, User $admin, string $newStatus, string $aksi, ?string $reason, array $checklist): MitraProfile
+    private function decide(MitraProfile $profile, User $admin, string $newStatus, string $aksi, ?string $reason, array $checklist, array $results): MitraProfile
     {
-        $snapshot = $this->snapshot($profile, $checklist);
+        $snapshot = $this->snapshot($profile, $checklist, $results);
 
         DB::transaction(function () use ($profile, $admin, $newStatus, $aksi, $reason, $snapshot) {
+            // Update bersyarat: hanya berhasil kalau status masih 'pending' saat query dijalankan.
+            // json_encode manual: update massal lewat query builder tidak menerapkan cast.
             $affected = MitraProfile::whereKey($profile->getKey())
                 ->where('status', 'pending')
                 ->update([
@@ -74,14 +95,18 @@ class MitraVerificationService
         return $profile->refresh();
     }
 
-    /** Foto pemeriksaan saat keputusan dibuat. Hanya butir yang berlaku, nilainya dipaksa boolean. */
-    private function snapshot(MitraProfile $profile, array $checklist): array
+    /** Foto pemeriksaan saat keputusan dibuat: centang manual dan hasil otomatis. */
+    private function snapshot(MitraProfile $profile, array $checklist, array $results): array
     {
         $manual = [];
         foreach (array_keys($this->checklistItemsFor($profile)) as $key) {
             $manual[$key] = filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
 
-        return ['manual' => $manual];
+        return [
+            'manual'  => $manual,
+            'auto'    => $this->checks->snapshot($results),
+            'auto_at' => now()->toIso8601String(),
+        ];
     }
 }

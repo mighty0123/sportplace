@@ -1,7 +1,11 @@
 @php
     $items     = app(\App\Services\Admin\MitraVerificationService::class)->checklistItemsFor($mitra);
     $nameLabel = $mitra->nama_usaha ?: 'pendaftaran ini';
-    $quick     = ['KTP tidak terbaca atau tidak utuh', 'NIK atau nama tidak sesuai dengan KTP', 'Nama rekening tidak sesuai dengan nama pemilik'];
+    $base  = ['KTP tidak terbaca atau tidak utuh', 'NIK atau nama tidak sesuai dengan KTP', 'Nama rekening tidak sesuai dengan nama pemilik'];
+    // Alasan dari pemeriksaan yang bermasalah tampil lebih dulu.
+    $quick = collect($checks)->whereIn('status', ['fail', 'warn'])->pluck('reason')->filter()
+        ->merge($base)->unique()->take(6)->values()->all();
+    $auto = is_array($mitra->review_checklist) ? ($mitra->review_checklist['auto'] ?? null) : null;
 @endphp
 
 @if ($mitra->isPending())
@@ -12,6 +16,8 @@
             get done() { return Object.values(this.checks).filter(Boolean).length },
             get total() { return Object.keys(this.checks).length },
             get complete() { return this.done === this.total },
+            blocked: @js($blocked),
+            get canApprove() { return this.complete && ! this.blocked },
             quick(text) {
                 this.reason = text;
                 this.$nextTick(() => document.getElementById('alasan_penolakan').dispatchEvent(new Event('input')));
@@ -25,19 +31,22 @@
             </legend>
             @foreach ($items as $key => $label)
                 <label class="flex min-h-10 items-start gap-3 py-2 text-body-sm text-ink">
-                    <input type="checkbox" x-model="checks.{{ $key }}" class="mt-0.5 size-[18px] shrink-0 accent-primary-500">
+                    <input type="checkbox" x-model="checks.{{ $key }}" class="mt-0.5 size-4.5 shrink-0 accent-primary-500">
                     {{ $label }}
                 </label>
             @endforeach
         </fieldset>
 
-        <p class="mt-2 text-caption text-ink-muted" x-show="!complete">Centang semua butir pemeriksaan untuk menyetujui.</p>
+        <p class="mt-2 text-caption text-danger-700" x-show="blocked" x-cloak>
+            Tidak bisa menyetujui: ada pemeriksaan data yang tidak lolos. Perbaiki datanya atau tolak pendaftaran.
+        </p>
+        <p class="mt-2 text-caption text-ink-muted" x-show="!blocked && !complete">Centang semua butir pemeriksaan untuk menyetujui.</p>
 
         <div class="mt-3 flex gap-2">
             <x-ui.button variant="danger-outline" type="button" class="flex-1" x-on:click="$dispatch('open-modal', 'reject')">
                 Tolak
             </x-ui.button>
-            <x-ui.button type="button" class="flex-[1.4]" ::disabled="!complete" x-on:click="$dispatch('open-modal', 'approve')">
+            <x-ui.button type="button" class="flex-[1.4]" ::disabled="!canApprove" x-on:click="$dispatch('open-modal', 'approve')">
                 Setujui mitra
             </x-ui.button>
         </div>
@@ -133,6 +142,16 @@
             </ul>
         @else
             <p class="text-caption text-ink-muted">Diputuskan sebelum pencatatan hasil pemeriksaan ada.</p>
+        @endif
+
+        @if ($auto)
+            @php
+                $words = ['pass' => 'lolos', 'warn' => 'perlu perhatian', 'fail' => 'tidak lolos', 'na' => 'tidak berlaku'];
+            @endphp
+            <p class="text-caption text-ink-muted">
+                Pemeriksaan otomatis saat diputuskan:
+                {{ collect($auto)->countBy()->map(fn ($n, $s) => "{$n} " . ($words[$s] ?? $s))->implode(', ') }}.
+            </p>
         @endif
 
         <p class="text-caption text-ink-body">

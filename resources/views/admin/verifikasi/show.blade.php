@@ -92,6 +92,12 @@
                 </dl>
             </x-ui.card>
 
+            @if ($mitra->isPending())
+                <x-ui.card class="min-w-0">
+                    <x-admin.data-checks :checks="$checks" />
+                </x-ui.card>
+            @endif
+
             <x-ui.card class="min-w-0">
                 @include('admin.verifikasi.partials.decision')
             </x-ui.card>
