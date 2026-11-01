@@ -1,13 +1,36 @@
 @php
-    $counts = $this->counts;
-    $rows   = $this->rows;
+    $counts  = $this->counts;
+    $rows    = $this->rows;
+    $s       = $this->summary;
     $hasTerm = trim($search) !== '';
 @endphp
 
 <div class="space-y-4">
+    <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line md:grid-cols-4">
+        <div class="bg-surface p-4">
+            <dt class="text-caption text-ink-muted">Menunggu verifikasi</dt>
+            <dd class="mt-1 text-metric tabular-nums text-ink">{{ $s['pending'] }}</dd>
+        </div>
+        <div class="bg-surface p-4">
+            <dt class="text-caption text-ink-muted">Melewati batas {{ $sla }} hari</dt>
+            <dd class="mt-1 flex items-center gap-2 text-metric tabular-nums {{ $s['late'] ? 'text-danger-700' : 'text-ink' }}">
+                {{ $s['late'] }}
+                @if ($s['late'])<x-ui.icon name="alert-circle" /><span class="sr-only">perlu segera ditinjau</span>@endif
+            </dd>
+        </div>
+        <div class="bg-surface p-4">
+            <dt class="text-caption text-ink-muted">Terlama menunggu</dt>
+            <dd class="mt-1 text-metric tabular-nums text-ink">{{ $s['oldest'] === null ? '—' : $s['oldest'] . ' hari' }}</dd>
+        </div>
+        <div class="bg-surface p-4">
+            <dt class="text-caption text-ink-muted">Diputuskan 7 hari terakhir</dt>
+            <dd class="mt-1 text-metric tabular-nums text-ink">{{ $s['decided'] }}</dd>
+        </div>
+    </dl>
+
     {{-- Tab status dan pencarian --}}
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <nav aria-label="Filter status" class="flex gap-5 overflow-x-auto border-b border-line-strong md:flex-1">
+        <nav aria-label="Filter status" class="flex justify-center gap-5 border-b border-line-strong md:flex-1 md:justify-start">
             @foreach ($statuses as $key => $label)
                 <button type="button" wire:click="setStatus('{{ $key }}')" wire:key="tab-{{ $key }}"
                         @if ($status === $key) aria-current="true" @endif
@@ -37,7 +60,7 @@
     </div>
 
     {{-- Hasil: meredup selagi memuat, dan diumumkan ke pembaca layar --}}
-    <div wire:loading.class="opacity-60" wire:target="search,setStatus,toggleSort,clearSearch,nextPage,previousPage"
+    <div wire:loading.class="opacity-60" wire:target="search,setStatus,toggleSort,clearSearch,nextPage,previousPage,gotoPage,perPage"
         class="space-y-4 transition-opacity motion-reduce:transition-none">
         <p class="sr-only" role="status">{{ $rows->total() }} pendaftaran ditemukan</p>
 
@@ -100,32 +123,96 @@
             {{-- Daftar kartu (di bawah md) --}}
             <ul class="space-y-3 md:hidden">
                 @foreach ($rows as $m)
-                    <li wire:key="card-{{ $m->id }}" class="rounded-md border border-line bg-surface p-4">
-                        <a href="{{ route('admin.verifikasi.show', $m) }}" class="text-label-lg font-semibold text-ink">
-                            {{ $m->nama_usaha ?: 'Tanpa nama usaha' }}
-                        </a>
-                        <p class="text-caption text-ink-muted">{{ $m->user?->name ?? '—' }}</p>
-                        <p class="mt-1 text-caption text-ink-muted">
+                    @php
+                        $initials = \Illuminate\Support\Str::of($m->nama_usaha ?: '?')->explode(' ')->filter()->take(2)
+                            ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+                        $days = $m->daysWaiting();
+                        $late = $m->isPending() && $days !== null && $days >= $sla;
+                        $docs = $m->uploadedDocumentsCount();
+                    @endphp
+            
+                    <li wire:key="card-{{ $m->id }}"
+                        @class([
+                            'relative rounded-md border border-l-4 border-line bg-surface p-4 transition-colors active:bg-surface-muted motion-reduce:transition-none',
+                            'border-l-danger-500' => $late,
+                            'border-l-line-strong' => ! $late,
+                        ])>
+                        <div class="flex items-center gap-3">
+                            <span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary-100 text-label-lg text-primary-700" aria-hidden="true">{{ $initials }}</span>
+                            <div class="min-w-0 flex-1">
+                                {{-- Tautan membentang ke seluruh kartu --}}
+                                <a href="{{ route('admin.verifikasi.show', $m) }}"
+                                class="block truncate text-label-lg font-semibold text-ink after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+                                    <span class="sr-only">Tinjau </span>{{ $m->nama_usaha ?: 'Tanpa nama usaha' }}
+                                </a>
+                                <p class="truncate text-caption text-ink-muted">{{ $m->user?->name ?? '—' }}</p>
+                            </div>
+                            <x-ui.icon name="chevron-right" class="text-ink-muted" />
+                        </div>
+            
+                        <p class="mt-3 inline-flex items-center gap-1.5 text-caption text-ink-body [&>svg]:size-4">
+                            <x-ui.icon name="map-pin" />
                             {{ $m->kota_operasional ?: '—' }}, {{ $m->bentuk_badan_usaha ?: '—' }}
                         </p>
-                        <div class="mt-2"><x-admin.verification-timing :mitra="$m" :sla="$sla" /></div>
-                        <div class="mt-3 flex items-center justify-between gap-3">
-                            <span class="text-caption tabular-nums text-ink-muted">{{ $m->uploadedDocumentsCount() }} dari 4 berkas</span>
-                            <x-ui.button variant="outline" size="sm" :href="route('admin.verifikasi.show', $m)"
-                                        aria-label="Tinjau {{ $m->nama_usaha ?: 'pendaftaran #' . $m->id }}">Tinjau</x-ui.button>
+            
+                        <div class="mt-3 flex items-end justify-between gap-3">
+                            <x-admin.verification-timing :mitra="$m" :sla="$sla" />
+            
+                            <div class="shrink-0 text-right">
+                                <div class="flex justify-end gap-0.5" aria-hidden="true">
+                                    @for ($i = 1; $i <= 4; $i++)
+                                        <span @class(['h-1.5 w-4 rounded-full', 'bg-primary-500' => $i <= $docs, 'bg-line-strong' => $i > $docs])></span>
+                                    @endfor
+                                </div>
+                                <p class="mt-1 text-caption tabular-nums text-ink-muted">{{ $docs }} dari 4 berkas</p>
+                            </div>
                         </div>
                     </li>
                 @endforeach
             </ul>
 
             {{-- Navigasi halaman --}}
-            <div class="flex flex-col gap-3 text-caption text-ink-muted sm:flex-row sm:items-center sm:justify-between">
-                <p>Menampilkan {{ $rows->firstItem() }} sampai {{ $rows->lastItem() }} dari {{ $rows->total() }} pendaftaran</p>
+            <div class="flex flex-col items-center gap-3 text-center text-caption text-ink-muted lg:flex-row lg:justify-between lg:text-left">
+                <div class="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+                    <p>Menampilkan {{ $rows->firstItem() }} sampai {{ $rows->lastItem() }} dari {{ $rows->total() }} pendaftaran</p>
+                    <label class="flex items-center gap-2">
+                        Baris per halaman
+                        <select wire:model.live="perPage"
+                                class="min-h-9 rounded-md border border-line-strong bg-surface px-2 text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand">
+                            @foreach ($perPageOptions as $n)
+                                <option value="{{ $n }}">{{ $n }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
+            
                 @if ($rows->hasPages())
-                    <div class="flex gap-2">
-                        <x-ui.button variant="neutral" size="sm" type="button" wire:click="previousPage" :disabled="$rows->onFirstPage()">Sebelumnya</x-ui.button>
-                        <x-ui.button variant="neutral" size="sm" type="button" wire:click="nextPage" :disabled="! $rows->hasMorePages()">Berikutnya</x-ui.button>
-                    </div>
+                    <nav aria-label="Halaman" class="flex items-center justify-center gap-2">
+                        <x-ui.button variant="neutral" type="button" wire:click="previousPage" :disabled="$rows->onFirstPage()">Sebelumnya</x-ui.button>
+            
+                        {{-- Ponsel: ringkas --}}
+                        <span class="px-1 text-label-md tabular-nums text-ink md:hidden">Halaman {{ $rows->currentPage() }} dari {{ $rows->lastPage() }}</span>
+            
+                        {{-- Tablet ke atas: nomor halaman --}}
+                        <div class="hidden items-center gap-1 md:flex">
+                            @foreach ($this->pageWindow() as $p)
+                                @if ($p === null)
+                                    <span class="px-1" aria-hidden="true">…</span>
+                                @else
+                                    <button type="button" wire:click="gotoPage({{ $p }})" wire:key="page-{{ $p }}"
+                                            aria-label="Halaman {{ $p }}"
+                                            @if ($p === $rows->currentPage()) aria-current="page" @endif
+                                            @class([
+                                                'grid min-h-9 min-w-9 place-items-center rounded-md border px-2 text-label-md tabular-nums',
+                                                'border-brand bg-brand-soft font-semibold text-primary-700' => $p === $rows->currentPage(),
+                                                'border-line-strong text-ink-body hover:bg-surface-muted' => $p !== $rows->currentPage(),
+                                            ])>{{ $p }}</button>
+                                @endif
+                            @endforeach
+                        </div>
+            
+                        <x-ui.button variant="neutral" type="button" wire:click="nextPage" :disabled="! $rows->hasMorePages()">Berikutnya</x-ui.button>
+                    </nav>
                 @endif
             </div>
         @endif

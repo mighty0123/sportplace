@@ -1,8 +1,8 @@
-<x-layouts.admin title="Verifikasi Mitra">
-    <x-admin.page-header title="Verifikasi Mitra"
-                description="Periksa pendaftaran pemilik lapangan sebelum mereka bisa membuat listing." />
+<x-layouts.admin title="Verifikasi Mitra" hero-size="compact">
+    <x-slot:hero>
+        <x-admin.page-header tone="dark" title="Verifikasi Mitra"
+                            description="Periksa pendaftaran pemilik lapangan sebelum mereka bisa membuat listing." />
+    </x-slot:hero>
 
-    <div class="mt-5">
-        <livewire:admin.mitra.mitra-table />
-    </div>
+    <livewire:admin.mitra.mitra-table />
 </x-layouts.admin>

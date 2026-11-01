@@ -111,13 +111,16 @@ class MitraVerificationController extends Controller
         ]);
     }
 
-    public function revealNik(Request $request, MitraProfile $mitra): JsonResponse
+    public function reveal(Request $request, MitraProfile $mitra, string $field): JsonResponse
     {
         Gate::authorize('review', $mitra);
+        abort_unless(array_key_exists($field, MitraProfile::SENSITIVE), 404);
 
-        AuditLog::record($request->user(), 'MitraProfile', $mitra->id, 'lihat_nik', null, null, 'Menampilkan NIK lengkap.');
+        AuditLog::record($request->user(), 'MitraProfile', $mitra->id, 'lihat_data', null, null, "Menampilkan {$field} lengkap.");
 
-        return response()->json(['nik' => $mitra->no_ktp])->header('Cache-Control', 'no-store');
+        return response()
+            ->json(['value' => $mitra->{MitraProfile::SENSITIVE[$field]}])
+            ->header('Cache-Control', 'no-store');
     }
 
     private function documents(MitraProfile $mitra): Collection

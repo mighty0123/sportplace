@@ -61,7 +61,7 @@ class MitraVerificationService
             // Dua bentuk nama entitas ada di data: nama pendek (helper aplikasi) dan nama class lengkap.
             ->whereIn('entitas_type', ['MitraProfile', MitraProfile::class])
             ->where('entitas_id', $profile->id)
-            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik'])
+            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data'])
             ->latest('created_at')
             ->latest('id')
             ->get();
@@ -98,9 +98,12 @@ class MitraVerificationService
     /** Foto pemeriksaan saat keputusan dibuat: centang manual dan hasil otomatis. */
     private function snapshot(MitraProfile $profile, array $checklist, array $results): array
     {
-        $manual = [];
-        foreach (array_keys($this->checklistItemsFor($profile)) as $key) {
-            $manual[$key] = filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $manual = null;
+        if ($checklist !== []) {
+            $manual = [];
+            foreach (array_keys($this->checklistItemsFor($profile)) as $key) {
+                $manual[$key] = filter_var($checklist[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
+            }
         }
 
         return [

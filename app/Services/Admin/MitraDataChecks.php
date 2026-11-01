@@ -49,11 +49,11 @@ class MitraDataChecks
 
     public function blockingMessage(array $results): string
     {
-        $labels = collect($results)
+        $problems = collect($results)
             ->filter(fn ($r) => $r['status'] === self::FAIL && $r['blocking'])
-            ->pluck('label')->implode('; ');
+            ->pluck('detail')->implode(' ');
 
-        return "Tidak dapat disetujui, ada pemeriksaan data yang tidak lolos: {$labels}.";
+        return "Tidak dapat disetujui. {$problems}";
     }
 
     /** Ringkas untuk disimpan sebagai bukti keputusan: kunci => status. */

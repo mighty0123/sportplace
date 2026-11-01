@@ -84,8 +84,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/{mitra}', [MitraVerificationController::class, 'show'])->name('show');
         Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
         Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
-        Route::post('/{mitra}/nik', [MitraVerificationController::class, 'revealNik'])
-            ->middleware('throttle:20,1')->name('nik');
+        Route::post('/{mitra}/data/{field}', [MitraVerificationController::class, 'reveal'])
+            ->whereIn('field', array_keys(MitraProfile::SENSITIVE))
+            ->middleware('throttle:30,1')->name('reveal');
         Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
             ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))->name('document');
     });

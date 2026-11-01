@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Mitra;
 
 use App\Models\MitraProfile;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
@@ -16,8 +17,7 @@ class MitraTable extends Component
     use WithPagination;
 
     public const STATUSES = ['pending' => 'Menunggu', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
-
-    private const PER_PAGE = 15;
+    public const PER_PAGE_OPTIONS = [10, 15, 30, 50];
 
     // Keadaan tampilan disimpan di URL
     #[Url(history: true)]
@@ -27,7 +27,10 @@ class MitraTable extends Component
     public string $search = '';
 
     #[Url(as: 'urut')]
-    public string $sort = ''; // '' = otomatis (Menunggu: terlama dulu, lainnya: terbaru dulu)
+    public string $sort = '';
+
+    #[Url(as: 'per')]
+    public int $perPage = 10;
 
     public function mount(): void
     {
@@ -35,6 +38,11 @@ class MitraTable extends Component
     }
 
     public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -58,7 +66,7 @@ class MitraTable extends Component
         $this->resetPage();
     }
 
-    /** Jumlah per status, satu query untuk ketiga tab. */
+    /** Jumlah per status */
     #[Computed]
     public function counts(): array
     {
@@ -69,6 +77,26 @@ class MitraTable extends Component
             ->all();
     }
 
+    /** Angka untuk strip ringkasan di atas daftar. */
+    #[Computed]
+    public function summary(): array
+    {
+        $sla = (int) config('admin.verification_sla_days', 2);
+        $pending = fn () => MitraProfile::query()->where('status', 'pending');
+        $oldest = $pending()->min('submitted_at');
+
+        return [
+            'pending' => $pending()->count(),
+            // submitted_at <= sekarang - SLA hari sama dengan "sudah menunggu SLA hari atau lebih".
+            'late'    => $pending()->where('submitted_at', '<=', now()->subDays($sla))->count(),
+            'oldest'  => $oldest ? (int) floor(CarbonImmutable::parse($oldest)->diffInDays(now())) : null,
+            'decided' => MitraProfile::query()
+                ->whereIn('status', ['approved', 'rejected'])
+                ->where('reviewed_at', '>=', now()->subDays(7))
+                ->count(),
+        ];
+    }
+
     #[Computed]
     public function rows(): LengthAwarePaginator
     {
@@ -76,7 +104,7 @@ class MitraTable extends Component
         $dir  = $this->direction();
 
         return MitraProfile::query()
-            ->with(['user:id,name,email', 'reviewer:id,name'])
+            ->with(['user:id,name,email', 'reviewer:id,name']) // eager load
             ->where('status', $this->currentStatus())
             ->when($term !== '', function ($query) use ($term) {
                 // Karakter khusus LIKE (% _ \) di-escape supaya dicari apa adanya.
@@ -87,23 +115,45 @@ class MitraTable extends Component
             })
             ->orderBy('submitted_at', $dir)
             ->orderBy('id', $dir)
-            ->paginate(self::PER_PAGE);
+            ->paginate($this->currentPerPage());
+    }
+
+    public function pageWindow(): array
+    {
+        $current = $this->rows->currentPage();
+        $last    = $this->rows->lastPage();
+
+        $pages = collect([1, $last])
+            ->merge(range(max(1, $current - 1), min($last, $current + 1)))
+            ->unique()->sort()->values();
+
+        $out = [];
+        $prev = null;
+        foreach ($pages as $p) {
+            if ($prev !== null && $p - $prev > 1) {
+                $out[] = null;
+            }
+            $out[] = $p;
+            $prev = $p;
+        }
+
+        return $out;
     }
 
     public function render(): View
     {
-        // Setiap permintaan Livewire diotorisasi sendiri
         $this->authorizeAccess();
 
         return view('livewire.admin.mitra.mitra-table', [
-            'statuses'  => self::STATUSES,
-            'status'    => $this->currentStatus(),
-            'direction' => $this->direction(),
-            'sla'       => (int) config('admin.verification_sla_days', 2),
+            'statuses'       => self::STATUSES,
+            'status'         => $this->currentStatus(),
+            'direction'      => $this->direction(),
+            'sla'            => (int) config('admin.verification_sla_days', 2),
+            'perPageOptions' => self::PER_PAGE_OPTIONS,
         ]);
     }
 
-    // helpers
+    // ---- helpers
 
     private function authorizeAccess(): void
     {
@@ -114,6 +164,11 @@ class MitraTable extends Component
     private function currentStatus(): string
     {
         return array_key_exists($this->status, self::STATUSES) ? $this->status : 'pending';
+    }
+
+    private function currentPerPage(): int
+    {
+        return in_array($this->perPage, self::PER_PAGE_OPTIONS, true) ? $this->perPage : self::PER_PAGE_OPTIONS[0];
     }
 
     private function direction(): string
