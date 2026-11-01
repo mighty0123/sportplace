@@ -14,44 +14,16 @@
             </p>
         </div>
 
-        <!-- 6 Sport Categories Grid -->
+        <!-- Sport Categories Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-            <x-public.category-card 
-                type="futsal" 
-                name="Futsal" 
-                :count="14" 
-                href="#lapangan-populer" 
-            />
-            <x-public.category-card 
-                type="badminton" 
-                name="Badminton" 
-                :count="10" 
-                href="#lapangan-populer" 
-            />
-            <x-public.category-card 
-                type="basket" 
-                name="Basket" 
-                :count="8" 
-                href="#lapangan-populer" 
-            />
-            <x-public.category-card 
-                type="tenis" 
-                name="Tenis" 
-                :count="6" 
-                href="#lapangan-populer" 
-            />
-            <x-public.category-card 
-                type="voli" 
-                name="Voli" 
-                :count="4" 
-                href="#lapangan-populer" 
-            />
-            <x-public.category-card 
-                type="tenis-meja" 
-                name="Tenis Meja" 
-                :count="2" 
-                href="#lapangan-populer" 
-            />
+            @foreach($sports as $sport)
+                <x-public.category-card 
+                    :type="$sport['type']" 
+                    :name="$sport['name']" 
+                    :count="$sport['count']" 
+                    :href="$sport['href']" 
+                />
+            @endforeach
         </div>
     </section>
 
@@ -68,7 +40,7 @@
             </div>
 
             <a 
-                href="#lapangan-populer" 
+                href="{{ route('penyewa.lapangan') }}" 
                 class="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0A7660] hover:text-[#0B604F] group transition"
             >
                 <span>Lihat semua lapangan</span>
@@ -78,59 +50,22 @@
             </a>
         </div>
 
-        <!-- 4 Popular Field Cards Grid -->
+        <!-- Popular Field Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Card 1: Arena Sport Center -->
-            <x-public.field-card 
-                :image="asset('images/fields/arena-sport-center.jpg')"
-                sport="Badminton"
-                city="Denpasar"
-                name="Arena Sport Center"
-                rating="4.8"
-                reviews="120"
-                :facilities="['Vinyl', 'AC', 'Shower']"
-                :price="80000"
-                href="#detail-arena-sport"
-            />
-
-            <!-- Card 2: Green Court Arena -->
-            <x-public.field-card 
-                :image="asset('images/fields/green-court-arena.jpg')"
-                sport="Futsal"
-                city="Denpasar"
-                name="Green Court Arena"
-                rating="4.9"
-                reviews="85"
-                :facilities="['Sintetis', 'Kantin', 'Loker']"
-                :price="120000"
-                href="#detail-green-court"
-            />
-
-            <!-- Card 3: Bali Basket Hub -->
-            <x-public.field-card 
-                :image="asset('images/fields/bali-basket-hub.jpg')"
-                sport="Basket"
-                city="Gianyar"
-                name="Bali Basket Hub"
-                rating="4.7"
-                reviews="95"
-                :facilities="['Parquet', 'Locker', 'Tribun']"
-                :price="100000"
-                href="#detail-bali-basket"
-            />
-
-            <!-- Card 4: Sunrise Tennis Club -->
-            <x-public.field-card 
-                :image="asset('images/fields/sunrise-tennis-club.jpg')"
-                sport="Tenis"
-                city="Badung"
-                name="Sunrise Tennis Club"
-                rating="4.9"
-                reviews="140"
-                :facilities="['Hard Court', 'Rooftop', 'Cafe']"
-                :price="150000"
-                href="#detail-sunrise-tennis"
-            />
+            @foreach($popularFields as $card)
+                <x-public.field-card 
+                    :image="$card['image']"
+                    :sport="$card['sport']"
+                    :city="$card['city']"
+                    :venue="$card['venue_name'] ?? null"
+                    :name="$card['name']"
+                    :rating="$card['rating']"
+                    :reviews="$card['reviews']"
+                    :facilities="$card['facilities']"
+                    :price="$card['price']"
+                    :href="$card['href']"
+                />
+            @endforeach
         </div>
     </section>
 

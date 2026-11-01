@@ -7,17 +7,20 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Mitra\DashboardController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Models\MitraProfile;
 
-Route::get('/', function () {
-    return view('user-public.welcome');
-})->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::redirect('/beranda', '/')->name('beranda');
+Route::get('/tentang-kami', function () {
+    return view('user-public.tentang-kami');
+})->name('tentang-kami');
+Route::redirect('/about', '/tentang-kami');
 
 // FR-AUTH-001..005 (PUB-04/05/06). Dipakai bersama 3 peran — lihat CLAUDE.md §1.
 Route::middleware('guest')->group(function () {
@@ -46,6 +49,26 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     // Mendukung POST (standar form) dan GET (untuk kemudahan navigasi URL browser)
     Route::match(['get', 'post'], '/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+// Area Penyewa — Dashboard & fitur penyewa lapangan.
+Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/lapangan', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('lapangan');
+    Route::get('/lapangan/{id}', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::get('/booking/baru', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('booking.baru');
+    Route::get('/kalender/{id?}', [\App\Http\Controllers\Penyewa\CalendarController::class, 'index'])->name('kalender');
+    Route::get('/pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran');
+    Route::get('/review-pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran.review');
+    Route::get('/checkout/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('checkout');
+    Route::post('/bayar/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'processPayment'])->name('pembayaran.process');
+    Route::get('/booking/{id}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/tiket/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.ticket');
+    Route::post('/booking/{id}/cancel', [\App\Http\Controllers\Penyewa\PaymentController::class, 'cancel'])->name('booking.cancel');
+    Route::get('/booking/{id}/invoice', [\App\Http\Controllers\Penyewa\PaymentController::class, 'invoice'])->name('booking.invoice');
+    Route::get('/riwayat', [\App\Http\Controllers\Penyewa\BookingHistoryController::class, 'index'])->name('riwayat');
+    Route::get('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'update'])->name('profil.update');
 });
 
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.

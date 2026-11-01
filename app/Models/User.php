@@ -11,7 +11,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'no_hp', 'role',
+        'name', 'email', 'password', 'no_hp', 'role', 'status_akun', 'foto_profil',
     ];
 
     protected $hidden = [
@@ -23,6 +23,12 @@ class User extends Authenticatable
         'phone_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    // Relasi User (customer) ke BookingHeader (1 to many)
+    public function bookingHeaders()
+    {
+        return $this->hasMany(BookingHeader::class, 'penyewa_id');
+    }
 
     // Relasi User ke Mitra Profile (1 to 1)
     public function mitraProfile()
