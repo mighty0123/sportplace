@@ -23,6 +23,14 @@ class DashboardStats
         'ajukan_ulang' => ['diajukan ulang', 'info', 'send'],
     ];
 
+    private const PAYMENT_LABELS = [
+        'qris'          => 'QRIS',
+        'bank_transfer' => 'Transfer bank',
+        'ewallet'       => 'Dompet digital',
+        'va'            => 'Virtual account',
+        'credit_card'   => 'Kartu kredit',
+    ];
+
     private const ENTITY_LABELS = [
         'MitraProfile'  => 'Mitra',
         'Venue'         => 'Venue',
@@ -142,6 +150,36 @@ class DashboardStats
                 'time' => CarbonImmutable::parse($r->created_at)->locale('id')->diffForHumans(),
             ];
         })->all();
+    }
+
+    /** Pembayaran berhasil 30 hari terakhir menurut metode, terbanyak dulu. */
+    public function paymentMethods(): array
+    {
+        $now = CarbonImmutable::now();
+
+        return DB::table('payments')
+            ->selectRaw('metode_pembayaran as metode, COUNT(*) as n')
+            ->where('status_pembayaran', self::PAID)
+            ->whereBetween('paid_at', [$now->subDays(30), $now])
+            ->groupBy('metode_pembayaran')
+            ->orderByDesc('n')
+            ->get()
+            ->map(fn ($r) => [
+                'label' => self::PAYMENT_LABELS[$r->metode] ?? Str::headline((string) $r->metode),
+                'value' => (int) $r->n,
+            ])->all();
+    }
+
+    /** Semua pendaftaran mitra menurut status */
+    public function mitraStatus(): array
+    {
+        $counts = DB::table('mitra_profiles')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+
+        return [
+            ['label' => 'Disetujui', 'value' => (int) ($counts['approved'] ?? 0), 'tone' => 'success'],
+            ['label' => 'Menunggu',  'value' => (int) ($counts['pending'] ?? 0),  'tone' => 'warning'],
+            ['label' => 'Ditolak',   'value' => (int) ($counts['rejected'] ?? 0), 'tone' => 'danger'],
+        ];
     }
 
     // Helper

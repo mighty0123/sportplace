@@ -10,10 +10,12 @@ class DashboardController extends Controller
     public function __invoke(DashboardStats $stats)
     {
         return view('admin.dashboard', [
-            'kpis' => $stats->kpis(),
-            'queues' => $stats->queues(),
-            'chart' => $stats->chart(),
-            'activity' => $stats->activity(),
+            'kpis'        => $stats->kpis(),
+            'queues'      => $stats->queues(),
+            'chart'       => $stats->chart(),
+            'payments'    => $stats->paymentMethods(),
+            'mitraStatus' => $stats->mitraStatus(),
+            'activity'    => $stats->activity(10),
         ]);
     }
 }

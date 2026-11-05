@@ -2,6 +2,7 @@
 
 return [
     'verification_sla_days' => 2,
+    'listing_photo_disk' => 'public',
 
     'nav' => [
         [
@@ -26,10 +27,11 @@ return [
                     'active' => 'admin.verifikasi.*',
                 ],
                 [
-                    'key' => 'moderasi',
+                    'key' => 'moderasi', 
                     'label' => 'Moderasi Listing',
                     'icon' => 'file-check',
-                    'route' => null,
+                    'route' => 'admin.moderasi.index',
+                    'active' => 'admin.moderasi.*'
                 ],
             ],
         ],

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Models\MitraProfile;
 
@@ -79,15 +80,27 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 
-    Route::prefix('verifikasi')->name('verifikasi.')->where(['mitra' => '[0-9]+'])->group(function () {
-        Route::get('/', [MitraVerificationController::class, 'index'])->name('index');
-        Route::get('/{mitra}', [MitraVerificationController::class, 'show'])->name('show');
-        Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
-        Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
-        Route::post('/{mitra}/data/{field}', [MitraVerificationController::class, 'reveal'])
-            ->whereIn('field', array_keys(MitraProfile::SENSITIVE))
-            ->middleware('throttle:30,1')->name('reveal');
-        Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
-            ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))->name('document');
+    Route::prefix('verifikasi')->name('verifikasi.')
+        ->where(['mitra' => '[0-9]+'])
+        ->group(function () {
+            Route::get('/', [MitraVerificationController::class, 'index'])->name('index');
+            Route::get('/{mitra}', [MitraVerificationController::class, 'show'])->name('show');
+            Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
+            Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
+            Route::post('/{mitra}/data/{field}', [MitraVerificationController::class, 'reveal'])
+                ->whereIn('field', array_keys(MitraProfile::SENSITIVE))
+                ->middleware('throttle:30,1')->name('reveal');
+            Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
+                ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))->name('document');
+    });
+
+    Route::prefix('moderasi')->name('moderasi.')
+        ->middleware('can:moderate-listings')
+        ->where(['jenis' => 'venue|lapangan', 'id' => '[0-9]+'])
+        ->group(function () {
+            Route::get('/', [ListingModerationController::class, 'index'])->name('index');
+            Route::get('/{jenis}/{id}', [ListingModerationController::class, 'show'])->name('show');
+            Route::post('/{jenis}/{id}/setujui', [ListingModerationController::class, 'approve'])->name('approve');
+            Route::post('/{jenis}/{id}/tolak', [ListingModerationController::class, 'reject'])->name('reject');
     });
 });
