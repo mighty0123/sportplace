@@ -72,7 +72,7 @@
                         <x-ui.button variant="outline" type="button" wire:click="clearSearch">Hapus pencarian</x-ui.button>
                     </x-ui.empty-state>
                 @elseif ($status === 'pending')
-                    <x-ui.empty-state title="Tidak ada pendaftaran yang menunggu"
+                    <x-ui.empty-state variant="done" title="Tidak ada pendaftaran yang menunggu"
                                     description="Pendaftaran baru dari pemilik lapangan akan muncul di sini." />
                 @else
                     <x-ui.empty-state title="Belum ada pendaftaran yang {{ strtolower($statuses[$status]) }}"

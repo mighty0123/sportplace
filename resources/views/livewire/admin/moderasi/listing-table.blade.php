@@ -98,7 +98,7 @@
                         <x-ui.button variant="outline" type="button" wire:click="clearSearch">Hapus pencarian</x-ui.button>
                     </x-ui.empty-state>
                 @elseif ($status === 'pending_review')
-                    <x-ui.empty-state title="Tidak ada {{ $noun }} yang menunggu"
+                    <x-ui.empty-state variant="done" title="Tidak ada {{ $noun }} yang menunggu"
                                     description="Pengajuan baru dari mitra akan muncul di sini." />
                 @else
                     <x-ui.empty-state title="Belum ada {{ $noun }} yang {{ strtolower($statuses[$status]) }}"
