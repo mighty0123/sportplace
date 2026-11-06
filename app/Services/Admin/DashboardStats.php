@@ -14,13 +14,17 @@ class DashboardStats
     private const PAID = 'succes'; // ejaan mengikuti enum payments.status_pembayaran
 
     private const ACTIONS = [
-        'setujui'     => ['disetujui', 'success', 'check-circle'],
-        'tolak'       => ['ditolak', 'danger', 'x-circle'],
-        'ajukan'      => ['diajukan', 'info', 'send'],
-        'suspend'     => ['disuspend', 'warning', 'ban'],
-        'kedaluwarsa' => ['kedaluwarsa', 'neutral', 'clock'],
+        'setujui'      => ['disetujui', 'success', 'check-circle'],
+        'tolak'        => ['ditolak', 'danger', 'x-circle'],
+        'ajukan'       => ['diajukan', 'info', 'send'],
+        'suspend'      => ['disuspend', 'warning', 'ban'],
+        'kedaluwarsa'  => ['kedaluwarsa', 'neutral', 'clock'],
         'pendaftaran'  => ['didaftarkan', 'info', 'send'],
         'ajukan_ulang' => ['diajukan ulang', 'info', 'send'],
+        'tambah'       => ['ditambahkan',    'success', 'check-circle'],
+        'ubah'         => ['diubah',         'info',    'activity'],
+        'nonaktifkan'  => ['dinonaktifkan',  'warning', 'ban'],
+        'aktifkan'     => ['diaktifkan',     'success', 'check-circle'],
     ];
 
     private const PAYMENT_LABELS = [
@@ -32,11 +36,14 @@ class DashboardStats
     ];
 
     private const ENTITY_LABELS = [
-        'MitraProfile'  => 'Mitra',
-        'Venue'         => 'Venue',
-        'Field'         => 'Lapangan',
-        'User'          => 'Akun',
-        'BookingHeader' => 'Booking',
+        'MitraProfile'   => 'Mitra',
+        'Venue'          => 'Venue',
+        'Field'          => 'Lapangan',
+        'User'           => 'Akun',
+        'BookingHeader'  => 'Booking',
+        'MasterSport'    => 'Cabang olahraga',
+        'MasterCity'     => 'Kota',
+        'MasterFacility' => 'Fasilitas',
     ];
 
     public function kpis(): array
@@ -255,10 +262,13 @@ class DashboardStats
     private function entityNames($rows): array
     {
         $sources = [
-            'MitraProfile' => ['mitra_profiles', 'nama_usaha'],
-            'Venue'        => ['venues', 'nama_venue'],
-            'Field'        => ['fields', 'nama_lapangan'],
-            'User'         => ['users', 'name'],
+            'MitraProfile'   => ['mitra_profiles', 'nama_usaha'],
+            'Venue'          => ['venues', 'nama_venue'],
+            'Field'          => ['fields', 'nama_lapangan'],
+            'User'           => ['users', 'name'],
+            'MasterSport'    => ['master_sports', 'nama_olahraga'],
+            'MasterCity'     => ['master_cities', 'nama_kota'],
+            'MasterFacility' => ['master_facilities', 'nama'],
         ];
 
         $names = [];

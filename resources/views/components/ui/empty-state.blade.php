@@ -20,7 +20,7 @@
 @endphp
 
 <div {{ $attributes->class('flex flex-col items-center px-4 py-10 text-center') }}>
-    <svg viewBox="0 0 160 112" fill="none" class="mx-auto h-auto w-40" aria-hidden="true">
+    <svg viewBox="0 0 160 112" fill="none" class="mx-auto h-auto w-32" aria-hidden="true">
         {!! $court !!}
         @switch($variant)
             @case('search')

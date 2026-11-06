@@ -30,7 +30,8 @@ class AppServiceProvider extends ServiceProvider
             $view->with('navCounts', PendingCounts::all());
         });
 
-        // Izin moderasi tidak terikat ke model tertentu: kode hanya membaca tabel lewat query builder.
+        // Izin moderasi tidak terikat ke model tertentu
         Gate::define('moderate-listings', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('manage-master-data', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
     }
 }

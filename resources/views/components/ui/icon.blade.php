@@ -34,6 +34,7 @@
         'wrench'        => '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3.5 17.2a1.8 1.8 0 0 0 2.6 2.6l5.8-5.8a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.1-.5-.5-2.1z"/>',
         'refresh'       => '<path d="M20 11a8 8 0 0 0-14.5-4M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4"/>',
         'arrow-left'    => '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+        'plus'          => '<path d="M12 5v14M5 12h14"/>',
     ];
 @endphp
 <svg {{ $attributes->merge(['class' => 'size-[18px] shrink-0']) }}

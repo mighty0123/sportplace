@@ -77,6 +77,7 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     });
 });
 
+// Admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 
@@ -103,4 +104,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::post('/{jenis}/{id}/setujui', [ListingModerationController::class, 'approve'])->name('approve');
             Route::post('/{jenis}/{id}/tolak', [ListingModerationController::class, 'reject'])->name('reject');
     });
+
+    Route::view('/master-data', 'admin.master.index')
+        ->middleware('can:manage-master-data')->name('master.index');
 });

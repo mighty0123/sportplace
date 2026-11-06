@@ -3,6 +3,7 @@
 return [
     'verification_sla_days' => 2,
     'listing_photo_disk' => 'public',
+    'master_icon_disk' => 'public',
 
     'nav' => [
         [
@@ -42,7 +43,8 @@ return [
                 [
                     'label' => 'Master Data',
                     'icon' => 'database',
-                    'route' => null,
+                    'route' => 'admin.master.index',
+                    'active' => 'admin.master.*'
                 ],
                 [
                     'label' => 'Monitoring Transaksi',
