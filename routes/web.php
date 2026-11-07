@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Http\Controllers\Admin\TransactionController;
 use App\Models\MitraProfile;
 
 Route::get('/', function () {
@@ -107,4 +108,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::view('/master-data', 'admin.master.index')
         ->middleware('can:manage-master-data')->name('master.index');
+
+    Route::prefix('transaksi')->name('transaksi.')->middleware('can:view-transactions')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index');
+        Route::get('/{id}', [TransactionController::class, 'show'])->whereNumber('id')->name('show');
+    });
 });

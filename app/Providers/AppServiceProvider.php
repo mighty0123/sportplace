@@ -33,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
         // Izin moderasi tidak terikat ke model tertentu
         Gate::define('moderate-listings', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
         Gate::define('manage-master-data', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('view-transactions', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
     }
 }

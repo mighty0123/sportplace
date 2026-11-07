@@ -49,7 +49,8 @@ return [
                 [
                     'label' => 'Monitoring Transaksi',
                     'icon' => 'receipt',
-                    'route' => null,
+                    'route' => 'admin.transaksi.index',
+                    'active' => 'admin.transaksi.*'
                 ],
                 [
                     'label' => 'Laporan',
