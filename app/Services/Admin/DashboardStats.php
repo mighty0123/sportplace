@@ -27,7 +27,7 @@ class DashboardStats
         'aktifkan'     => ['diaktifkan',     'success', 'check-circle'],
     ];
 
-    private const PAYMENT_LABELS = [
+    public const PAYMENT_LABELS = [
         'qris'          => 'QRIS',
         'bank_transfer' => 'Transfer bank',
         'ewallet'       => 'Dompet digital',
