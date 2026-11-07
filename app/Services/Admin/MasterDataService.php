@@ -53,7 +53,7 @@ class MasterDataService
             ->selectRaw("x.*, ({$t['usage_sql']}) as usage_count")->first();
     }
 
-    /** Alamat gambar untuk ditampilkan */
+    /** Alamat gambar untuk ditampilkan: http(s) apa adanya, path relatif hanya bila berkasnya benar-benar ada. */
     public function iconUrl(?string $path): ?string
     {
         $p = trim((string) $path);
@@ -67,9 +67,14 @@ class MasterDataService
             return null; // javascript:, data:, dan sejenisnya
         }
 
-        return asset(ltrim($p, '/'));
-    }
+        $relative = ltrim($p, '/');
+        if (str_contains($relative, '..') || ! is_file(public_path($relative))) {
+            return null;
+        }
 
+        return asset($relative);
+    }
+    
     // validasi
 
     public function rules(string $tipe, ?int $id, array $in): array
