@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Venue extends Model
 {
     public $timestamps = true;
+
     protected $table = 'venues';
 
     protected $fillable = [
@@ -104,10 +105,10 @@ class Venue extends Model
         }
 
         if ((float) $min === (float) $max) {
-            return 'Rp ' . number_format($min, 0, ',', '.');
+            return 'Rp '.number_format($min, 0, ',', '.');
         }
 
-        return 'Rp ' . number_format($min, 0, ',', '.') . ' – Rp ' . number_format($max, 0, ',', '.');
+        return 'Rp '.number_format($min, 0, ',', '.').' – Rp '.number_format($max, 0, ',', '.');
     }
 
     /**

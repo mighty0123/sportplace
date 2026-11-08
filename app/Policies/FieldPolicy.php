@@ -59,4 +59,3 @@ class FieldPolicy
         return $user->role === 'mitra' && $field->venue?->mitra_id === $user->mitraProfile?->id;
     }
 }
-

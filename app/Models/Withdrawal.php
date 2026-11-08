@@ -9,7 +9,7 @@ class Withdrawal extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id', 'bank_kode', 'nomor_rekening', 'nama_pemilik_rek', 'nominal_tarik', 'biaya_admin_bank', 'status', 'pg_disbursement_id', 'alasan_gagal', 'created_at', 'complated_at'
+        'user_id', 'bank_kode', 'nomor_rekening', 'nama_pemilik_rek', 'nominal_tarik', 'biaya_admin_bank', 'status', 'pg_disbursement_id', 'alasan_gagal', 'created_at', 'complated_at',
     ];
 
     public function user()

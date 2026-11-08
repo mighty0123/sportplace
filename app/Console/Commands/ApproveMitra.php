@@ -29,6 +29,7 @@ class ApproveMitra extends Command
     {
         if (app()->isProduction()) {
             $this->error('Perintah ini hanya dapat dijalankan pada lingkungan non-produksi!');
+
             return Command::FAILURE;
         }
 
@@ -37,11 +38,13 @@ class ApproveMitra extends Command
 
         if (! $user) {
             $this->error("User dengan email [{$email}] tidak ditemukan.");
+
             return Command::FAILURE;
         }
 
         if ($user->role !== 'mitra') {
             $this->error("User [{$email}] bukan berstatus mitra (role: {$user->role}).");
+
             return Command::FAILURE;
         }
 
@@ -57,7 +60,7 @@ class ApproveMitra extends Command
         $profile->save();
 
         $this->info("Mitra [{$email}] berhasil disetujui (status: approved).");
+
         return Command::SUCCESS;
     }
 }
-

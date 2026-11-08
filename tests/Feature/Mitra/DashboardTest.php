@@ -177,6 +177,7 @@ class DashboardTest extends TestCase
         MitraProfile::create([
             'user_id' => $mitraB->id,
             'nama_usaha' => 'Mitra B Lapangan',
+            'no_ktp' => '3170000000000002',
             'status' => 'approved',
         ]);
         [$venueB, $fieldB] = $this->makeVenueAndField($mitraB);
@@ -234,4 +235,3 @@ class DashboardTest extends TestCase
         $response->assertSee('Foto dokumen denah lapangan kurang jelas.');
     }
 }
-

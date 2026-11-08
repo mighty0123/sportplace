@@ -35,4 +35,3 @@ class BookingDetailPolicy
         return $user->role === 'mitra' && $detail->field?->venue?->mitra_id === $user->mitraProfile?->id;
     }
 }
-

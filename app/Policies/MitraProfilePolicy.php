@@ -42,4 +42,3 @@ class MitraProfilePolicy
         return $user->role === 'admin' && $user->status_akun === 'aktif';
     }
 }
-

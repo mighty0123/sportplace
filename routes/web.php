@@ -4,17 +4,25 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Mitra\DashboardController;
+use App\Http\Controllers\Mitra\OnboardingController;
+use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Models\MitraProfile;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', WelcomeController::class)->name('home');
+
+Route::redirect('/beranda', '/')->name('beranda');
+Route::get('/tentang-kami', function () {
+    return view('user-public.tentang-kami');
+})->name('tentang-kami');
+Route::redirect('/about', '/tentang-kami');
 
 // FR-AUTH-001..005 (PUB-04/05/06). Dipakai bersama 3 peran — lihat CLAUDE.md §1.
 Route::middleware('guest')->group(function () {
@@ -45,42 +53,62 @@ Route::middleware('auth')->group(function () {
     Route::match(['get', 'post'], '/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
+// Area Penyewa — Dashboard & fitur penyewa lapangan.
+Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/lapangan', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('lapangan');
+    Route::get('/lapangan/{id}', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::get('/booking/baru', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('booking.baru');
+    Route::get('/kalender/{id?}', [\App\Http\Controllers\Penyewa\CalendarController::class, 'index'])->name('kalender');
+    Route::get('/pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran');
+    Route::get('/review-pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran.review');
+    Route::get('/checkout/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('checkout');
+    Route::post('/bayar/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'processPayment'])->name('pembayaran.process');
+    Route::get('/booking/{id}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/tiket/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.ticket');
+    Route::post('/booking/{id}/cancel', [\App\Http\Controllers\Penyewa\PaymentController::class, 'cancel'])->name('booking.cancel');
+    Route::get('/booking/{id}/invoice', [\App\Http\Controllers\Penyewa\PaymentController::class, 'invoice'])->name('booking.invoice');
+    Route::get('/riwayat', [\App\Http\Controllers\Penyewa\BookingHistoryController::class, 'index'])->name('riwayat');
+    Route::get('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'update'])->name('profil.update');
+});
+
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.
 // MTR-03 ke atas wajib mitra.approved (EC-17, BR-002, PRD §12.2/§12.6).
 Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
     // MTR-01: Pendaftaran Mitra
-    Route::get('/pendaftaran', [\App\Http\Controllers\Mitra\OnboardingController::class, 'create'])->name('onboarding.create');
-    Route::post('/pendaftaran', [\App\Http\Controllers\Mitra\OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('/pendaftaran', [OnboardingController::class, 'create'])->name('onboarding.create');
+    Route::post('/pendaftaran', [OnboardingController::class, 'store'])->name('onboarding.store');
 
     // MTR-02: Status Verifikasi Akun
-    Route::get('/status', [\App\Http\Controllers\Mitra\OnboardingController::class, 'showStatus'])->name('status');
+    Route::get('/status', [OnboardingController::class, 'showStatus'])->name('status');
 
     // MTR-12: Edit & Ajukan Ulang jika ditolak
-    Route::get('/resubmit', [\App\Http\Controllers\Mitra\OnboardingController::class, 'editResubmit'])->name('resubmit');
-    Route::post('/resubmit', [\App\Http\Controllers\Mitra\OnboardingController::class, 'resubmit'])->name('resubmit.store');
+    Route::get('/resubmit', [OnboardingController::class, 'editResubmit'])->name('resubmit');
+    Route::post('/resubmit', [OnboardingController::class, 'resubmit'])->name('resubmit.store');
 
     // Akses Dokumen Privat Terproteksi
-    Route::get('/dokumen/{type}', [\App\Http\Controllers\Mitra\OnboardingController::class, 'downloadDocument'])->name('document.download');
+    Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
     Route::middleware('mitra.approved')->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Mitra\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // MTR-04 & MTR-05b: Manajemen Venue (FR-VENUE-001..004)
-        Route::get('/venues', [\App\Http\Controllers\Mitra\VenueController::class, 'index'])->name('venues.index');
-        Route::get('/venues/create', [\App\Http\Controllers\Mitra\VenueController::class, 'create'])->name('venues.create');
-        Route::post('/venues', [\App\Http\Controllers\Mitra\VenueController::class, 'store'])->name('venues.store');
-        Route::get('/venues/{venue}/edit', [\App\Http\Controllers\Mitra\VenueController::class, 'edit'])->name('venues.edit');
-        Route::put('/venues/{venue}', [\App\Http\Controllers\Mitra\VenueController::class, 'update'])->name('venues.update');
-        Route::delete('/venues/{venue}', [\App\Http\Controllers\Mitra\VenueController::class, 'destroy'])->name('venues.destroy');
-        Route::post('/venues/{venue}/submit', [\App\Http\Controllers\Mitra\VenueController::class, 'submitForReview'])->name('venues.submit');
-        Route::post('/venues/{venue}/deactivate', [\App\Http\Controllers\Mitra\VenueController::class, 'deactivate'])->name('venues.deactivate');
-        Route::post('/venues/{venue}/activate', [\App\Http\Controllers\Mitra\VenueController::class, 'activate'])->name('venues.activate');
+        Route::get('/venues', [VenueController::class, 'index'])->name('venues.index');
+        Route::get('/venues/create', [VenueController::class, 'create'])->name('venues.create');
+        Route::post('/venues', [VenueController::class, 'store'])->name('venues.store');
+        Route::get('/venues/{venue}/edit', [VenueController::class, 'edit'])->name('venues.edit');
+        Route::put('/venues/{venue}', [VenueController::class, 'update'])->name('venues.update');
+        Route::delete('/venues/{venue}', [VenueController::class, 'destroy'])->name('venues.destroy');
+        Route::post('/venues/{venue}/submit', [VenueController::class, 'submitForReview'])->name('venues.submit');
+        Route::post('/venues/{venue}/deactivate', [VenueController::class, 'deactivate'])->name('venues.deactivate');
+        Route::post('/venues/{venue}/activate', [VenueController::class, 'activate'])->name('venues.activate');
     });
 });
 
 // Admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('/', AdminDashboardController::class)->name('dashboard');
 
     Route::prefix('verifikasi')->name('verifikasi.')
         ->where(['mitra' => '[0-9]+'])

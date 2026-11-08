@@ -9,7 +9,7 @@ class Wallet extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id', 'saldo_aktif', 'saldo_tertahan', 'updated_at'
+        'user_id', 'saldo_aktif', 'saldo_tertahan', 'updated_at',
     ];
 
     public function user()

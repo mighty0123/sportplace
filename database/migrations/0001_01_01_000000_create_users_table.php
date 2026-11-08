@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name', 100);
             $table->string('email', 255)->unique();
-            $table->string('password', 255)->unique();
+            $table->string('password', 255);
             $table->string('no_hp', 20);
             $table->enum('role', ['admin', 'mitra', 'customer'])->default('customer');
         });
