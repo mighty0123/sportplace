@@ -82,7 +82,7 @@
                             value="{{ old('name') }}" 
                             placeholder="Budi Pratama" 
                             required 
-                            class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F2F7F4] border {{ $errors->has('name') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
+                            class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#F2F7F4] border {{ $errors->has('name') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
                         />
                     </div>
                     @error('name')
@@ -108,7 +108,7 @@
                             value="{{ old('email') }}" 
                             placeholder="budi.pratama@email.com" 
                             required 
-                            class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F2F7F4] border {{ $errors->has('email') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
+                            class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#F2F7F4] border {{ $errors->has('email') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
                         />
                     </div>
                     @error('email')
@@ -121,7 +121,7 @@
                     <label for="no_hp" class="block text-xs font-semibold text-[#1B2724] mb-1.5">
                         Nomor WhatsApp / HP Aktif
                     </label>
-                    <div class="flex rounded-xl bg-[#F2F7F4] border {{ $errors->has('no_hp') ? 'border-red-400' : 'border-transparent' }} focus-within:bg-white focus-within:border-[#0A7660] focus-within:ring-2 focus-within:ring-[#0A7660]/20 transition overflow-hidden">
+                    <div class="flex rounded-2xl bg-[#F2F7F4] border {{ $errors->has('no_hp') ? 'border-red-400' : 'border-transparent' }} focus-within:bg-white focus-within:border-[#0A7660] focus-within:ring-2 focus-within:ring-[#0A7660]/20 transition overflow-hidden">
                         <!-- Flag Prefix -->
                         <div class="flex items-center gap-1.5 px-3 py-2.5 bg-[#E8F7EE] border-r border-[#BBEDE3]/60 shrink-0 text-xs font-semibold text-[#1B2724]">
                             <!-- Indonesian Flag SVG -->
@@ -169,7 +169,7 @@
                                 placeholder="SportSpace2025!" 
                                 required 
                                 minlength="8" 
-                                class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F2F7F4] border {{ $errors->has('password') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
+                                class="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-[#F2F7F4] border {{ $errors->has('password') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
                             />
                             <button 
                                 type="button" 
@@ -206,7 +206,7 @@
                                 placeholder="SportSpace2025!" 
                                 required 
                                 minlength="8" 
-                                class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F2F7F4] border border-transparent focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
+                                class="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-[#F2F7F4] border border-transparent focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
                             />
                             <button 
                                 type="button" 
@@ -259,7 +259,7 @@
                     <button 
                         type="submit" 
                         id="btn-submit-register" 
-                        class="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm"
+                        class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm cursor-pointer"
                     >
                         <span id="btn-submit-text">Daftar sebagai Penyewa</span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

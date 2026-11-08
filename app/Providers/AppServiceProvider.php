@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Contracts\OtpSender;
 use App\Services\Auth\MailOtpSender;
+use App\Support\PendingCounts;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer('components.admin.sidebar', function ($view) {
+            $view->with('navCounts', PendingCounts::all());
+        });
     }
 }

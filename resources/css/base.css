@@ -1,0 +1,36 @@
+@layer base {
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-ink-body);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
+    }
+    ::selection {
+        background: var(--color-primary-200);
+        color: var(--color-primary-950);
+    }
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

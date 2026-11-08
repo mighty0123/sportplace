@@ -66,6 +66,10 @@ class OnboardingController extends Controller
             array_merge($data, [
                 'status' => 'pending',
                 'alasan_penolakan' => null,
+                'submitted_at' => now(),
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'review_checklist' => null,
             ])
         );
 
@@ -161,6 +165,10 @@ class OnboardingController extends Controller
         $profile->update(array_merge($data, [
             'status' => 'pending',
             'alasan_penolakan' => null, // Reset status penolakan
+            'submitted_at' => now(),
+            'reviewed_by' => null,
+            'reviewed_at' => null,
+            'review_checklist' => null,
         ]));
 
         // NFR-LOG-001 / BR-028: Catat perubahan di audit log

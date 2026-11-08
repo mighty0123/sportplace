@@ -273,29 +273,29 @@ Rujukan: FR-VENUE-001…004, UJ-05, BR-023/BR-025.
 
 Rujukan: FR-FIELD-001…004, BR-002/003/031.
 
-- [ ] **T5.1 Daftar lapangan per venue** + status + aksi (edit, ajukan, nonaktifkan).
-- [ ] **T5.2 Buat lapangan (draft)** (FR-FIELD-001): pilih venue milik sendiri; `nama_lapangan` (≤100), `sport_id` (olahraga `aktif`), `harga_perjam` (numerik > 0), fasilitas (`aktif`, multi-pilih → `field_facilities`), deskripsi.
+- [x] **T5.1 Daftar lapangan per venue** + status + aksi (edit, ajukan, nonaktifkan).
+- [x] **T5.2 Buat lapangan (draft)** (FR-FIELD-001): pilih venue milik sendiri; `nama_lapangan` (≤100), `sport_id` (olahraga `aktif`), `harga_perjam` (numerik > 0), fasilitas (`aktif`, multi-pilih → `field_facilities`), deskripsi.
   - **Guard BR-002:** mitra bukan `approved` → ditolak (AC FIELD-001-02). `status_lapangan` default `draft` (AC FIELD-001-03: tidak tampil publik).
-- [ ] **T5.3 Unggah foto lapangan:** multi-foto, tandai **foto utama** (`field_photo.is_primary`; wajib tepat satu = Perlu Konfirmasi → default: otomatis foto pertama jadi utama bila belum ada). Batas jumlah/format/ukuran dari config. Hapus/ganti foto. Simpan draft tanpa foto diperbolehkan, tetapi **ajukan** mensyaratkan ≥1 foto (asumsi).
-- [ ] **T5.4 Ajukan lapangan** (FR-FIELD-002): syarat data lengkap + jadwal (T6.1) sudah diatur (Usulan). Apakah venue harus `aktif` dulu = OQ-010 → default: **venue harus `aktif`**. Status `draft`/`rejected` → `pending_review`. AC: FIELD-002-01.
-- [ ] **T5.5 Edit lapangan** (FR-FIELD-003): sinkronkan `field_facilities` & `field_photo`; perubahan harga **tidak** memengaruhi booking lama (`harga_slot` tersimpan). AC: FIELD-003-01. Tampilkan `alasan_penolakan` bila `rejected`.
-- [ ] **T5.6 Nonaktifkan lapangan** (FR-FIELD-004, **S**) + dialog konfirmasi + aturan booking mendatang seperti T4.5. AC: FIELD-004-01.
+- [x] **T5.3 Unggah foto lapangan:** multi-foto, tandai **foto utama** (`field_photo.is_primary`; wajib tepat satu = Perlu Konfirmasi → default: otomatis foto pertama jadi utama bila belum ada). Batas jumlah/format/ukuran dari config. Hapus/ganti foto. Simpan draft tanpa foto diperbolehkan, tetapi **ajukan** mensyaratkan ≥1 foto (asumsi).
+- [x] **T5.4 Ajukan lapangan** (FR-FIELD-002): syarat data lengkap + jadwal (T6.1) sudah diatur (Usulan). Apakah venue harus `aktif` dulu = OQ-010 → default: **venue harus `aktif`**. Status `draft`/`rejected` → `pending_review`. AC: FIELD-002-01.
+- [x] **T5.5 Edit lapangan** (FR-FIELD-003): sinkronkan `field_facilities` & `field_photo`; perubahan harga **tidak** memengaruhi booking lama (`harga_slot` tersimpan). AC: FIELD-003-01. Tampilkan `alasan_penolakan` bila `rejected`.
+- [x] **T5.6 Nonaktifkan lapangan** (FR-FIELD-004, **S**) + dialog konfirmasi + aturan booking mendatang seperti T4.5. AC: FIELD-004-01.
 
 ### FASE 6 — Jadwal Operasional & Blokir (MTR-06) — **M**
 
 Rujukan: FR-SCHED-001/002, BR-020/BR-021.
 
-- [ ] **T6.1 Jadwal mingguan per lapangan** (FR-SCHED-001): per hari → `status_hari` (`buka`/`tutup`), `jam_buka`, `jam_tutup`, `durasi` slot (TIME). Validasi jam tutup > jam buka dan **berada dalam jam venue** (Usulan KS-14). Fitur "salin ke semua hari". Pemetaan angka `hari` didokumentasikan (default ISO: 1=Senin … 7=Minggu; catat DECISIONS). AC: SCHED-001-01 (08:00–22:00, durasi 01:00 → 14 slot), SCHED-001-02 (hari tutup → tidak ada slot).
-- [ ] **T6.2 Service pembentuk slot** `SlotGenerator` (dipakai juga modul Penyewa): input lapangan + tanggal → daftar slot dari `field_schedule` dikurangi `field_blocks` (dan booking aktif, bila modul booking sudah ada). **Beri unit test; ini fondasi kalender real-time.** Koordinasikan kontraknya dengan pemilik modul Booking.
-- [ ] **T6.3 Blokir tanggal/jam** (FR-SCHED-002): `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alasan_pemblokiran` (opsional ≤255). Validasi akhir ≥ awal. Tambah/ubah/hapus blokir. Interpretasi rentang (harian berulang vs kontinu) = KS-15 → default: **tiap hari dalam rentang tanggal, jam_mulai–jam_selesai** (catat DECISIONS). AC: SCHED-002-01.
-- [ ] **T6.4 Konflik blokir vs booking `confirmed`** (OQ-013): default **tolak blokir** yang menabrak booking aktif dan tampilkan daftar booking yang bentrok sebagai peringatan.
-- [ ] **T6.5 Tampilan "Blocked/Maintenance"** konsisten dengan state kalender `desain.md` §10 (pola diagonal, bukan hanya warna).
+- [x] **T6.1 Jadwal mingguan per lapangan** (FR-SCHED-001): per hari → `status_hari` (`buka`/`tutup`), `jam_buka`, `jam_tutup`, `durasi` slot (TIME). Validasi jam tutup > jam buka dan **berada dalam jam venue** (Usulan KS-14). Fitur "salin ke semua hari". Pemetaan angka `hari` didokumentasikan (default ISO: 1=Senin … 7=Minggu; catat DECISIONS). AC: SCHED-001-01 (08:00–22:00, durasi 01:00 → 14 slot), SCHED-001-02 (hari tutup → tidak ada slot).
+- [x] **T6.2 Service pembentuk slot** `SlotGenerator` (dipakai juga modul Penyewa): input lapangan + tanggal → daftar slot dari `field_schedule` dikurangi `field_blocks` (dan booking aktif, bila modul booking sudah ada). **Beri unit test; ini fondasi kalender real-time.** Koordinasikan kontraknya dengan pemilik modul Booking.
+- [x] **T6.3 Blokir tanggal/jam** (FR-SCHED-002): `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alasan_pemblokiran` (opsional ≤255). Validasi akhir ≥ awal. Tambah/ubah/hapus blokir. Interpretasi rentang (harian berulang vs kontinu) = KS-15 → default: **tiap hari dalam rentang tanggal, jam_mulai–jam_selesai** (catat DECISIONS). AC: SCHED-002-01.
+- [x] **T6.4 Konflik blokir vs booking `confirmed`** (OQ-013): default **tolak blokir** yang menabrak booking aktif dan tampilkan daftar booking yang bentrok sebagai peringatan.
+- [x] **T6.5 Tampilan "Blocked/Maintenance"** konsisten dengan state kalender `desain.md` §10 (pola diagonal, bukan hanya warna).
 
 ### FASE 7 — Harga Peak / Off-Peak (MTR-07) — **S**
 
 Rujukan: FR-FIELD-006, BR-008, GAP-21/OQ-005.
 
-- [ ] **T7.1 Definisikan skema `meta_harga`** (JSON). Asumsi default (catat DECISIONS, ubah bila OQ-005 diputuskan):
+- [x] **T7.1 Definisikan skema `meta_harga`** (JSON). Asumsi default (catat DECISIONS, ubah bila OQ-005 diputuskan):
   ```json
   {
     "harga_off_peak": 100000,
@@ -304,8 +304,8 @@ Rujukan: FR-FIELD-006, BR-008, GAP-21/OQ-005.
   }
   ```
   Tanpa `meta_harga` → `harga_perjam` berlaku untuk semua slot.
-- [ ] **T7.2 Form MTR-07** + validasi: harga tidak negatif, periode peak tidak tumpang-tindih (galat bila tumpang-tindih), struktur JSON valid.
-- [ ] **T7.3 Service `PriceCalculator`** (dipakai modul Booking): input lapangan + slot → harga per jam. Unit test AC FIELD-006-01 (slot Sabtu memakai harga peak). Koordinasikan kontrak dengan modul Booking.
+- [x] **T7.2 Form MTR-07** + validasi: harga tidak negatif, periode peak tidak tumpang-tindih (galat bila tumpang-tindih), struktur JSON valid.
+- [x] **T7.3 Service `PriceCalculator`** (dipakai modul Booking): input lapangan + slot → harga per jam. Unit test AC FIELD-006-01 (slot Sabtu memakai harga peak). Koordinasikan kontrak dengan modul Booking.
 
 ### FASE 8 — Pesanan Mitra (MTR-08, 09, 10) — **M**
 
@@ -313,16 +313,16 @@ Rujukan: FR-ORDER-001…003, FR-PAY-003, UJ-06, BR-009/010/013/014/015.
 
 > Fase ini bergantung pada data booking dari modul Penyewa. Gunakan seeder untuk pengembangan.
 
-- [ ] **T8.1 Daftar & kalender pesanan masuk** (FR-ORDER-001): query `booking_details` → `fields` → `venues.mitra_id = mitra login`. Filter lapangan/tanggal/status. Kalender per lapangan; klik → MTR-09. Empty state. Paparan data pribadi penyewa (nama/no HP) dibatasi seperlunya (NFR-PRIV-001). AC: ORDER-001-01 (tidak ada booking mitra lain).
-- [ ] **T8.2 Detail pesanan MTR-09:** data booking, penyewa, slot, harga, status pembayaran, bukti transfer (bila ada).
+- [x] **T8.1 Daftar & kalender pesanan masuk** (FR-ORDER-001): query `booking_details` → `fields` → `venues.mitra_id = mitra login`. Filter lapangan/tanggal/status. Kalender per lapangan; klik → MTR-09. Empty state. Paparan data pribadi penyewa (nama/no HP) dibatasi seperlunya (NFR-PRIV-001). AC: ORDER-001-01 (tidak ada booking mitra lain).
+- [x] **T8.2 Detail pesanan MTR-09:** data booking, penyewa, slot, harga, status pembayaran, bukti transfer (bila ada).
 - [ ] **T8.3 Verifikasi transfer manual** (FR-PAY-003) — **BLOCKED oleh GAP-02, OQ-017, OQ-027, OQ-016.**
   Setelah diputuskan & migration disetujui: tombol **Setujui** → booking `confirmed` + notifikasi penyewa; **Tolak** wajib `catatan_penolakan` (dialog). Hanya untuk lapangan milik mitra (AC PAY-003-02). Catat audit.
   Sementara BLOCKED: siapkan UI & Policy, tombol disembunyikan di balik feature flag.
-- [ ] **T8.4 Konfirmasi kehadiran & `no_show`** (FR-ORDER-002, **S**): `no_show` hanya untuk booking `confirmed` pada hari itu **setelah jam mulai** (sebelum itu ditolak). Hadir → `ongoing` (pemetaan Usulan). Check-in/QR = Perlu Konfirmasi (GAP-25). AC: ORDER-002-01.
-- [ ] **T8.5 Selesaikan per transaksi** (FR-ORDER-003): hanya jika `jam_selesai` sudah lewat dan booking terbayar → `completed`. AC: ORDER-003-02 (sebelum jam berakhir ditolak).
-- [ ] **T8.6 Bulk completion MTR-10:** pilih banyak (checkbox) → **dialog konfirmasi** → item valid diproses, item tidak valid dilaporkan dalam ringkasan (EC-24). Semua item harus milik mitra. AC: ORDER-003-01 (5 booking → 5 `completed`). Gunakan transaksi DB per item agar sebagian gagal tidak menggagalkan semuanya.
-- [ ] **T8.7 Audit log** perubahan status pesanan/pembayaran dari sisi mitra (NFR-LOG-001).
-- [ ] **T8.8 Concurrency:** dua aksi bersamaan pada pesanan yang sama → aksi pertama berlaku, aksi kedua mendapat pesan "sudah diproses" (gunakan row lock / pengecekan status dalam transaksi).
+- [x] **T8.4 Konfirmasi kehadiran & `no_show`** (FR-ORDER-002, **S**): `no_show` hanya untuk booking `confirmed` pada hari itu **setelah jam mulai** (sebelum itu ditolak). Hadir → `ongoing` (pemetaan Usulan). Check-in/QR = Perlu Konfirmasi (GAP-25). AC: ORDER-002-01.
+- [x] **T8.5 Selesaikan per transaksi** (FR-ORDER-003): hanya jika `jam_selesai` sudah lewat dan booking terbayar → `completed`. AC: ORDER-003-02 (sebelum jam berakhir ditolak).
+- [x] **T8.6 Bulk completion MTR-10:** pilih banyak (checkbox) → **dialog konfirmasi** → item valid diproses, item tidak valid dilaporkan dalam ringkasan (EC-24). Semua item harus milik mitra. AC: ORDER-003-01 (5 booking → 5 `completed`). Gunakan transaksi DB per item agar sebagian gagal tidak menggagalkan semuanya.
+- [x] **T8.7 Audit log** perubahan status pesanan/pembayaran dari sisi mitra (NFR-LOG-001).
+- [x] **T8.8 Concurrency:** dua aksi bersamaan pada pesanan yang sama → aksi pertama berlaku, aksi kedua mendapat pesan "sudah diproses" (gunakan row lock / pengecekan status dalam transaksi).
 
 ### FASE 9 — Laporan Pendapatan (MTR-11) — **M**
 

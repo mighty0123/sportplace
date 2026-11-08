@@ -17,7 +17,7 @@ class BookingDetailPolicy
         }
 
         if ($user->role === 'customer') {
-            return $detail->header?->user_id === $user->id;
+            return $detail->header?->penyewa_id === $user->id;
         }
 
         return $user->role === 'mitra' && $detail->field?->venue?->mitra_id === $user->mitraProfile?->id;

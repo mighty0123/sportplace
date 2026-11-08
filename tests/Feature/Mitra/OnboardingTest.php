@@ -84,6 +84,7 @@ class OnboardingTest extends TestCase
 
         $profile = $mitra->fresh()->mitraProfile;
         $this->assertNotNull($profile->file_ktp);
+        $this->assertNotNull($profile->submitted_at);
         Storage::disk('local')->assertExists($profile->file_ktp);
 
         // Audit Log tercatat (NFR-LOG-001)
@@ -148,6 +149,7 @@ class OnboardingTest extends TestCase
         $profile->refresh();
         $this->assertSame('pending', $profile->status);
         $this->assertNull($profile->alasan_penolakan);
+        $this->assertNotNull($profile->submitted_at);
         $this->assertSame('GOR Tirta Sport Reborn', $profile->nama_usaha);
 
         // Audit Log ajukan ulang tercatat
