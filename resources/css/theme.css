@@ -176,11 +176,7 @@
     }
 }
 
-/* ============ ALIAS SEMANTIK ============
-    "inline" = nilainya diacu langsung dari palet di atas.
-    Komponen memakai alias ini untuk peran umum (latar, garis, teks, brand).
-    Status dan warna khusus tetap memakai langkah palet langsung.
-*/
+/* ============ ALIAS SEMANTIK ============ */
 @theme inline {
     --color-canvas: var(--color-neutral-0);
     --color-surface: var(--color-neutral-0);

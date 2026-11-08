@@ -14,21 +14,36 @@ class DashboardStats
     private const PAID = 'succes'; // ejaan mengikuti enum payments.status_pembayaran
 
     private const ACTIONS = [
-        'setujui'     => ['disetujui', 'success', 'check-circle'],
-        'tolak'       => ['ditolak', 'danger', 'x-circle'],
-        'ajukan'      => ['diajukan', 'info', 'send'],
-        'suspend'     => ['disuspend', 'warning', 'ban'],
-        'kedaluwarsa' => ['kedaluwarsa', 'neutral', 'clock'],
+        'setujui'      => ['disetujui', 'success', 'check-circle'],
+        'tolak'        => ['ditolak', 'danger', 'x-circle'],
+        'ajukan'       => ['diajukan', 'info', 'send'],
+        'suspend'      => ['disuspend', 'warning', 'ban'],
+        'kedaluwarsa'  => ['kedaluwarsa', 'neutral', 'clock'],
         'pendaftaran'  => ['didaftarkan', 'info', 'send'],
         'ajukan_ulang' => ['diajukan ulang', 'info', 'send'],
+        'tambah'       => ['ditambahkan',    'success', 'check-circle'],
+        'ubah'         => ['diubah',         'info',    'activity'],
+        'nonaktifkan'  => ['dinonaktifkan',  'warning', 'ban'],
+        'aktifkan'     => ['diaktifkan',     'success', 'check-circle'],
+    ];
+
+    public const PAYMENT_LABELS = [
+        'qris'          => 'QRIS',
+        'bank_transfer' => 'Transfer bank',
+        'ewallet'       => 'Dompet digital',
+        'va'            => 'Virtual account',
+        'credit_card'   => 'Kartu kredit',
     ];
 
     private const ENTITY_LABELS = [
-        'MitraProfile'  => 'Mitra',
-        'Venue'         => 'Venue',
-        'Field'         => 'Lapangan',
-        'User'          => 'Akun',
-        'BookingHeader' => 'Booking',
+        'MitraProfile'   => 'Mitra',
+        'Venue'          => 'Venue',
+        'Field'          => 'Lapangan',
+        'User'           => 'Akun',
+        'BookingHeader'  => 'Booking',
+        'MasterSport'    => 'Cabang olahraga',
+        'MasterCity'     => 'Kota',
+        'MasterFacility' => 'Fasilitas',
     ];
 
     public function kpis(): array
@@ -144,6 +159,36 @@ class DashboardStats
         })->all();
     }
 
+    /** Pembayaran berhasil 30 hari terakhir menurut metode, terbanyak dulu. */
+    public function paymentMethods(): array
+    {
+        $now = CarbonImmutable::now();
+
+        return DB::table('payments')
+            ->selectRaw('metode_pembayaran as metode, COUNT(*) as n')
+            ->where('status_pembayaran', self::PAID)
+            ->whereBetween('paid_at', [$now->subDays(30), $now])
+            ->groupBy('metode_pembayaran')
+            ->orderByDesc('n')
+            ->get()
+            ->map(fn ($r) => [
+                'label' => self::PAYMENT_LABELS[$r->metode] ?? Str::headline((string) $r->metode),
+                'value' => (int) $r->n,
+            ])->all();
+    }
+
+    /** Semua pendaftaran mitra menurut status */
+    public function mitraStatus(): array
+    {
+        $counts = DB::table('mitra_profiles')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+
+        return [
+            ['label' => 'Disetujui', 'value' => (int) ($counts['approved'] ?? 0), 'tone' => 'success'],
+            ['label' => 'Menunggu',  'value' => (int) ($counts['pending'] ?? 0),  'tone' => 'warning'],
+            ['label' => 'Ditolak',   'value' => (int) ($counts['rejected'] ?? 0), 'tone' => 'danger'],
+        ];
+    }
+
     // Helper
     private function daily(CarbonImmutable $now, int $days, string $format): array
     {
@@ -217,10 +262,13 @@ class DashboardStats
     private function entityNames($rows): array
     {
         $sources = [
-            'MitraProfile' => ['mitra_profiles', 'nama_usaha'],
-            'Venue'        => ['venues', 'nama_venue'],
-            'Field'        => ['fields', 'nama_lapangan'],
-            'User'         => ['users', 'name'],
+            'MitraProfile'   => ['mitra_profiles', 'nama_usaha'],
+            'Venue'          => ['venues', 'nama_venue'],
+            'Field'          => ['fields', 'nama_lapangan'],
+            'User'           => ['users', 'name'],
+            'MasterSport'    => ['master_sports', 'nama_olahraga'],
+            'MasterCity'     => ['master_cities', 'nama_kota'],
+            'MasterFacility' => ['master_facilities', 'nama'],
         ];
 
         $names = [];

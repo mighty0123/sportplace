@@ -17,7 +17,7 @@ class MitraTable extends Component
     use WithPagination;
 
     public const STATUSES = ['pending' => 'Menunggu', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
-    public const PER_PAGE_OPTIONS = [10, 15, 30, 50];
+    public const PER_PAGE_OPTIONS = [15, 30, 50];
 
     // Keadaan tampilan disimpan di URL
     #[Url(history: true)]
@@ -30,7 +30,7 @@ class MitraTable extends Component
     public string $sort = '';
 
     #[Url(as: 'per')]
-    public int $perPage = 10;
+    public int $perPage = 15;
 
     public function mount(): void
     {

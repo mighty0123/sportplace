@@ -66,7 +66,7 @@ class MitraDataChecks
 
     private function nikFormat(MitraProfile $m): array
     {
-        $label = 'Format NIK (16 digit)';
+        $label = 'Format NIK';
         $nik = (string) $m->no_ktp;
 
         if (! preg_match('/^\d{16}$/', $nik)) {
@@ -83,7 +83,7 @@ class MitraDataChecks
 
     private function nikUnique(MitraProfile $m): array
     {
-        $label = 'NIK belum dipakai pengajuan lain';
+        $label = 'Keunikan NIK';
         $nik = trim((string) $m->no_ktp);
 
         if ($nik === '') {
@@ -102,7 +102,7 @@ class MitraDataChecks
 
     private function ktpFile(MitraProfile $m): array
     {
-        $label = 'Berkas KTP tersimpan';
+        $label = 'Berkas KTP';
         $path = $m->documentPath('ktp');
 
         /** @var FilesystemAdapter $disk */
@@ -134,7 +134,7 @@ class MitraDataChecks
 
     private function npwpUnique(MitraProfile $m): array
     {
-        $label = 'NPWP belum dipakai pengajuan lain';
+        $label = 'Keunikan NPWP';
         $digits = $this->digits($m->npwp);
 
         if ($digits === '') {
@@ -157,7 +157,7 @@ class MitraDataChecks
 
     private function phoneUnique(MitraProfile $m): array
     {
-        $label = 'Nomor HP belum dipakai akun lain';
+        $label = 'Keunikan Nomor HP';
         $phone = $this->digits($m->user?->no_hp);
 
         if ($phone === '') {
@@ -184,7 +184,7 @@ class MitraDataChecks
 
     private function accountName(MitraProfile $m): array
     {
-        $label = 'Nama rekening sesuai pemilik atau usaha';
+        $label = 'Nama rekening';
         $account = trim((string) $m->nama_rekening);
 
         $candidates = array_filter(['pemilik' => $m->user?->name, 'usaha' => $m->nama_usaha]);
@@ -214,7 +214,7 @@ class MitraDataChecks
 
     //---- helpers
 
-    /** 'exact' | 'similar' | 'different'. Public supaya mudah diuji. */
+    /** 'exact' | 'similar' | 'different' */
     public function nameMatch(string $a, string $b): string
     {
         $ta = $this->tokens($a);

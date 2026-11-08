@@ -2,6 +2,8 @@
 
 return [
     'verification_sla_days' => 2,
+    'listing_photo_disk' => 'public',
+    'master_icon_disk' => 'public',
 
     'nav' => [
         [
@@ -26,10 +28,11 @@ return [
                     'active' => 'admin.verifikasi.*',
                 ],
                 [
-                    'key' => 'moderasi',
+                    'key' => 'moderasi', 
                     'label' => 'Moderasi Listing',
                     'icon' => 'file-check',
-                    'route' => null,
+                    'route' => 'admin.moderasi.index',
+                    'active' => 'admin.moderasi.*'
                 ],
             ],
         ],
@@ -40,12 +43,14 @@ return [
                 [
                     'label' => 'Master Data',
                     'icon' => 'database',
-                    'route' => null,
+                    'route' => 'admin.master.index',
+                    'active' => 'admin.master.*'
                 ],
                 [
                     'label' => 'Monitoring Transaksi',
                     'icon' => 'receipt',
-                    'route' => null,
+                    'route' => 'admin.transaksi.index',
+                    'active' => 'admin.transaksi.*'
                 ],
                 [
                     'label' => 'Laporan',
