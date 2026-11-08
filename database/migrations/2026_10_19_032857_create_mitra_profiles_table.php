@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('alasan_penolakan', 255)->nullable();
         });
     }
+
     /**
      * Reverse the migrations.
      */

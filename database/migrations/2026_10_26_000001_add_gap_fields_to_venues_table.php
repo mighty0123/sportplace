@@ -14,10 +14,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('venues', function (Blueprint $table) {
-            if (!Schema::hasColumn('venues', 'deskripsi')) {
+            if (! Schema::hasColumn('venues', 'deskripsi')) {
                 $table->text('deskripsi')->nullable()->after('alamat_lengkap');
             }
-            if (!Schema::hasColumn('venues', 'created_at')) {
+            if (! Schema::hasColumn('venues', 'created_at')) {
                 $table->nullableTimestamps();
             }
         });
@@ -38,4 +38,3 @@ return new class extends Migration
         });
     }
 };
-

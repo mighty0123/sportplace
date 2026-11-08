@@ -59,4 +59,3 @@ class VenuePolicy
         return $user->role === 'mitra' && $venue->mitra_id === $user->mitraProfile?->id;
     }
 }
-

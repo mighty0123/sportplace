@@ -10,7 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -45,7 +45,7 @@ class PasswordResetController extends Controller
 
         // TODO: kirim email dengan tautan reset (DEP-02, INT-03 belum ditentukan).
         // Sementara: catat token di log untuk dev/testing.
-        \Illuminate\Support\Facades\Log::info('Password reset token', [
+        Log::info('Password reset token', [
             'email' => $user->email,
             'token' => $token,
         ]);

@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -36,7 +37,7 @@ class RegisterTest extends TestCase
         $user = User::first();
         $this->assertSame('customer', $user->role);
         $this->assertNotSame('password123', $user->password);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password123', $user->password));
+        $this->assertTrue(Hash::check('password123', $user->password));
     }
 
     public function test_email_duplikat_ditolak_tanpa_membuat_baris_baru(): void

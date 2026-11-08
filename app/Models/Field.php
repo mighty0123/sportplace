@@ -9,8 +9,8 @@ class Field extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'venue_id', 'sport_id', 'nama_lapangan', 'harga_perjam', 
-        'meta_harga', 'status_lapangan', 'alasan_penolakan'
+        'venue_id', 'sport_id', 'nama_lapangan', 'harga_perjam',
+        'meta_harga', 'status_lapangan', 'alasan_penolakan',
     ];
 
     protected function casts(): array
@@ -50,6 +50,11 @@ class Field extends Model
     public function schedules()
     {
         return $this->hasMany(FieldSchedule::class, 'field_id');
+    }
+
+    public function bookingDetails()
+    {
+        return $this->hasMany(BookingDetail::class, 'field_id');
     }
     
     // Relasi Many-to-Many ke MasterFacilities melalui field_facilities
