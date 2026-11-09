@@ -27,16 +27,8 @@
             <!-- LEFT: Logo & Main Navigation Links -->
             <div class="flex items-center gap-4 lg:gap-6 xl:gap-8 shrink-0">
                 <!-- Brand Logo -->
-                <a href="{{ url('/penyewa/dashboard') }}" class="flex items-center gap-2.5 sm:gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-xl" title="SportPlace Dashboard">
-                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0B7B69] group-hover:bg-[#086354] flex items-center justify-center text-white shadow-xs transition-colors duration-150 shrink-0">
-                        <!-- Court Icon -->
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect width="18" height="18" x="3" y="3" rx="4"/>
-                            <line x1="3" x2="21" y1="12" y2="12"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </div>
-                    <span class="text-lg sm:text-xl font-bold tracking-tight text-white group-hover:text-emerald-100 transition-colors">SportPlace</span>
+                <a href="{{ url('/penyewa/dashboard') }}" class="flex items-center group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-xl" title="SportPlace Dashboard">
+                    <img src="{{ asset('images/logo.svg') }}" alt="SportPlace" class="h-8 sm:h-9 w-auto">
                 </a>
 
                 <!-- Desktop Navigation Links (Converted from Sidebar) -->
