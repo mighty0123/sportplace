@@ -46,23 +46,27 @@ return new class extends Migration
         Schema::table('master_facilities', fn (Blueprint $t) => $t->unique('nama'));
 
         // Data yang punya turunan tidak boleh terhapus tanpa sengaja.
-        foreach (self::RESTRICTED_FKS as [$table, $name]) {
-            Schema::table($table, fn (Blueprint $t) => $t->dropForeign($name));
-        }
-        foreach (self::RESTRICTED_FKS as [$table, $name, $column, $parent]) {
-            Schema::table($table, fn (Blueprint $t) => $t->foreign($column, $name)
-                ->references('id')->on($parent)->restrictOnDelete());
+        if (DB::getDriverName() !== 'sqlite') {
+            foreach (self::RESTRICTED_FKS as [$table, $name]) {
+                Schema::table($table, fn (Blueprint $t) => $t->dropForeign($name));
+            }
+            foreach (self::RESTRICTED_FKS as [$table, $name, $column, $parent]) {
+                Schema::table($table, fn (Blueprint $t) => $t->foreign($column, $name)
+                    ->references('id')->on($parent)->restrictOnDelete());
+            }
         }
     }
 
     public function down(): void
     {
-        foreach (self::RESTRICTED_FKS as [$table, $name]) {
-            Schema::table($table, fn (Blueprint $t) => $t->dropForeign($name));
-        }
-        foreach (self::RESTRICTED_FKS as [$table, $name, $column, $parent]) {
-            Schema::table($table, fn (Blueprint $t) => $t->foreign($column, $name)
-                ->references('id')->on($parent)->cascadeOnDelete());
+        if (DB::getDriverName() !== 'sqlite') {
+            foreach (self::RESTRICTED_FKS as [$table, $name]) {
+                Schema::table($table, fn (Blueprint $t) => $t->dropForeign($name));
+            }
+            foreach (self::RESTRICTED_FKS as [$table, $name, $column, $parent]) {
+                Schema::table($table, fn (Blueprint $t) => $t->foreign($column, $name)
+                    ->references('id')->on($parent)->cascadeOnDelete());
+            }
         }
 
         Schema::table('master_facilities', fn (Blueprint $t) => $t->dropUnique(['nama']));
@@ -101,6 +105,10 @@ return new class extends Migration
 
     private function assertForeignKeysExist(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         $missing = [];
         foreach (self::RESTRICTED_FKS as [$table, $name]) {
             if (! in_array($name, array_column(Schema::getForeignKeys($table), 'name'), true)) {

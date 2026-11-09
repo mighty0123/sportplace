@@ -28,5 +28,8 @@
     <!-- Footer Component -->
     <x-public.footer />
 
+    <!-- Help & Guide Modal Component -->
+    <x-public.help-modal />
+
 </body>
 </html>
