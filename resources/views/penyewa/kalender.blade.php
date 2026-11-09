@@ -11,7 +11,11 @@
     ========================================================= --}}
     <div class="flex flex-wrap items-center justify-between gap-3">
         <nav class="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <a href="{{ url('/penyewa/dashboard') }}" class="hover:text-[#0B7B69] transition">Dashboard</a>
+            @auth
+                <a href="{{ url('/penyewa/dashboard') }}" class="hover:text-[#0B7B69] transition">Dashboard</a>
+            @else
+                <a href="{{ url('/') }}" class="hover:text-[#0B7B69] transition">Beranda</a>
+            @endauth
             <span>/</span>
             <a href="{{ url('/penyewa/lapangan') }}" class="hover:text-[#0B7B69] transition">Daftar Lapangan</a>
             <span>/</span>
