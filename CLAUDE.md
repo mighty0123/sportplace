@@ -328,10 +328,10 @@ Rujukan: FR-ORDER-001…003, FR-PAY-003, UJ-06, BR-009/010/013/014/015.
 
 Rujukan: FR-REPORT-002, BR-016/BR-017, UJ-10.
 
-- [ ] **T9.1 Laporan & filter:** harian/bulanan (+ filter per lapangan), jumlah booking, tabel transaksi, angka rata kanan `tabular-nums`. Validasi rentang tanggal. Empty state.
-- [ ] **T9.2 Komisi** — **BLOCKED oleh OQ-004/GAP-07.** Buat `CommissionResolver` dengan satu antarmuka; implementasi awal membaca satu tarif dari config (default 0 dan **ditampilkan jelas** sebagai belum ditetapkan). Jangan hardcode rumus tersebar.
-- [ ] **T9.3 Perhitungan:** pendapatan kotor (`booking_details.harga_slot` untuk booking `completed` & terbayar) − komisi = bersih. AC: REPORT-002-01 (bersih = kotor − komisi).
-- [ ] **T9.4 Ekspor laporan:** format default **CSV** (Perlu Konfirmasi; mudah ditambah XLSX/PDF). Galat ekspor → pesan jelas (EC).
+- [x] **T9.1 Laporan & filter:** harian/bulanan (+ filter per lapangan), jumlah booking, tabel transaksi, angka rata kanan `tabular-nums`. Validasi rentang tanggal. Empty state.
+- [x] **T9.2 Komisi** — **BLOCKED oleh OQ-004/GAP-07.** Buat `CommissionResolver` dengan satu antarmuka; implementasi awal membaca satu tarif dari config (default 0 dan **ditampilkan jelas** sebagai belum ditetapkan). Jangan hardcode rumus tersebar.
+- [x] **T9.3 Perhitungan:** pendapatan kotor (`booking_details.harga_slot` untuk booking `completed` & terbayar) − komisi = bersih. AC: REPORT-002-01 (bersih = kotor − komisi).
+- [x] **T9.4 Ekspor laporan:** format default **CSV** (Perlu Konfirmasi; mudah ditambah XLSX/PDF). Galat ekspor → pesan jelas (EC).
 - [ ] **T9.5 Wallet & penarikan mitra (FR-FIN-003)** — **BLOCKED oleh OQ-006.** Jangan dibangun sebelum diputuskan in/out scope.
 
 ### FASE 10 — Notifikasi, Polish, dan Penutupan — **S**

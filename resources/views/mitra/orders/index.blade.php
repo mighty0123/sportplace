@@ -1,5 +1,5 @@
 <x-layouts.mitra title="Pesanan & Kalender Booking — SportPlace" heading="Pesanan Masuk">
-    <div class="space-y-6">
+    <div class="space-y-6 max-w-full min-w-0">
 
         <!-- Top Header & Breadcrumb -->
         <div class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
@@ -42,108 +42,109 @@
             </div>
         </div>
 
-        <!-- Metric Summary Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
-                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Total Reservasi</span>
-                <span class="text-2xl font-bold text-slate-900 tabular-nums">{{ $totalOrdersCount }}</span>
-                <span class="text-[11px] text-slate-400 block mt-1">Seluruh sesi tercatat</span>
+        <!-- Metric Summary Cards (Lebih Compact agar Muat Sempurna dalam Frame) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs">
+                <span class="text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5 truncate">Total Reservasi</span>
+                <span class="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">{{ $totalOrdersCount }}</span>
+                <span class="text-[10px] text-slate-400 block mt-0.5 truncate">Seluruh sesi tercatat</span>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
-                <span class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block mb-1">Berlangsung / Aktif</span>
-                <span class="text-2xl font-bold text-[#0B7B69] tabular-nums">{{ $ongoingCount }}</span>
-                <span class="text-[11px] text-slate-400 block mt-1">Sesi belum diselesaikan</span>
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs">
+                <span class="text-[10px] sm:text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block mb-0.5 truncate">Berlangsung</span>
+                <span class="text-xl sm:text-2xl font-bold text-[#0B7B69] tabular-nums">{{ $ongoingCount }}</span>
+                <span class="text-[10px] text-slate-400 block mt-0.5 truncate">Sesi aktif berjalan</span>
             </div>
-            <div class="bg-white rounded-3xl border border-amber-200/80 bg-amber-50/30 p-4 sm:p-5 shadow-xs">
-                <span class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider block mb-1">Siap Selesai</span>
-                <span class="text-2xl font-bold text-amber-700 tabular-nums">{{ $readyToCompleteCount }}</span>
-                <span class="text-[11px] text-amber-600 block mt-1">Jam sewa telah berakhir</span>
+            <div class="bg-white rounded-2xl border border-amber-200/80 bg-amber-50/20 p-3 sm:p-4 shadow-xs">
+                <span class="text-[10px] sm:text-[11px] font-semibold text-amber-700 uppercase tracking-wider block mb-0.5 truncate">Siap Selesai</span>
+                <span class="text-xl sm:text-2xl font-bold text-amber-700 tabular-nums">{{ $readyToCompleteCount }}</span>
+                <span class="text-[10px] text-amber-600 block mt-0.5 truncate">Jam sewa berakhir</span>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
-                <span class="text-[11px] font-semibold text-slate-700 uppercase tracking-wider block mb-1">Selesai (Completed)</span>
-                <span class="text-2xl font-bold text-slate-800 tabular-nums">{{ $completedCount }}</span>
-                <span class="text-[11px] text-slate-400 block mt-1">Hak ulasan dibuka</span>
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs">
+                <span class="text-[10px] sm:text-[11px] font-semibold text-slate-700 uppercase tracking-wider block mb-0.5 truncate">Selesai</span>
+                <span class="text-xl sm:text-2xl font-bold text-slate-800 tabular-nums">{{ $completedCount }}</span>
+                <span class="text-[10px] text-slate-400 block mt-0.5 truncate">Hak ulasan aktif</span>
             </div>
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs col-span-2 sm:col-span-1">
-                <span class="text-[11px] font-semibold text-rose-700 uppercase tracking-wider block mb-1">Tidak Hadir (No-Show)</span>
-                <span class="text-2xl font-bold text-rose-600 tabular-nums">{{ $noShowCount }}</span>
-                <span class="text-[11px] text-slate-400 block mt-1">Penyewa absen</span>
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs col-span-2 sm:col-span-1">
+                <span class="text-[10px] sm:text-[11px] font-semibold text-rose-700 uppercase tracking-wider block mb-0.5 truncate">No-Show</span>
+                <span class="text-xl sm:text-2xl font-bold text-rose-600 tabular-nums">{{ $noShowCount }}</span>
+                <span class="text-[10px] text-slate-400 block mt-0.5 truncate">Penyewa absen</span>
             </div>
         </div>
 
-        <!-- Filter & Search Bar -->
-        <div class="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
-            <form method="GET" action="{{ url('/mitra/pesanan') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-end">
+        <!-- Filter & Search Bar (Rapi & Tidak Overflow Melebihi Card) -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
+            <form method="GET" action="{{ url('/mitra/pesanan') }}" class="space-y-3.5">
                 <input type="hidden" name="view_mode" value="{{ $viewMode }}">
 
-                <!-- Search -->
-                <div class="lg:col-span-3">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Pencarian</label>
-                    <div class="relative">
-                        <input
-                            type="text"
-                            name="search"
-                            value="{{ $search }}"
-                            placeholder="No. booking / nama / ID transaksi..."
-                            class="w-full px-4 py-2.5 pl-10 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition"
-                        >
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
+                <!-- 5 Kolom Input Proporsional -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
+                    <!-- 1. Search -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Pencarian</label>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ $search }}"
+                                placeholder="No. booking / nama / ID..."
+                                class="w-full px-3 py-2 pl-8 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition"
+                            >
+                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Lapangan -->
-                <div class="lg:col-span-3">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Pilih Lapangan</label>
-                    <select
-                        name="field_id"
-                        class="w-full px-4 py-2.5 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white"
-                    >
-                        <option value="">Semua Lapangan</option>
-                        @foreach ($venues as $v)
-                            <optgroup label="{{ $v->nama_venue }}">
-                                @foreach ($v->fields as $f)
-                                    <option value="{{ $f->id }}" {{ (string)$selectedFieldId === (string)$f->id ? 'selected' : '' }}>
-                                        {{ $f->nama_lapangan }}
-                                    </option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
-                    </select>
-                </div>
+                    <!-- 2. Lapangan -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Lapangan</label>
+                        <select
+                            name="field_id"
+                            class="w-full px-3 py-2 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white truncate"
+                        >
+                            <option value="">Semua Lapangan</option>
+                            @foreach ($venues as $v)
+                                <optgroup label="{{ $v->nama_venue }}">
+                                    @foreach ($v->fields as $f)
+                                        <option value="{{ $f->id }}" {{ (string)$selectedFieldId === (string)$f->id ? 'selected' : '' }}>
+                                            {{ $f->nama_lapangan }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
+                    </div>
 
-                <!-- Status Sesi -->
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Status Sesi</label>
-                    <select
-                        name="status"
-                        class="w-full px-4 py-2.5 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white"
-                    >
-                        <option value="">Semua Status</option>
-                        <option value="ongoing" {{ $selectedStatus === 'ongoing' ? 'selected' : '' }}>Ongoing (Aktif)</option>
-                        <option value="completed" {{ $selectedStatus === 'completed' ? 'selected' : '' }}>Completed (Selesai)</option>
-                        <option value="no_show" {{ $selectedStatus === 'no_show' ? 'selected' : '' }}>No-Show (Tidak Hadir)</option>
-                    </select>
-                </div>
+                    <!-- 3. Status Sesi -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Status Sesi</label>
+                        <select
+                            name="status"
+                            class="w-full px-3 py-2 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="ongoing" {{ $selectedStatus === 'ongoing' ? 'selected' : '' }}>Ongoing (Aktif)</option>
+                            <option value="completed" {{ $selectedStatus === 'completed' ? 'selected' : '' }}>Completed (Selesai)</option>
+                            <option value="no_show" {{ $selectedStatus === 'no_show' ? 'selected' : '' }}>No-Show (Tidak Hadir)</option>
+                        </select>
+                    </div>
 
-                <!-- Status Bayar -->
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Status Pembayaran</label>
-                    <select
-                        name="payment_status"
-                        class="w-full px-4 py-2.5 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white"
-                    >
-                        <option value="">Semua Pembayaran</option>
-                        <option value="payment" {{ $selectedPaymentStatus === 'payment' ? 'selected' : '' }}>Lunas (Payment)</option>
-                        <option value="pending" {{ $selectedPaymentStatus === 'pending' ? 'selected' : '' }}>Pending (Menunggu)</option>
-                    </select>
-                </div>
+                    <!-- 4. Status Bayar -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Status Bayar</label>
+                        <select
+                            name="payment_status"
+                            class="w-full px-3 py-2 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white"
+                        >
+                            <option value="">Semua Pembayaran</option>
+                            <option value="payment" {{ $selectedPaymentStatus === 'payment' ? 'selected' : '' }}>Lunas (Payment)</option>
+                            <option value="pending" {{ $selectedPaymentStatus === 'pending' ? 'selected' : '' }}>Pending (Menunggu)</option>
+                        </select>
+                    </div>
 
-                <!-- Tanggal -->
-                <div class="lg:col-span-2 flex items-center gap-2">
-                    <div class="flex-1">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tanggal Sesi</label>
+                    <!-- 5. Tanggal Sesi -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Sesi</label>
                         <input
                             type="date"
                             name="date"
@@ -151,24 +152,32 @@
                             class="w-full px-3 py-2 text-xs sm:text-sm rounded-full border border-slate-200 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition bg-white"
                         >
                     </div>
-                    <button
-                        type="submit"
-                        class="px-4 py-2.5 rounded-full bg-[#0B7B69] hover:bg-[#086354] text-white text-xs sm:text-sm font-semibold transition shrink-0 min-h-[42px] mt-auto"
-                        title="Terapkan Filter"
-                    >
-                        Filter
-                    </button>
+                </div>
+
+                <!-- Tombol Aksi Filter & Reset (Rata Kanan di Dalam Card) -->
+                <div class="flex items-center justify-end gap-2 pt-2.5 border-t border-slate-100">
                     @if ($search || $selectedFieldId || $selectedStatus || $selectedPaymentStatus || request()->query('date') || request()->query('filter'))
                         <a
                             href="{{ url('/mitra/pesanan?view_mode=' . $viewMode) }}"
-                            class="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs transition shrink-0 min-h-[42px] flex items-center justify-center mt-auto"
-                            title="Reset Filter"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition"
+                            title="Reset Semua Filter"
                         >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
+                            <span>Reset</span>
                         </a>
                     @endif
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full bg-[#0B7B69] hover:bg-[#086354] text-white text-xs sm:text-sm font-semibold shadow-xs transition min-h-[38px] cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        <span>Terapkan Filter</span>
+                    </button>
                 </div>
             </form>
         </div>

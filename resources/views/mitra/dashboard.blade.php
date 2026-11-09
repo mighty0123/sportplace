@@ -1,5 +1,5 @@
 <x-layouts.mitra title="Dashboard Mitra — SportPlace" heading="Dashboard Mitra">
-    <div class="space-y-6">
+    <div class="space-y-6 max-w-full min-w-0">
 
         <!-- Welcome Banner & Business Identity Card -->
         <div class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">

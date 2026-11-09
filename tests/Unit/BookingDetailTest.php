@@ -48,9 +48,9 @@ class BookingDetailTest extends TestCase
     {
         $detail = new BookingDetail;
         $detail->setRawAttributes([
-            'tanggal_sewa' => Carbon::today()->toDateString(),
-            'jam_mulai' => Carbon::now()->addHours(1)->format('H:i:s'),
-            'jam_selesai' => Carbon::now()->addHours(2)->format('H:i:s'),
+            'tanggal_sewa' => Carbon::tomorrow()->toDateString(),
+            'jam_mulai' => '10:00:00',
+            'jam_selesai' => '11:00:00',
             'status_item' => 'ongoing',
         ]);
 
@@ -86,9 +86,9 @@ class BookingDetailTest extends TestCase
     {
         $detail = new BookingDetail;
         $detail->setRawAttributes([
-            'tanggal_sewa' => Carbon::today()->toDateString(),
-            'jam_mulai' => Carbon::now()->addHours(2)->format('H:i:s'),
-            'jam_selesai' => Carbon::now()->addHours(3)->format('H:i:s'),
+            'tanggal_sewa' => Carbon::tomorrow()->toDateString(),
+            'jam_mulai' => '10:00:00',
+            'jam_selesai' => '11:00:00',
             'status_item' => 'ongoing',
         ]);
 
@@ -106,8 +106,8 @@ class BookingDetailTest extends TestCase
         $detail = new BookingDetail;
         $detail->setRawAttributes([
             'tanggal_sewa' => Carbon::today()->toDateString(),
-            'jam_mulai' => Carbon::now()->subMinutes(30)->format('H:i:s'),
-            'jam_selesai' => Carbon::now()->addMinutes(30)->format('H:i:s'),
+            'jam_mulai' => '00:00:01',
+            'jam_selesai' => '23:59:59',
             'status_item' => 'ongoing',
         ]);
 

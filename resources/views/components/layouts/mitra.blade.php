@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-[#F4F7F5]">
+<html lang="id" class="h-full bg-[#F4F7F5] overflow-x-hidden">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,7 +12,7 @@
 
     @vite(['resources/css/app.css'])
 </head>
-<body class="h-full font-sans text-slate-800 antialiased flex flex-col md:flex-row bg-[#F4F7F5]">
+<body class="h-full font-sans text-slate-800 antialiased flex flex-col md:flex-row bg-[#F4F7F5] overflow-x-hidden">
 
     <!-- Backdrop Gelap untuk Mobile saat Sidebar Terbuka -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300 backdrop-blur-xs" aria-hidden="true"></div>
@@ -106,7 +106,7 @@
     </aside>
 
     <!-- Main Content Area -->
-    <div class="flex-1 md:pl-64 flex flex-col min-h-screen">
+    <div class="flex-1 md:pl-64 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden">
         <!-- Topbar Khusus Mobile (Tidak Sticky / Tidak Mengikuti Scroll) -->
         <header class="md:hidden h-16 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -127,7 +127,7 @@
         </header>
 
         <!-- Flash Messages & Main Content -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden">
             {{ $slot }}
         </main>
     </div>

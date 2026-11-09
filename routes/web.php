@@ -11,6 +11,7 @@ use App\Http\Controllers\Mitra\FieldController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\OrderController;
 use App\Http\Controllers\Mitra\PricingController;
+use App\Http\Controllers\Mitra\ReportController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
 use App\Models\MitraProfile;
@@ -113,6 +114,10 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         Route::post('/pesanan/{order}/no-show', [OrderController::class, 'markNoShow'])->name('orders.no-show');
         Route::post('/pesanan/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
         Route::post('/pesanan-bulk-complete', [OrderController::class, 'bulkComplete'])->name('orders.bulk-complete');
+
+        // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
+        Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
     });
 });
 
