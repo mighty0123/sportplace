@@ -4,7 +4,7 @@
 
 <button 
     type="button" 
-    class="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-[#E8F7EE] hover:bg-[#DDF4EF] active:bg-[#BBEDE3] border border-[#BBEDE3]/70 text-sm font-semibold text-[#1B2724] transition duration-150 shadow-2xs"
+    class="w-full flex items-center justify-center gap-2.5 py-3 px-5 rounded-full bg-[#E8F7EE] hover:bg-[#DDF4EF] active:bg-[#BBEDE3] border border-[#BBEDE3]/70 text-sm font-semibold text-[#1B2724] transition duration-150 shadow-2xs cursor-pointer min-h-[44px]"
 >
     <!-- Google Multi-Color G Icon -->
     <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">

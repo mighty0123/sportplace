@@ -3,8 +3,8 @@
 namespace App\Services\Admin;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Semua angka dashboard admin. Transaksi = pembayaran berhasil; nilai = GMV (bukan komisi).
@@ -63,7 +63,7 @@ class DashboardStats
         if ($prev > 0) {
             $pct = ($curr - $prev) / $prev * 100;
             $trx = [
-                (($pct >= 0) ? '+' : '-') . number_format(abs($pct), 1, ',', '.') . '% dibanding 30 hari sebelumnya',
+                (($pct >= 0) ? '+' : '-').number_format(abs($pct), 1, ',', '.').'% dibanding 30 hari sebelumnya',
                 $pct > 0 ? 'up' : ($pct < 0 ? 'down' : 'flat'),
             ];
         } else {
@@ -145,7 +145,7 @@ class DashboardStats
             $type = class_basename($r->entitas_type);
             [$verb, $tone, $icon] = self::ACTIONS[$r->aksi] ?? [Str::lower(Str::headline($r->aksi)), 'neutral', 'activity'];
             $label = self::ENTITY_LABELS[$type] ?? Str::headline($type);
-            $name = $names[$type][$r->entitas_id] ?? '#' . $r->entitas_id; // nama kalau ketemu, kalau tidak nomor ID
+            $name = $names[$type][$r->entitas_id] ?? '#'.$r->entitas_id; // nama kalau ketemu, kalau tidak nomor ID
 
             return [
                 'subject' => Str::startsWith(Str::lower($name), Str::lower($label)) ? $name : "{$label} {$name}",
@@ -251,14 +251,14 @@ class DashboardStats
         $days = (int) floor($date->diffInDays(CarbonImmutable::now()));
         $when = $days === 0 ? 'hari ini' : "{$days} hari";
 
-        return 'Terlama menunggu sejak ' . $date->locale('id')->isoFormat('D MMM') . " ({$when})";
+        return 'Terlama menunggu sejak '.$date->locale('id')->isoFormat('D MMM')." ({$when})";
     }
 
     private function n(int|float $n): string
     {
         return number_format($n, 0, ',', '.');
     }
-    
+
     private function entityNames($rows): array
     {
         $sources = [

@@ -15,7 +15,7 @@ class RejectMitraRequest extends FormRequest
     {
         return [
             'alasan_penolakan' => ['required', 'string', 'min:10', 'max:255'],
-            'checklist'   => ['nullable', 'array'],
+            'checklist' => ['nullable', 'array'],
             'checklist.*' => ['boolean'],
         ];
     }
@@ -24,8 +24,8 @@ class RejectMitraRequest extends FormRequest
     {
         return [
             'alasan_penolakan.required' => 'Alasan penolakan wajib diisi supaya mitra tahu apa yang perlu diperbaiki.',
-            'alasan_penolakan.min'      => 'Alasan penolakan minimal 10 karakter.',
-            'alasan_penolakan.max'      => 'Alasan penolakan maksimal 255 karakter.',
+            'alasan_penolakan.min' => 'Alasan penolakan minimal 10 karakter.',
+            'alasan_penolakan.max' => 'Alasan penolakan maksimal 255 karakter.',
         ];
     }
 }

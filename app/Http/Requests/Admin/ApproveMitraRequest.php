@@ -28,9 +28,9 @@ class ApproveMitraRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'checklist.required'            => 'Pemeriksaan belum lengkap. Centang semua butir sebelum menyetujui.',
-            'checklist.*.required'          => 'Pemeriksaan belum lengkap. Centang semua butir sebelum menyetujui.',
-            'checklist.*.accepted'          => 'Pemeriksaan belum lengkap. Centang semua butir sebelum menyetujui.',
+            'checklist.required' => 'Pemeriksaan belum lengkap. Centang semua butir sebelum menyetujui.',
+            'checklist.*.required' => 'Pemeriksaan belum lengkap. Centang semua butir sebelum menyetujui.',
+            'checklist.*.accepted' => 'Pemeriksaan belum lengkap. Centang semua butir sebelum menyetujui.',
         ];
     }
 }
