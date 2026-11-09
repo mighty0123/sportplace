@@ -61,15 +61,28 @@ class MitraProfile extends Model
         return collect(['npwp', 'nib', 'sewa'])->contains(fn ($type) => $this->documentPath($type));
     }
 
-    /** NIK tersamar: tampil 4 digit awal dan akhir saja. */
-    public function maskedNik(): string
-    {
-        $nik = (string) $this->no_ktp;
+    /** Data sensitif */
+    public const SENSITIVE = ['nik' => 'no_ktp', 'npwp' => 'npwp', 'rekening' => 'nomor_rekening'];
 
-        return strlen($nik) > 8 ? Str::mask($nik, '•', 4, -4) : str_repeat('•', strlen($nik));
+    /** Tersamarkan: NIK menyisakan 4 digit awal dan akhir, lainnya hanya 4 karakter akhir. */
+    public function maskedValue(string $field): string
+    {
+        $value = (string) $this->{self::SENSITIVE[$field]};
+        $len   = mb_strlen($value);
+
+        if ($len === 0) {
+            return '';
+        }
+        if ($len <= 8) {
+            return str_repeat('•', $len);
+        }
+
+        $head = $field === 'nik' ? 4 : 0;
+
+        return Str::mask($value, '•', $head, $len - $head - 4);
     }
 
-    /** Nomor rekening tersamar: hanya 4 digit akhir. */
+    /** Nomor rekening tersamar */
     public function maskedAccountNumber(): string
     {
         $no = (string) $this->nomor_rekening;
@@ -108,5 +121,15 @@ class MitraProfile extends Model
     public function isRejected(): bool
     {
         return $this->status === 'rejected';
+    }
+
+    public function uploadedDocumentsCount(): int
+    {
+        return collect(self::DOCUMENTS)->filter(fn ($column) => ! empty($this->{$column}))->count();
+    }
+
+    public function daysWaiting(): ?int
+    {
+        return $this->submitted_at ? (int) floor($this->submitted_at->diffInDays(now())) : null;
     }
 }

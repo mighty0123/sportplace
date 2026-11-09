@@ -23,14 +23,24 @@ class LoginTest extends TestCase
         ], $overrides));
     }
 
-    public function test_customer_login_berhasil_dan_diarahkan_ke_beranda(): void
+    public function test_customer_login_berhasil_dan_diarahkan_ke_dashboard_penyewa(): void
     {
         // AC-FR-AUTH-003-01
         $user = $this->makeUser(['role' => 'customer']);
 
         $response = $this->post('/login', ['email' => $user->email, 'password' => 'password123']);
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('penyewa.dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_admin_login_berhasil_dan_diarahkan_ke_dashboard_admin(): void
+    {
+        $user = $this->makeUser(['role' => 'admin']);
+
+        $response = $this->post('/login', ['email' => $user->email, 'password' => 'password123']);
+
+        $response->assertRedirect(route('admin.dashboard'));
         $this->assertAuthenticatedAs($user);
     }
 

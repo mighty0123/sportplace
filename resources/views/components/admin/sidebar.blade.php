@@ -7,7 +7,7 @@
 
     <div class="flex items-center justify-between px-2 md:px-0 lg:px-2">
         <a href="{{ route('admin.dashboard') }}" class="block">
-            <span class="block overflow-hidden md:w-8.5 lg:w-auto">
+            <span class="block overflow-hidden md:w-9 lg:w-auto">
                 <img src="{{ asset('images/logo.svg') }}" alt="{{ config('app.name') }}" class="h-9 max-w-none">
             </span>
         </a>

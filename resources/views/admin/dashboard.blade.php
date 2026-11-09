@@ -53,88 +53,123 @@
     </section>
 
     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {{-- Grafik --}}
-        <x-ui.card class="min-w-0 lg:col-span-2">
-            <div x-data="revenueChart(@js($chart))">
-                <div>
-                    <h2 class="text-h4 text-ink">Tren transaksi</h2>
-                    <p class="mt-0.5 text-body-sm text-ink-muted">Total nilai booking dengan pembayaran berhasil, bukan pendapatan komisi.</p>
-                </div>
 
-                <div class="mt-4 flex flex-wrap items-center gap-2">
-                    <x-ui.segmented label="Ukuran" model="metric" :options="['nilai' => 'Nilai (Rp)', 'jumlah' => 'Jumlah']" />
-                    <x-ui.segmented label="Periode" model="range" :options="['7d' => '7 hari', '30d' => '30 hari', '6m' => '6 bulan']" />
+        {{-- Kolom kiri --}}
+        <div class="grid min-w-0 grid-cols-1 content-start gap-4 lg:col-span-2">
+            <x-ui.card class="min-w-0">
+                <div x-data="revenueChart(@js($chart))">
+                    <div>
+                        <h2 class="text-h4 text-ink">Tren transaksi</h2>
+                        <p class="mt-0.5 text-body-sm text-ink-muted">Total nilai booking dengan pembayaran berhasil, bukan pendapatan komisi.</p>
+                    </div>
+    
+                    <div class="mt-4 flex flex-wrap items-center gap-2">
+                        <x-ui.segmented label="Ukuran" model="metric" :options="['nilai' => 'Nilai (Rp)', 'jumlah' => 'Jumlah']" />
+                        <x-ui.segmented label="Periode" model="range" :options="['7d' => '7 hari', '30d' => '30 hari', '6m' => '6 bulan']" />
+                    </div>
+    
+                    <div class="relative mt-5 h-64 md:h-72">
+                        <canvas x-ref="canvas" role="img" :aria-label="summary"></canvas>
+                        <p x-show="total === 0" x-cloak class="absolute inset-0 grid place-items-center text-body-sm text-ink-muted">
+                            Belum ada pembayaran berhasil pada periode ini.
+                        </p>
+                    </div>
+    
+                    <div class="mt-4 flex flex-col gap-2 border-t border-line pt-3 text-caption text-ink-muted md:flex-row md:items-center md:justify-between">
+                        <p class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <span class="inline-flex items-center gap-1.5"><span class="h-0.5 w-5 bg-primary-600"></span>Periode selesai</span>
+                            <span class="inline-flex items-center gap-1.5"><span class="w-5 border-t-2 border-dashed border-primary-600"></span><span x-text="partialText"></span></span>
+                        </p>
+                        <p class="text-ink-strong"><span x-text="totalLabel"></span>: <strong class="font-semibold" x-text="totalText"></strong></p>
+                    </div>
                 </div>
-
-                <div class="relative mt-5 h-64 md:h-72">
-                    <canvas x-ref="canvas" role="img" :aria-label="summary"></canvas>
-                    <p x-show="total === 0" x-cloak class="absolute inset-0 grid place-items-center text-body-sm text-ink-muted">
-                        Belum ada pembayaran berhasil pada periode ini.
-                    </p>
-                </div>
-
-                <div class="mt-4 flex flex-col gap-2 border-t border-line pt-3 text-caption text-ink-muted md:flex-row md:items-center md:justify-between">
-                    <p class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <span class="inline-flex items-center gap-1.5"><span class="h-0.5 w-5 bg-primary-600"></span>Periode selesai</span>
-                        <span class="inline-flex items-center gap-1.5"><span class="w-5 border-t-2 border-dashed border-primary-600"></span><span x-text="partialText"></span></span>
-                    </p>
-                    <p class="text-ink-strong"><span x-text="totalLabel"></span>: <strong class="font-semibold" x-text="totalText"></strong></p>
-                </div>
+            </x-ui.card>
+    
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <x-admin.donut-card title="Metode pembayaran" subtitle="Pembayaran berhasil, 30 hari terakhir"
+                                    unit="transaksi" :segments="$payments"
+                                    empty="Belum ada pembayaran berhasil dalam 30 hari terakhir." />
+                <x-admin.donut-card title="Pendaftaran mitra" subtitle="Semua pendaftaran"
+                                    unit="pendaftaran" :segments="$mitraStatus"
+                                    empty="Belum ada pendaftaran mitra." />
             </div>
-        </x-ui.card>
-
+        </div>
+    
         {{-- Kolom kanan --}}
-        <div class="grid min-w-0 grid-cols-1 content-start gap-4">
-            <x-ui.card class="min-w-0 border-l-4 border-l-warning-500">
-                <h2 class="text-h4 text-ink">Perlu tindakan admin</h2>
-
-                @if ($waiting === 0)
-                    <div class="mt-4 flex items-center gap-3 text-body-md text-ink-muted">
-                        <span class="grid size-9 place-items-center rounded-full bg-success-100 text-success-800"><x-ui.icon name="check-circle" /></span>
-                        Tidak ada antrian. Semua sudah ditinjau.
+        <div class="min-w-0 lg:relative">
+            <div class="flex flex-col gap-4 lg:absolute lg:inset-0">
+    
+                <x-ui.card class="min-w-0 shrink-0 border-l-4 border-l-warning-500">
+                    <h2 class="text-h4 text-ink">Perlu tindakan admin</h2>
+    
+                    @if ($waiting === 0)
+                        <div class="mt-4 flex items-center gap-3 text-body-md text-ink-muted">
+                            <span class="grid size-9 place-items-center rounded-full bg-success-100 text-success-800"><x-ui.icon name="check-circle" /></span>
+                            Tidak ada antrian. Semua sudah ditinjau.
+                        </div>
+                    @else
+                        <div class="mt-4 divide-y divide-line">
+                            @if ($mitra['count'])
+                                <x-admin.action-item :count="$mitra['count']" title="Pendaftaran mitra menunggu verifikasi"
+                                    :hint="$mitra['since']" cta="Tinjau pendaftaran" :href="$href('admin.verifikasi.index')" />
+                            @endif
+                            @if ($moderasi['count'])
+                                <x-admin.action-item :count="$moderasi['count']" title="Listing menunggu moderasi"
+                                    :hint="$moderasi['since']" cta="Tinjau listing" :href="$href('admin.moderasi.index')" />
+                            @endif
+                        </div>
+                    @endif
+                </x-ui.card>
+    
+                <x-ui.card flush class="min-w-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                    <div class="p-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:p-5"
+                        x-data="{
+                            fit() {
+                                const region  = this.$refs.region;
+                                const items   = [...this.$refs.list.children];
+                                const desktop = window.matchMedia('(min-width: 1024px)').matches;
+                                items.forEach(i => i.style.display = '');
+                                let hide = false;
+                                items.forEach((item, n) => {
+                                    // lg: sembunyikan item yang tidak muat utuh. Di bawah lg: tampilkan 5 teratas.
+                                    const overflow = desktop ? item.offsetTop + item.offsetHeight > region.clientHeight + 1 : n >= 5;
+                                    if (hide || overflow) { hide = true; item.style.display = 'none'; }
+                                });
+                            },
+                        }"
+                        x-init="$nextTick(() => fit()); document.fonts && document.fonts.ready.then(() => fit()); new ResizeObserver(() => fit()).observe($refs.region)">
+    
+                        <h2 class="text-h5 text-ink">Aktivitas terbaru</h2>
+    
+                        <div x-ref="region" class="relative mt-3 overflow-hidden lg:min-h-0 lg:flex-1">
+                            <ol x-ref="list">
+                                @forelse ($activity as $row)
+                                    <li class="flex gap-3 border-t border-line py-3 first:border-t-0 first:pt-0">
+                                        <span class="grid size-8 shrink-0 place-items-center rounded-full {{ $toneClass[$row['tone']] }}">
+                                            <x-ui.icon :name="$row['icon']" />
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-baseline justify-between gap-3">
+                                                <p class="truncate text-body-sm font-semibold text-ink" title="{{ $row['subject'] }}">{{ $row['subject'] }}</p>
+                                                <p class="shrink-0 text-caption text-ink-muted">{{ $row['time'] }}</p>
+                                            </div>
+                                            <p class="text-caption text-ink-muted">
+                                                <span class="font-semibold {{ $toneText[$row['tone']] }}">{{ ucfirst($row['verb']) }}</span>
+                                                oleh {{ $row['actor'] }}
+                                            </p>
+                                            @if ($row['note'])
+                                                <p class="mt-0.5 truncate text-caption text-ink-muted">{{ $row['note'] }}</p>
+                                            @endif
+                                        </div>
+                                    </li>
+                                @empty
+                                    <li class="text-body-sm text-ink-muted">Belum ada aktivitas. Tindakan verifikasi dan moderasi akan muncul di sini.</li>
+                                @endforelse
+                            </ol>
+                        </div>
                     </div>
-                @else
-                    <div class="mt-4 divide-y divide-line">
-                        @if ($mitra['count'])
-                            <x-admin.action-item :count="$mitra['count']" title="Pendaftaran mitra menunggu verifikasi"
-                                :hint="$mitra['since']" cta="Tinjau pendaftaran" :href="$href('admin.verifikasi.index')" />
-                        @endif
-                        @if ($moderasi['count'])
-                            <x-admin.action-item :count="$moderasi['count']" title="Listing menunggu moderasi"
-                                :hint="$moderasi['since']" cta="Tinjau listing" :href="$href('admin.moderasi.index')" />
-                        @endif
-                    </div>
-                @endif
-            </x-ui.card>
-
-            <x-ui.card class="min-w-0 ">
-                <h2 class="text-h5 text-ink">Aktivitas terbaru</h2>
-            
-                <ol class="mt-3">
-                    @forelse ($activity as $row)
-                        <li class="flex gap-3 border-t border-line py-3 first:border-t-0 first:pt-0 last:pb-0">
-                            <span class="grid size-8 shrink-0 place-items-center rounded-full {{ $toneClass[$row['tone']] }}">
-                                <x-ui.icon :name="$row['icon']" />
-                            </span>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-baseline justify-between gap-3">
-                                    <p class="truncate text-body-sm font-semibold text-ink" title="{{ $row['subject'] }}">{{ $row['subject'] }}</p>
-                                    <p class="shrink-0 text-caption text-ink-muted">{{ $row['time'] }}</p>
-                                </div>
-                                <p class="text-caption text-ink-muted">
-                                    <span class="font-semibold {{ $toneText[$row['tone']] }}">{{ ucfirst($row['verb']) }}</span>
-                                    oleh {{ $row['actor'] }}
-                                </p>
-                                @if ($row['note'])
-                                    <p class="mt-0.5 truncate text-caption text-ink-muted">{{ $row['note'] }}</p>
-                                @endif
-                            </div>
-                        </li>
-                    @empty
-                        <li class="text-body-sm text-ink-muted">Belum ada aktivitas. Tindakan verifikasi dan moderasi akan muncul di sini.</li>
-                    @endforelse
-                </ol>
-            </x-ui.card>
+                </x-ui.card>
+            </div>
         </div>
     </div>
 </x-layouts.admin>

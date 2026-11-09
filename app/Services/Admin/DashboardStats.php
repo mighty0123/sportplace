@@ -14,21 +14,44 @@ class DashboardStats
     private const PAID = 'succes'; // ejaan mengikuti enum payments.status_pembayaran
 
     private const ACTIONS = [
-        'setujui' => ['disetujui', 'success', 'check-circle'],
-        'tolak' => ['ditolak', 'danger', 'x-circle'],
-        'ajukan' => ['diajukan', 'info', 'send'],
-        'suspend' => ['disuspend', 'warning', 'ban'],
-        'kedaluwarsa' => ['kedaluwarsa', 'neutral', 'clock'],
-        'pendaftaran' => ['didaftarkan', 'info', 'send'],
+        'setujui'      => ['disetujui', 'success', 'check-circle'],
+        'tolak'        => ['ditolak', 'danger', 'x-circle'],
+        'ajukan'       => ['diajukan', 'info', 'send'],
+        'suspend'      => ['disuspend', 'warning', 'ban'],
+        'kedaluwarsa'  => ['kedaluwarsa', 'neutral', 'clock'],
+        'pendaftaran'  => ['didaftarkan', 'info', 'send'],
         'ajukan_ulang' => ['diajukan ulang', 'info', 'send'],
+        'tambah'       => ['ditambahkan',    'success', 'check-circle'],
+        'ubah'         => ['diubah',         'info',    'activity'],
+        'nonaktifkan'  => ['dinonaktifkan',  'warning', 'ban'],
+        'aktifkan'     => ['diaktifkan',     'success', 'check-circle'],
+    ];
+
+    public const PAYMENT_LABELS = [
+        'qris'          => 'QRIS',
+        'bank_transfer' => 'Transfer bank',
+        'ewallet'       => 'Dompet digital',
+        'va'            => 'Virtual account',
+        'credit_card'   => 'Kartu kredit',
     ];
 
     private const ENTITY_LABELS = [
+<<<<<<< HEAD
         'MitraProfile' => 'Mitra',
         'Venue' => 'Venue',
         'Field' => 'Lapangan',
         'User' => 'Akun',
         'BookingHeader' => 'Booking',
+=======
+        'MitraProfile'   => 'Mitra',
+        'Venue'          => 'Venue',
+        'Field'          => 'Lapangan',
+        'User'           => 'Akun',
+        'BookingHeader'  => 'Booking',
+        'MasterSport'    => 'Cabang olahraga',
+        'MasterCity'     => 'Kota',
+        'MasterFacility' => 'Fasilitas',
+>>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c
     ];
 
     public function kpis(): array
@@ -114,11 +137,11 @@ class DashboardStats
         ];
     }
 
-    public function activity(int $limit = 3): array
+    public function activity(int $limit = 4): array
     {
         $rows = DB::table('audit_logs')
             ->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')
-            ->where('audit_logs.aksi', '!=', 'lihat_dokumen')
+            ->whereNotIn('audit_logs.aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data'])
             ->orderByDesc('audit_logs.created_at')
             ->limit($limit)
             ->get(['users.name as actor', 'audit_logs.aksi', 'audit_logs.entitas_type',
@@ -142,6 +165,36 @@ class DashboardStats
                 'time' => CarbonImmutable::parse($r->created_at)->locale('id')->diffForHumans(),
             ];
         })->all();
+    }
+
+    /** Pembayaran berhasil 30 hari terakhir menurut metode, terbanyak dulu. */
+    public function paymentMethods(): array
+    {
+        $now = CarbonImmutable::now();
+
+        return DB::table('payments')
+            ->selectRaw('metode_pembayaran as metode, COUNT(*) as n')
+            ->where('status_pembayaran', self::PAID)
+            ->whereBetween('paid_at', [$now->subDays(30), $now])
+            ->groupBy('metode_pembayaran')
+            ->orderByDesc('n')
+            ->get()
+            ->map(fn ($r) => [
+                'label' => self::PAYMENT_LABELS[$r->metode] ?? Str::headline((string) $r->metode),
+                'value' => (int) $r->n,
+            ])->all();
+    }
+
+    /** Semua pendaftaran mitra menurut status */
+    public function mitraStatus(): array
+    {
+        $counts = DB::table('mitra_profiles')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+
+        return [
+            ['label' => 'Disetujui', 'value' => (int) ($counts['approved'] ?? 0), 'tone' => 'success'],
+            ['label' => 'Menunggu',  'value' => (int) ($counts['pending'] ?? 0),  'tone' => 'warning'],
+            ['label' => 'Ditolak',   'value' => (int) ($counts['rejected'] ?? 0), 'tone' => 'danger'],
+        ];
     }
 
     // Helper
@@ -217,10 +270,20 @@ class DashboardStats
     private function entityNames($rows): array
     {
         $sources = [
+<<<<<<< HEAD
             'MitraProfile' => ['mitra_profiles', 'nama_usaha'],
             'Venue' => ['venues', 'nama_venue'],
             'Field' => ['fields', 'nama_lapangan'],
             'User' => ['users', 'name'],
+=======
+            'MitraProfile'   => ['mitra_profiles', 'nama_usaha'],
+            'Venue'          => ['venues', 'nama_venue'],
+            'Field'          => ['fields', 'nama_lapangan'],
+            'User'           => ['users', 'name'],
+            'MasterSport'    => ['master_sports', 'nama_olahraga'],
+            'MasterCity'     => ['master_cities', 'nama_kota'],
+            'MasterFacility' => ['master_facilities', 'nama'],
+>>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c
         ];
 
         $names = [];

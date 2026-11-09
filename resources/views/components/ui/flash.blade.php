@@ -1,5 +1,6 @@
+@props(['messages' => null])
 @php
-    $messages = array_filter([
+    $messages = array_filter($messages ?? [
         'success' => session('success'),
         'error'   => session('error'),
         'info'    => session('status'),

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+<<<<<<< HEAD
 @import "./theme.css";
 @import "./utilities.css";
 @import "./base.css";
@@ -31,3 +32,12 @@
     -ms-overflow-style: none; /* IE dan Edge */
     scrollbar-width: none; /* Firefox */
 }
+=======
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "./theme.css";
+@import "./utilities.css";
+@import "./admin.css";
+@import "./base.css";
+>>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c

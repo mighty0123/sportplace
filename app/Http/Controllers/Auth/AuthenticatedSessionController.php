@@ -84,8 +84,7 @@ class AuthenticatedSessionController extends Controller
     private function redirectPathFor(User $user): string
     {
         if ($user->role === 'admin') {
-            // ADM-01 belum ada — placeholder, TODO untuk pemilik modul Admin.
-            return '/admin';
+            return route('admin.dashboard', absolute: false);
         }
 
         if ($user->role === 'mitra') {
@@ -101,7 +100,7 @@ class AuthenticatedSessionController extends Controller
             };
         }
 
-        // customer → halaman utama / welcome
-        return route('home', absolute: false);
+        // customer / user penyewa → dashboard penyewa
+        return route('penyewa.dashboard', absolute: false);
     }
 }

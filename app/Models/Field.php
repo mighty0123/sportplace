@@ -141,7 +141,7 @@ class Field extends Model
     {
         return $this->hasMany(BookingDetail::class, 'field_id');
     }
-
+    
     // Relasi Many-to-Many ke MasterFacilities melalui field_facilities
     public function facilities()
     {

@@ -20,10 +20,7 @@
 
                 <!-- Desktop Nav Links -->
                 <nav class="hidden md:flex items-center gap-7">
-                    <a href="#lapangan-populer" class="text-sm font-medium text-emerald-100/80 hover:text-white transition">
-                        Explore
-                    </a>
-                    <a href="#keunggulan" class="text-sm font-medium text-emerald-100/80 hover:text-white transition">
+                    <a href="{{ route('tentang-kami') }}" class="text-sm font-medium {{ request()->routeIs('tentang-kami') ? 'text-[#DEEF25] font-semibold' : 'text-emerald-100/80 hover:text-white' }} transition">
                         Tentang Kami
                     </a>
                 </nav>
@@ -99,10 +96,7 @@
 
     <!-- Mobile Drawer Menu -->
     <div id="mobile-menu" class="hidden md:hidden bg-[#06231D] border-t border-emerald-900/60 px-4 pt-3 pb-6 space-y-3">
-        <a href="#lapangan-populer" onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-base font-medium text-emerald-100 hover:text-white">
-            Explore Lapangan
-        </a>
-        <a href="#keunggulan" onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-base font-medium text-emerald-100 hover:text-white">
+        <a href="{{ route('tentang-kami') }}" onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-base font-medium {{ request()->routeIs('tentang-kami') ? 'text-[#DEEF25] font-semibold' : 'text-emerald-100 hover:text-white' }}">
             Tentang Kami
         </a>
         <a href="#bantuan" onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-base font-medium text-emerald-100 hover:text-white">

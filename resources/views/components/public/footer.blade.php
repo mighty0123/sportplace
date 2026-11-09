@@ -51,10 +51,10 @@
                     Platform
                 </h4>
                 <ul class="space-y-2.5 text-xs sm:text-sm">
-                    <li><a href="#lapangan-populer" class="hover:text-white transition">Populer</a></li>
-                    <li><a href="#kategori" class="hover:text-white transition">Olahraga</a></li>
-                    <li><a href="#lapangan-populer" class="hover:text-white transition">Promo</a></li>
-                    <li><a href="#keunggulan" class="hover:text-white transition">Tentang Kami</a></li>
+                    <li><a href="{{ route('penyewa.lapangan') }}" class="hover:text-white transition">Explore</a></li>
+                    <li><a href="{{ url('/#kategori') }}" class="hover:text-white transition">Olahraga</a></li>
+                    <li><a href="{{ route('penyewa.lapangan') }}" class="hover:text-white transition">Promo</a></li>
+                    <li><a href="{{ route('tentang-kami') }}" class="hover:text-white transition">Tentang Kami</a></li>
                 </ul>
             </div>
 

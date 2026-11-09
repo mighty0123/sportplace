@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\Admin\MitraAlreadyProcessedException;
+use App\Exceptions\Admin\MitraBlockedByChecksException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveMitraRequest;
 use App\Http\Requests\Admin\RejectMitraRequest;
 use App\Models\AuditLog;
 use App\Models\MitraProfile;
 use App\Services\Admin\MitraVerificationService;
+use App\Services\Admin\MitraDataChecks;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,19 +32,33 @@ class MitraVerificationController extends Controller
         'sewa' => ['Sewa lahan', false],
     ];
 
-    public function __construct(private MitraVerificationService $service) {}
+    public function __construct(
+        private MitraVerificationService $service,
+        private MitraDataChecks $checks,
+    ) {
+    }
 
     public function show(MitraProfile $mitra): View
     {
         Gate::authorize('review', $mitra);
 
         $mitra->load(['user', 'reviewer']);
+        $checks = $this->checks->run($mitra);
 
         return view('admin.verifikasi.show', [
             'mitra' => $mitra,
             'documents' => $this->documents($mitra),
-            'history' => $this->service->history($mitra),
+            'history'   => $this->service->history($mitra),
+            'checks'    => $checks,
+            'blocked'   => $this->checks->isBlocked($checks),
         ]);
+    }
+
+    public function index(): View
+    {
+        Gate::authorize('viewAny', MitraProfile::class);
+
+        return view('admin.verifikasi.index');
     }
 
     public function approve(ApproveMitraRequest $request, MitraProfile $mitra): RedirectResponse
@@ -51,6 +67,9 @@ class MitraVerificationController extends Controller
             $this->service->approve($mitra, $request->user(), $request->validated('checklist'));
         } catch (MitraAlreadyProcessedException $e) {
             return $this->backToList()->with('error', $e->getMessage());
+        } catch (MitraBlockedByChecksException $e) {
+            // Tetap di halaman detail: masalahnya ada di data pengajuan ini
+            return redirect()->route('admin.verifikasi.show', $mitra)->with('error', $e->getMessage());
         }
 
         return $this->backToList()->with('success', "Mitra {$this->nameOf($mitra)} disetujui.");
@@ -92,20 +111,18 @@ class MitraVerificationController extends Controller
         ]);
     }
 
-    /**
-     * NIK lengkap tidak ikut di HTML halaman; baru dikirim saat admin menekan "Tampilkan",
-     * dan setiap permintaan dicatat di audit log.
-     */
-    public function revealNik(Request $request, MitraProfile $mitra): JsonResponse
+    public function reveal(Request $request, MitraProfile $mitra, string $field): JsonResponse
     {
         Gate::authorize('review', $mitra);
+        abort_unless(array_key_exists($field, MitraProfile::SENSITIVE), 404);
 
-        AuditLog::record($request->user(), 'MitraProfile', $mitra->id, 'lihat_nik', null, null, 'Menampilkan NIK lengkap.');
+        AuditLog::record($request->user(), 'MitraProfile', $mitra->id, 'lihat_data', null, null, "Menampilkan {$field} lengkap.");
 
-        return response()->json(['nik' => $mitra->no_ktp])->header('Cache-Control', 'no-store');
+        return response()
+            ->json(['value' => $mitra->{MitraProfile::SENSITIVE[$field]}])
+            ->header('Cache-Control', 'no-store');
     }
 
-    /** Data berkas untuk tampilan: tersedia atau tidak, jenis (gambar/PDF), alamat rute privat, ukuran. */
     private function documents(MitraProfile $mitra): Collection
     {
         /** @var FilesystemAdapter $disk */
@@ -132,7 +149,6 @@ class MitraVerificationController extends Controller
         return $mitra->nama_usaha ?: "#{$mitra->id}";
     }
 
-    // SEMENTARA: halaman daftar dibuat di langkah berikutnya. Hapus fallback ke dashboard saat itu.
     private function backToList(): RedirectResponse
     {
         return redirect()->route(

@@ -2,6 +2,7 @@
 
 <dialog x-data
         x-ref="dialog"
+        {{ $attributes }}
         x-on:open-modal.window="$event.detail === @js($name) && $refs.dialog.showModal()"
         x-on:close-modal.window="$event.detail === @js($name) && $refs.dialog.close()"
         x-on:click="$event.target === $refs.dialog && $refs.dialog.close()"

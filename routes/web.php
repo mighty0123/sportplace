@@ -14,14 +14,23 @@ use App\Http\Controllers\Mitra\PricingController;
 use App\Http\Controllers\Mitra\ReportController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\WelcomeController;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ListingModerationController;
+use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Http\Controllers\Admin\TransactionController;
 use App\Models\MitraProfile;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('user-public.welcome');
-})->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::redirect('/beranda', '/')->name('beranda');
+Route::get('/tentang-kami', function () {
+    return view('user-public.tentang-kami');
+})->name('tentang-kami');
+Route::redirect('/about', '/tentang-kami');
 
 // FR-AUTH-001..005 (PUB-04/05/06). Dipakai bersama 3 peran — lihat CLAUDE.md §1.
 Route::middleware('guest')->group(function () {
@@ -50,6 +59,26 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     // Mendukung POST (standar form) dan GET (untuk kemudahan navigasi URL browser)
     Route::match(['get', 'post'], '/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+// Area Penyewa — Dashboard & fitur penyewa lapangan.
+Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/lapangan', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('lapangan');
+    Route::get('/lapangan/{id}', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::get('/booking/baru', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('booking.baru');
+    Route::get('/kalender/{id?}', [\App\Http\Controllers\Penyewa\CalendarController::class, 'index'])->name('kalender');
+    Route::get('/pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran');
+    Route::get('/review-pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran.review');
+    Route::get('/checkout/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('checkout');
+    Route::post('/bayar/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'processPayment'])->name('pembayaran.process');
+    Route::get('/booking/{id}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/tiket/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.ticket');
+    Route::post('/booking/{id}/cancel', [\App\Http\Controllers\Penyewa\PaymentController::class, 'cancel'])->name('booking.cancel');
+    Route::get('/booking/{id}/invoice', [\App\Http\Controllers\Penyewa\PaymentController::class, 'invoice'])->name('booking.invoice');
+    Route::get('/riwayat', [\App\Http\Controllers\Penyewa\BookingHistoryController::class, 'index'])->name('riwayat');
+    Route::get('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'update'])->name('profil.update');
 });
 
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.
@@ -121,14 +150,39 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     });
 });
 
+// Admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboardController::class)->name('dashboard');
 
-    Route::prefix('verifikasi')->name('verifikasi.')->group(function () {
-        Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
-        Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
-        Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
-            ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))
-            ->name('document');
+    Route::prefix('verifikasi')->name('verifikasi.')
+        ->where(['mitra' => '[0-9]+'])
+        ->group(function () {
+            Route::get('/', [MitraVerificationController::class, 'index'])->name('index');
+            Route::get('/{mitra}', [MitraVerificationController::class, 'show'])->name('show');
+            Route::post('/{mitra}/setujui', [MitraVerificationController::class, 'approve'])->name('approve');
+            Route::post('/{mitra}/tolak', [MitraVerificationController::class, 'reject'])->name('reject');
+            Route::post('/{mitra}/data/{field}', [MitraVerificationController::class, 'reveal'])
+                ->whereIn('field', array_keys(MitraProfile::SENSITIVE))
+                ->middleware('throttle:30,1')->name('reveal');
+            Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
+                ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))->name('document');
+    });
+
+    Route::prefix('moderasi')->name('moderasi.')
+        ->middleware('can:moderate-listings')
+        ->where(['jenis' => 'venue|lapangan', 'id' => '[0-9]+'])
+        ->group(function () {
+            Route::get('/', [ListingModerationController::class, 'index'])->name('index');
+            Route::get('/{jenis}/{id}', [ListingModerationController::class, 'show'])->name('show');
+            Route::post('/{jenis}/{id}/setujui', [ListingModerationController::class, 'approve'])->name('approve');
+            Route::post('/{jenis}/{id}/tolak', [ListingModerationController::class, 'reject'])->name('reject');
+    });
+
+    Route::view('/master-data', 'admin.master.index')
+        ->middleware('can:manage-master-data')->name('master.index');
+
+    Route::prefix('transaksi')->name('transaksi.')->middleware('can:view-transactions')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index');
+        Route::get('/{id}', [TransactionController::class, 'show'])->whereNumber('id')->name('show');
     });
 });

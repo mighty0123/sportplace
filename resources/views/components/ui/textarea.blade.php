@@ -21,6 +21,7 @@
         @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
         @if ($hasError) aria-invalid="true" @endif
         @input="count = $event.target.value.length"
+        {{ $attributes->except(['class', 'id']) }}
         @class([
             'mt-1.5 w-full rounded-md border bg-surface px-3 py-2 text-body-md text-ink placeholder:text-ink-muted',
             'focus-visible:outline-2 focus-visible:outline-offset-1',

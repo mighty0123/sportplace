@@ -4,6 +4,7 @@
     'reviews' => '100',
     'sport' => 'Futsal',
     'city' => 'Denpasar',
+    'venue' => null,
     'name',
     'facilities' => [],
     'price' => 100000,
@@ -49,10 +50,14 @@
     <div class="p-5 flex flex-col flex-grow justify-between">
         <div>
             <!-- Sport Category & Location -->
-            <div class="text-xs font-medium text-[#7D8C78] mb-1.5 flex items-center gap-1.5">
+            <div class="text-xs font-medium text-[#7D8C78] mb-1.5 flex items-center gap-1.5 flex-wrap">
                 <span>{{ $sport }}</span>
                 <span>•</span>
                 <span>{{ $city }}</span>
+                @if(!empty($venue))
+                    <span>•</span>
+                    <span class="text-[#0A7660] font-semibold truncate">{{ $venue }}</span>
+                @endif
             </div>
 
             <!-- Field Name -->
