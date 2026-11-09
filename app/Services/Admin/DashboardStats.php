@@ -36,13 +36,6 @@ class DashboardStats
     ];
 
     private const ENTITY_LABELS = [
-<<<<<<< HEAD
-        'MitraProfile' => 'Mitra',
-        'Venue' => 'Venue',
-        'Field' => 'Lapangan',
-        'User' => 'Akun',
-        'BookingHeader' => 'Booking',
-=======
         'MitraProfile'   => 'Mitra',
         'Venue'          => 'Venue',
         'Field'          => 'Lapangan',
@@ -51,7 +44,6 @@ class DashboardStats
         'MasterSport'    => 'Cabang olahraga',
         'MasterCity'     => 'Kota',
         'MasterFacility' => 'Fasilitas',
->>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c
     ];
 
     public function kpis(): array
@@ -270,12 +262,6 @@ class DashboardStats
     private function entityNames($rows): array
     {
         $sources = [
-<<<<<<< HEAD
-            'MitraProfile' => ['mitra_profiles', 'nama_usaha'],
-            'Venue' => ['venues', 'nama_venue'],
-            'Field' => ['fields', 'nama_lapangan'],
-            'User' => ['users', 'name'],
-=======
             'MitraProfile'   => ['mitra_profiles', 'nama_usaha'],
             'Venue'          => ['venues', 'nama_venue'],
             'Field'          => ['fields', 'nama_lapangan'],
@@ -283,7 +269,6 @@ class DashboardStats
             'MasterSport'    => ['master_sports', 'nama_olahraga'],
             'MasterCity'     => ['master_cities', 'nama_kota'],
             'MasterFacility' => ['master_facilities', 'nama'],
->>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c
         ];
 
         $names = [];

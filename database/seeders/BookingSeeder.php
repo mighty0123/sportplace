@@ -5,21 +5,15 @@ namespace Database\Seeders;
 use App\Models\BookingDetail;
 use App\Models\BookingHeader;
 use App\Models\Field;
-<<<<<<< HEAD
 use App\Models\Payment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-=======
 use App\Models\MasterCity;
 use App\Models\MasterSport;
 use App\Models\MitraProfile;
-use App\Models\User;
 use App\Models\Venue;
-use Carbon\Carbon;
-use Illuminate\Database\Seeder;
->>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c
 
 class BookingSeeder extends Seeder
 {
