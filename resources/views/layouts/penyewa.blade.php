@@ -170,5 +170,8 @@
             }, 300);
         }
     </script>
+
+    <!-- Help & Guide Modal Component -->
+    <x-public.help-modal />
 </body>
 </html>

@@ -123,5 +123,11 @@
             </svg>
             <span>Slot ditahan selama 15 menit</span>
         </div>
+
+        @guest
+            <div class="mt-2.5 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-[11px] text-emerald-800 text-center leading-relaxed">
+                <span class="font-semibold">Info:</span> Anda akan diminta masuk atau membuat akun saat melanjutkan ke pembayaran.
+            </div>
+        @endguest
     </div>
 </div>
