@@ -92,10 +92,10 @@ return new class extends Migration
 
         $problems = collect($checks)
             ->filter(fn ($rows) => $rows->isNotEmpty())
-            ->map(fn ($rows, $label) => "{$label}: " . $rows->implode('; '));
+            ->map(fn ($rows, $label) => "{$label}: ".$rows->implode('; '));
 
         if ($problems->isNotEmpty()) {
-            throw new RuntimeException("Migrasi dibatalkan, ada data ganda. Rapikan dulu:\n" . $problems->implode("\n"));
+            throw new RuntimeException("Migrasi dibatalkan, ada data ganda. Rapikan dulu:\n".$problems->implode("\n"));
         }
     }
 
@@ -109,7 +109,7 @@ return new class extends Migration
         }
 
         if ($missing) {
-            throw new RuntimeException('Migrasi dibatalkan, nama foreign key tidak ditemukan: ' . implode(', ', $missing));
+            throw new RuntimeException('Migrasi dibatalkan, nama foreign key tidak ditemukan: '.implode(', ', $missing));
         }
     }
 };

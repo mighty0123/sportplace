@@ -12,7 +12,7 @@
             </span>
         </a>
         <button type="button" @click="menuOpen = false" aria-label="Tutup menu"
-                class="grid size-11 place-items-center rounded-lg hover:bg-primary-800 md:hidden">
+                class="grid size-11 place-items-center rounded-full hover:bg-primary-800 md:hidden">
             <x-ui.icon name="x" />
         </button>
     </div>

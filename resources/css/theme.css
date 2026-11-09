@@ -122,17 +122,22 @@
     --color-chart-8: #c7966b;
 
     /* ============ BENTUK ============ */
-    --radius-*: initial;
     --radius-xs: 0.25rem; /*  4px  */
     --radius-sm: 0.375rem; /*  6px  */
     --radius-md: 0.5rem; /*  8px  */
     --radius-lg: 0.75rem; /* 12px  */
+<<<<<<< HEAD
+    --radius-xl: 0.875rem; /* 14px  */
+    --radius-2xl: 1rem; /* 16px  */
+    --radius-3xl: 1.5rem; /* 24px  */
+    --radius-4xl: 2rem; /* 32px  */
+=======
     --radius-xl: 1rem; /* 16px */
     --radius-2xl: 1.25rem; /* 20px */
     --radius-3xl: 1.5rem; /* 24px */
+>>>>>>> 6c8992800451c5d6da00c8fd2cc47ce175a6726c
     --radius-full: 9999px; /* chip, avatar */
 
-    --shadow-*: initial; /* tanpa bayangan dekoratif */
     --shadow-float: 0 2px 8px rgb(27 39 36 / 0.1); /* tooltip, toast, dropdown */
     --shadow-modal: 0 8px 24px rgb(27 39 36 / 0.18);
 

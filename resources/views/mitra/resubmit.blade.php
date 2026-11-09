@@ -27,23 +27,46 @@
     <main class="max-w-3xl w-full mx-auto px-4 py-8 sm:py-10">
 
         <!-- Banner Alasan Penolakan dari Admin -->
-        <div class="mb-8 rounded-2xl bg-rose-50 border-2 border-rose-200 p-5 sm:p-6">
+        <div class="mb-8 rounded-3xl bg-rose-50 border-2 border-rose-200 p-6 sm:p-7">
             <div class="flex items-center gap-2 mb-2 text-rose-800 font-bold text-sm">
                 <svg class="w-5 h-5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span>Catatan Perbaikan dari Tim Verifikator Admin:</span>
             </div>
-            <p class="text-sm text-rose-900 font-medium leading-relaxed bg-white/70 p-3.5 rounded-xl border border-rose-200/80">
+            <p class="text-sm text-rose-900 font-medium leading-relaxed bg-white/70 p-4 rounded-2xl border border-rose-200/80">
                 &ldquo;{{ $profile->alasan_penolakan }}&rdquo;
             </p>
-            <p class="text-xs text-rose-700 mt-2">
+
+            @if (!empty($profile->review_checklist['manual']))
+                <div class="mt-3.5 p-4 rounded-2xl bg-white/80 border border-rose-200/80">
+                    <h4 class="text-xs font-bold text-rose-950 uppercase tracking-wider mb-2">Poin Pemeriksaan yang Perlu Diperhatikan:</h4>
+                    <ul class="space-y-1.5 text-xs">
+                        @foreach(\App\Services\Admin\MitraVerificationService::CHECKLIST as $key => $label)
+                            @if(isset($profile->review_checklist['manual'][$key]))
+                                @php $isPassed = (bool) $profile->review_checklist['manual'][$key]; @endphp
+                                <li class="flex items-center gap-2">
+                                    @if($isPassed)
+                                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        <span class="text-slate-600">{{ $label }}</span>
+                                    @else
+                                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span class="font-bold text-rose-700">{{ $label }} (Perlu Revisi)</span>
+                                    @endif
+                                </li>
+                            @endif
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <p class="text-xs text-rose-700 mt-3">
                 Silakan perbaiki data atau unggah ulang dokumen yang sesuai dengan catatan di atas, lalu klik <strong>Kirim Ulang Pengajuan</strong>.
             </p>
         </div>
 
         @if ($errors->any())
-            <div class="mb-6 rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
+            <div class="mb-6 rounded-2xl bg-rose-50 border border-rose-200 p-4 sm:p-5 text-sm text-rose-700">
                 <ul class="list-disc list-inside space-y-1 text-xs">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -56,7 +79,7 @@
             @csrf
 
             <!-- Data Usaha -->
-            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-xs">
+            <div class="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs">
                 <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100 mb-4">1. Data Usaha & Rekening</h3>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -140,12 +163,12 @@
             </div>
 
             <!-- Upload Ulang Dokumen -->
-            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-xs">
+            <div class="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs">
                 <h3 class="text-base font-bold text-slate-900 pb-3 border-b border-slate-100 mb-4">2. Unggah Ulang Dokumen Revisi</h3>
                 <p class="text-xs text-slate-500 mb-5">Pilih berkas baru jika dokumen sebelumnya perlu diganti. Kosongkan jika dokumen sudah benar.</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50">
                         <span class="text-xs font-bold text-slate-900 block mb-1">Unggah KTP Baru</span>
                         @if ($profile->file_ktp)
                             <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 mb-2 font-medium">
@@ -155,10 +178,10 @@
                                 Berkas KTP lama telah terunggah
                             </span>
                         @endif
-                        <input type="file" name="file_ktp" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
+                        <input type="file" name="file_ktp" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
                     </div>
 
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50">
                         <span class="text-xs font-bold text-slate-900 block mb-1">Unggah NPWP Baru</span>
                         @if ($profile->file_npwp)
                             <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 mb-2 font-medium">
@@ -168,10 +191,10 @@
                                 Berkas NPWP lama telah terunggah
                             </span>
                         @endif
-                        <input type="file" name="file_npwp" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
+                        <input type="file" name="file_npwp" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
                     </div>
 
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50">
                         <span class="text-xs font-bold text-slate-900 block mb-1">Unggah NIB Baru</span>
                         @if ($profile->file_nib)
                             <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 mb-2 font-medium">
@@ -181,10 +204,10 @@
                                 Berkas NIB lama telah terunggah
                             </span>
                         @endif
-                        <input type="file" name="file_nib" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
+                        <input type="file" name="file_nib" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
                     </div>
 
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50">
                         <span class="text-xs font-bold text-slate-900 block mb-1">Surat Sewa Lahan</span>
                         @if ($profile->file_sewa_lahan)
                             <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 mb-2 font-medium">
@@ -194,7 +217,7 @@
                                 Berkas lama terunggah
                             </span>
                         @endif
-                        <input type="file" name="file_sewa_lahan" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
+                        <input type="file" name="file_sewa_lahan" accept=".jpg,.jpeg,.png,.pdf" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-emerald-50 file:text-[#0B7B69] cursor-pointer">
                     </div>
                 </div>
 
@@ -209,13 +232,13 @@
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200/80">
                 <a
                     href="{{ route('mitra.status') }}"
-                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white border border-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-sm font-semibold shadow-xs transition duration-150 ease-in-out min-h-[44px] cursor-pointer"
+                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-full bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-sm font-semibold shadow-xs transition duration-150 ease-in-out min-h-[44px] cursor-pointer"
                 >
                     <span>Batal</span>
                 </a>
                 <button
                     type="submit"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B7B69] hover:bg-[#086354] px-6 py-3 text-sm font-semibold text-white shadow-xs transition duration-150 ease-in-out cursor-pointer min-h-[44px]"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0B7B69] hover:bg-[#086354] px-6 py-3 text-sm font-semibold text-white shadow-xs transition duration-150 ease-in-out cursor-pointer min-h-[44px]"
                 >
                     <span>Kirim Ulang Pengajuan</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

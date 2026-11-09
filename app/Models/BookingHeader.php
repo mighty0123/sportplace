@@ -9,7 +9,15 @@ class BookingHeader extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'penyewa_id', 'total_tagihan', 'status', 'created_at',
+        'penyewa_id',
+        'total_tagihan',
+        'status',
+        'created_at',
+    ];
+
+    protected $casts = [
+        'total_tagihan' => 'double',
+        'created_at' => 'datetime',
     ];
 
     public function user()
@@ -26,5 +34,16 @@ class BookingHeader extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class, 'header_id');
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === 'payment'
+            || $this->payment?->status_pembayaran === 'succes';
+    }
+
+    public function getFormattedTotalTagihanAttribute(): string
+    {
+        return 'Rp '.number_format($this->total_tagihan ?? 0, 0, ',', '.');
     }
 }

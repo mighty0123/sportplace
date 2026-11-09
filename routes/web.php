@@ -1,18 +1,22 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Mitra\DashboardController;
+use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
+use App\Http\Controllers\Mitra\FieldController;
 use App\Http\Controllers\Mitra\OnboardingController;
+use App\Http\Controllers\Mitra\OrderController;
+use App\Http\Controllers\Mitra\PricingController;
+use App\Http\Controllers\Mitra\ReportController;
+use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
-use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Models\MitraProfile;
 
@@ -91,7 +95,7 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
     Route::middleware('mitra.approved')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
 
         // MTR-04 & MTR-05b: Manajemen Venue (FR-VENUE-001..004)
         Route::get('/venues', [VenueController::class, 'index'])->name('venues.index');
@@ -103,6 +107,42 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         Route::post('/venues/{venue}/submit', [VenueController::class, 'submitForReview'])->name('venues.submit');
         Route::post('/venues/{venue}/deactivate', [VenueController::class, 'deactivate'])->name('venues.deactivate');
         Route::post('/venues/{venue}/activate', [VenueController::class, 'activate'])->name('venues.activate');
+
+        // MTR-04 & MTR-05: Manajemen Lapangan (FR-FIELD-001..004)
+        Route::get('/venues/{venue}/fields', [FieldController::class, 'index'])->name('venues.fields.index');
+        Route::get('/venues/{venue}/fields/create', [FieldController::class, 'create'])->name('venues.fields.create');
+        Route::post('/venues/{venue}/fields', [FieldController::class, 'store'])->name('venues.fields.store');
+        Route::get('/fields', [FieldController::class, 'allFields'])->name('fields.all');
+        Route::get('/fields/{field}/edit', [FieldController::class, 'edit'])->name('fields.edit');
+        Route::put('/fields/{field}', [FieldController::class, 'update'])->name('fields.update');
+        Route::delete('/fields/{field}', [FieldController::class, 'destroy'])->name('fields.destroy');
+        Route::post('/fields/{field}/submit', [FieldController::class, 'submitForReview'])->name('fields.submit');
+        Route::post('/fields/{field}/toggle-status', [FieldController::class, 'toggleStatus'])->name('fields.toggle-status');
+        Route::delete('/fields/{field}/photos/{photo}', [FieldController::class, 'deletePhoto'])->name('fields.photos.destroy');
+        Route::post('/fields/{field}/photos/{photo}/set-primary', [FieldController::class, 'setPrimaryPhoto'])->name('fields.photos.set-primary');
+
+        // MTR-06: Jadwal Operasional & Blokir Lapangan (FR-SCHED-001..002)
+        Route::get('/jadwal', [ScheduleController::class, 'index'])->name('schedules.index');
+        Route::put('/fields/{field}/schedule', [ScheduleController::class, 'update'])->name('fields.schedule.update');
+        Route::post('/fields/{field}/blocks', [ScheduleController::class, 'storeBlock'])->name('fields.blocks.store');
+        Route::delete('/fields/{field}/blocks/{block}', [ScheduleController::class, 'destroyBlock'])->name('fields.blocks.destroy');
+        Route::get('/fields/{field}/slots-json', [ScheduleController::class, 'slotsJson'])->name('fields.slots.json');
+
+        // MTR-07: Pengaturan Harga Peak / Off-Peak (FR-FIELD-006)
+        Route::get('/harga', [PricingController::class, 'index'])->name('pricing.index');
+        Route::put('/fields/{field}/pricing', [PricingController::class, 'update'])->name('fields.pricing.update');
+
+        // MTR-08, MTR-09, MTR-10: Pesanan Mitra (FR-ORDER-001..003)
+        Route::get('/pesanan', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('/pesanan/{order}/confirm-attendance', [OrderController::class, 'confirmAttendance'])->name('orders.confirm-attendance');
+        Route::post('/pesanan/{order}/no-show', [OrderController::class, 'markNoShow'])->name('orders.no-show');
+        Route::post('/pesanan/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
+        Route::post('/pesanan-bulk-complete', [OrderController::class, 'bulkComplete'])->name('orders.bulk-complete');
+
+        // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
+        Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
     });
 });
 
