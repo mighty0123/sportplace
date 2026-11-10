@@ -142,8 +142,7 @@ class BookingSeeder extends Seeder
                 'created_at' => $header->created_at,
             ]);
         }
-    }
-}
+    
 
         // 1. Dapatkan atau buat pengguna Penyewa (Dimas Pratama & Customer Budi)
         $dimas = User::firstOrCreate(
