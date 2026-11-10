@@ -39,7 +39,16 @@ class PricingController extends Controller
         }
 
         $fieldId = $request->query('field_id');
-        $selectedField = $allFields->firstWhere('id', $fieldId) ?? $allFields->first();
+        $venueId = $request->query('venue_id');
+
+        if ($fieldId) {
+            $selectedField = $allFields->firstWhere('id', $fieldId) ?? $allFields->first();
+        } elseif ($venueId) {
+            $venueFields = $allFields->where('venue_id', $venueId);
+            $selectedField = $venueFields->first() ?? $allFields->first();
+        } else {
+            $selectedField = $allFields->first();
+        }
         $selectedField->loadMissing(['venue', 'sport']);
 
         // Default konfigurasi meta_harga jika belum pernah diatur

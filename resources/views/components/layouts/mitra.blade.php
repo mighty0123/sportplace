@@ -39,6 +39,22 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
+            @php
+                $mitraUnreadNotifCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+            @endphp
+            <a href="{{ route('mitra.notifications.index') }}" class="flex items-center justify-between px-4 py-2.5 rounded-full text-sm font-medium transition {{ request()->routeIs('mitra.notifications.*') ? 'bg-[#0B7B69] text-white shadow-xs' : 'text-emerald-100/70 hover:bg-[#07261F] hover:text-white' }}">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    <span>Notifikasi</span>
+                </div>
+                @if ($mitraUnreadNotifCount > 0)
+                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#DEEF25] text-slate-900 tabular-nums">
+                        {{ $mitraUnreadNotifCount }}
+                    </span>
+                @endif
+            </a>
 
             <div class="pt-3 px-4 pb-1 text-[10px] font-bold tracking-wider text-emerald-400/60 uppercase">Operasional</div>
             <a href="{{ url('/mitra/venues') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition {{ (request()->is('mitra/venues*') || request()->is('mitra/fields*')) ? 'bg-[#0B7B69] text-white shadow-xs' : 'text-emerald-100/70 hover:bg-[#07261F] hover:text-white' }}">
@@ -118,16 +134,78 @@
                 </button>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <a href="{{ route('mitra.notifications.index') }}" class="relative p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Notifikasi">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    @if ($mitraUnreadNotifCount > 0)
+                        <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#0B7B69] ring-2 ring-white"></span>
+                    @endif
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="text-xs font-semibold text-rose-600 hover:underline min-h-[44px] flex items-center">Keluar</button>
+                    <button type="submit" class="text-xs font-semibold text-rose-600 hover:underline min-h-[44px] px-2 flex items-center">Keluar</button>
                 </form>
             </div>
         </header>
 
         <!-- Flash Messages & Main Content -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden space-y-4">
+            @if (session('success'))
+                <div class="rounded-2xl bg-emerald-50 border border-emerald-200/90 p-4 text-emerald-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in" role="alert">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-[#0B7B69] flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <p class="text-xs sm:text-sm font-medium">{{ session('success') }}</p>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-emerald-700 hover:text-emerald-900 p-1.5 rounded-lg transition" aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="rounded-2xl bg-rose-50 border border-rose-200/90 p-4 text-rose-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in" role="alert">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <p class="text-xs sm:text-sm font-medium">{{ session('error') }}</p>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-rose-700 hover:text-rose-900 p-1.5 rounded-lg transition" aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('status'))
+                <div class="rounded-2xl bg-blue-50 border border-blue-200/90 p-4 text-blue-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in" role="alert">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p class="text-xs sm:text-sm font-medium">{{ session('status') }}</p>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-blue-700 hover:text-blue-900 p-1.5 rounded-lg transition" aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
             {{ $slot }}
         </main>
     </div>

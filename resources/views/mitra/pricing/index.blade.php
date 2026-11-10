@@ -35,36 +35,74 @@
                 @endif
             </div>
 
-            <!-- Field Selector Tabs (Pilih Lapangan) -->
+            <!-- Selector Dropdown Venue & Lapangan (Masing-Masing Lonjong, Full Rata Kiri-Kanan) -->
             @if ($allFields->isNotEmpty())
-                <div class="mt-6 pt-6 border-t border-slate-100">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Pilih Lapangan:
-                        </span>
-                        <span class="text-xs text-slate-400">
-                            {{ $allFields->count() }} Lapangan Terdaftar
-                        </span>
+                <div class="mt-6 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+                    <!-- Dropdown Venue (Di Kiri) -->
+                    <div class="w-full">
+                        <label for="select-venue" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-[#0B7B69]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            <span>Pilih Venue</span>
+                        </label>
+                        <div class="relative">
+                            <select
+                                id="select-venue"
+                                onchange="onVenueDropdownChange(this.value)"
+                                class="w-full pl-4 pr-10 py-2.5 text-xs sm:text-sm font-semibold rounded-full border border-slate-200 bg-white hover:border-[#0B7B69]/50 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition shadow-xs cursor-pointer appearance-none min-h-[44px] text-slate-800"
+                            >
+                                @foreach ($venues as $v)
+                                    <option value="{{ $v->id }}" {{ $selectedField && $selectedField->venue_id === $v->id ? 'selected' : '' }}>
+                                        {{ $v->nama_venue }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                        @foreach ($allFields as $f)
-                            @php
-                                $isActive = $selectedField && $selectedField->id === $f->id;
-                                $isDynamic = is_array($f->meta_harga) && ($f->meta_harga['tipe_skema'] ?? '') === 'peak_off_peak';
-                            @endphp
-                            <a
-                                href="{{ route('mitra.pricing.index', ['field_id' => $f->id]) }}"
-                                class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition border shrink-0 {{ $isActive ? 'bg-[#06231B] text-white border-[#06231B] shadow-xs' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200' }}"
+                    <!-- Dropdown Pilih Lapangan (Di Kanan - Full ke Kanan) -->
+                    <div class="w-full">
+                        <label for="select-field" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-[#0B7B69]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span>Pilih Lapangan</span>
+                            </span>
+                            <span class="text-[11px] font-normal text-slate-400">
+                                {{ $allFields->where('venue_id', $selectedField?->venue_id)->count() }} Lapangan
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <select
+                                id="select-field"
+                                onchange="onFieldDropdownChange(this.value)"
+                                class="w-full pl-4 pr-10 py-2.5 text-xs sm:text-sm font-semibold rounded-full border border-slate-200 bg-white hover:border-[#0B7B69]/50 focus:outline-hidden focus:border-[#0B7B69] focus:ring-1 focus:ring-[#0B7B69] transition shadow-xs cursor-pointer appearance-none min-h-[44px] text-slate-800"
                             >
-                                <span class="w-2 h-2 rounded-full {{ $isActive ? 'bg-[#DEEF25]' : ($isDynamic ? 'bg-amber-400' : 'bg-emerald-500') }}"></span>
-                                <span>{{ $f->nama_lapangan }}</span>
-                                <span class="text-[10px] opacity-70">({{ $f->venue?->nama_venue ?? 'Venue' }})</span>
-                                @if ($isDynamic)
-                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-200/40 text-amber-900 border border-amber-300/60">Peak</span>
-                                @endif
-                            </a>
-                        @endforeach
+                                @php
+                                    $venueFields = $allFields->where('venue_id', $selectedField?->venue_id);
+                                @endphp
+                                @foreach ($venueFields as $f)
+                                    @php
+                                        $isDynamic = is_array($f->meta_harga) && ($f->meta_harga['tipe_skema'] ?? '') === 'peak_off_peak';
+                                    @endphp
+                                    <option value="{{ $f->id }}" {{ $selectedField && $selectedField->id === $f->id ? 'selected' : '' }}>
+                                        {{ $f->nama_lapangan }} ({{ $f->sport?->nama_olahraga ?? 'Umum' }}) {{ $isDynamic ? '— [Peak Hours]' : '— [Tarif Reguler]' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -871,6 +909,29 @@
         document.addEventListener('DOMContentLoaded', function() {
             updatePricingSimulation();
         });
+
+        // Handler Navigasi Dropdown Pemilihan Venue & Lapangan
+        const venueFieldsData = @json($venues->mapWithKeys(fn($v) => [
+            $v->id => $v->fields->map(fn($f) => [
+                'id' => $f->id,
+                'nama' => $f->nama_lapangan . ' (' . ($f->sport?->nama_olahraga ?? 'Umum') . ')',
+            ])
+        ]));
+
+        function onVenueDropdownChange(venueId) {
+            const fields = venueFieldsData[venueId];
+            if (fields && fields.length > 0) {
+                window.location.href = "{{ route('mitra.pricing.index') }}?field_id=" + fields[0].id;
+            } else {
+                window.location.href = "{{ route('mitra.pricing.index') }}?venue_id=" + venueId;
+            }
+        }
+
+        function onFieldDropdownChange(fieldId) {
+            if (fieldId) {
+                window.location.href = "{{ route('mitra.pricing.index') }}?field_id=" + fieldId;
+            }
+        }
     </script>
 </x-layouts.mitra>
 

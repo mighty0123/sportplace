@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
 use App\Http\Controllers\Mitra\FieldController;
+use App\Http\Controllers\Mitra\NotificationController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\OrderController;
 use App\Http\Controllers\Mitra\PricingController;
@@ -93,6 +94,11 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
 
     // Akses Dokumen Privat Terproteksi
     Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
+
+    // T10.1: Notifikasi Mitra (FR-NOTIF-001, BR-027)
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifikasi/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::post('/notifikasi/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
 
     Route::middleware('mitra.approved')->group(function () {
         Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');

@@ -336,12 +336,12 @@ Rujukan: FR-REPORT-002, BR-016/BR-017, UJ-10.
 
 ### FASE 10 — Notifikasi, Polish, dan Penutupan — **S**
 
-- [ ] **T10.1 Notifikasi sisi mitra** (FR-NOTIF-001, BR-027): status verifikasi mitra & moderasi venue/lapangan (disetujui/ditolak + alasan), booking baru. Pakai Laravel Notifications (database + mail); kanal WA/push = OQ-021. Kegagalan kirim **tidak** membatalkan transaksi utama (retry via queue). Halaman notifikasi mitra tidak ada di daftar halaman PRD → bangun sederhana atau lewati sampai dikonfirmasi.
-- [ ] **T10.2 State UI lengkap** untuk semua halaman: loading, empty, error, success (toast), dialog konfirmasi untuk aksi destruktif.
-- [ ] **T10.3 Responsif & aksesibilitas:** uji viewport <640 / 640–1024 / >1024; target tap ≥44px; kontras WCAG AA; tidak bergantung warna saja (NFR-A11Y-001…003).
-- [ ] **T10.4 Performa:** index untuk `booking_details(field_id, tanggal_sewa)`, `fields.sport_id`, `venues.city_id` (NFR-REC-006). Hindari N+1 (eager loading) di daftar & laporan.
-- [ ] **T10.5 Ulasan untuk rating dashboard** — selesaikan T3.4 setelah GAP-01 diputuskan.
-- [ ] **T10.6 Review akhir:** jalankan seluruh test, cek matriks akses §12.4–12.6, perbarui `docs/DECISIONS.md`, dokumentasikan cara menjalankan seeder & command dev di `README`.
+- [x] **T10.1 Notifikasi sisi mitra** (FR-NOTIF-001, BR-027): status verifikasi mitra & moderasi venue/lapangan (disetujui/ditolak + alasan), booking baru. Pakai Laravel Notifications (database + mail); kanal WA/push = OQ-021. Kegagalan kirim **tidak** membatalkan transaksi utama (retry via queue). Halaman notifikasi mitra dibangun rapi di `/mitra/notifikasi`.
+- [x] **T10.2 State UI lengkap** untuk semua halaman: loading, empty, error, success (toast), dialog konfirmasi untuk aksi destruktif.
+- [x] **T10.3 Responsif & aksesibilitas:** uji viewport <640 / 640–1024 / >1024; target tap ≥44px; kontras WCAG AA; tidak bergantung warna saja (NFR-A11Y-001…003).
+- [x] **T10.4 Performa:** index untuk `booking_details(field_id, tanggal_sewa)`, `fields.sport_id`, `venues.city_id` (NFR-REC-006). Hindari N+1 (eager loading) di daftar & laporan.
+- [x] **T10.5 Ulasan untuk rating dashboard** — selesaikan T3.4 setelah GAP-01 diputuskan (placeholder "Belum ada ulasan" dipertahankan konsisten).
+- [x] **T10.6 Review akhir:** jalankan seluruh test, cek matriks akses §12.4–12.6, perbarui `docs/DECISIONS.md`, dokumentasikan cara menjalankan seeder & command dev di `README`.
 
 ---
 
@@ -408,6 +408,174 @@ php artisan test --filter=Mitra      # jalankan test modul Mitra
 php artisan queue:work               # job notifikasi / OTP
 php artisan schedule:work            # scheduler (dev)
 ```
+
+---
+
+## 12. Rencana & Tahapan Migrasi Portal Mitra ke Livewire (Livewire Migration Roadmap)
+
+> **Status:** Proposal Arsitektur (Perencanaan). Belum ada kode yang diubah sebelum ada persetujuan eksekusi.
+> **Versi Livewire:** Livewire v4 (`livewire/livewire: ^4.4` yang sudah terpasang di project).
+
+### A. Filosofi & Keuntungan Migrasi ke Livewire
+1. **Single-Page Application (SPA) Experience:** Mengeliminasi *full-page reload* pada aksi-aksi krusial Mitra (ganti dropdown venue/lapangan, blokir slot waktu, simulasi kalkulasi tarif peak, filter status pesanan, dan konfirmasi kehadiran).
+2. **Konsistensi Arsitektur:** Menyamakan standar teknologi interaktif dengan modul Admin yang telah menggunakan Livewire (`App\Livewire\Admin\*`).
+3. **Penyederhanaan State:** Menghilangkan kode JavaScript manual (seperti manipulasi DOM kalkulator harga, sinkronisasi dropdown, fetch API internal) dan menggantikannya dengan PHP Livewire State (`#[Computed]`, `#[Url]`, `#[Validate]`).
+4. **Keamanan & Otorisasi Ketat:** Setiap komponen Livewire memvalidasi Policy (`authorize`) secara mandiri per aksi, menjaga kepatuhan aturan kepemilikan data mitra (BR-023).
+
+---
+
+### B. Tahapan Eksekusi Migrasi (Phased Roadmap)
+
+```
+[LW-0: Fondasi Layout]
+       │
+       ▼
+[LW-1: Notifikasi & Shell] ──► [LW-2: Onboarding & Verifikasi]
+       │
+       ▼
+[LW-3: Venue & Lapangan]   ──► [LW-4: Jadwal & Slot] ──► [LW-5: Pengaturan Harga]
+       │
+       ▼
+[LW-6: Pesanan & Kalender] ──► [LW-7: Laporan & Ekspor]
+       │
+       ▼
+[LW-8: Dashboard Utama]    ──► [LW-9: Testing & Finalisasi]
+```
+
+---
+
+#### TAHAP LW-0: Fondasi & Integrasi Layout Dasar
+*Tujuan: Mempersiapkan layout Blade agar siap menjalankan komponen Livewire tanpa merusak styling yang ada.*
+- **LW-0.1 Integrasi Asset Livewire:**
+  - Tambahkan `@livewireStyles` dan `@livewireScripts` (atau direktif Livewire 4) ke dalam `resources/views/components/layouts/mitra.blade.php`.
+  - Pastikan kompatibilitas dengan Vite dan Tailwind CSS v4.
+- **LW-0.2 Sistem Event & Notifikasi Toast Global:**
+  - Siapkan listener Alpine/Livewire global di layout untuk event `$this->dispatch('notify', type: 'success', message: '...')` agar toast notifikasi bekerja otomatis di seluruh komponen.
+- **LW-0.3 Base Component & Trait Mitra:**
+  - Siapkan trait bantuan (misal: `WithMitraAuthorization`) untuk menjamin setiap komponen otomatis mengambil profil mitra yang sedang login dan menolak akses tidak sah.
+
+---
+
+#### TAHAP LW-1: Notifikasi & Komponen Shell Interaktif (Low Risk / Quick Win)
+*Tujuan: Mengubah sistem notifikasi menjadi reaktif tanpa reload.*
+- **LW-1.1 Komponen `MitraNotificationBell`:**
+  - Lokasi: Header & Sidebar layout mitra.
+  - Fitur: Live counter unread badge, auto-refresh via event atau polling berkala, dropdown preview notifikasi cepat.
+- **LW-1.2 Komponen `MitraNotificationList`:**
+  - Menggantikan halaman `resources/views/mitra/notifications/index.blade.php`.
+  - Fitur: Tab filter (Semua / Belum Dibaca), aksi "Tandai Semua Dibaca", dan pagination tanpa reload halaman.
+
+---
+
+#### TAHAP LW-2: Onboarding & Verifikasi Mitra (MTR-01, MTR-02, MTR-12)
+*Tujuan: Meningkatkan UX pendaftaran mitra dengan validasi berkas instan.*
+- **LW-2.1 Komponen `MitraRegistrationForm` (MTR-01):**
+  - Live validation nomor KTP (16 digit) dan NPWP.
+  - Multi-file upload dokumen KTP & NPWP menggunakan `Livewire\WithFileUploads` dengan indikator progres real-time.
+- **LW-2.2 Komponen `MitraVerificationStatus` (MTR-02 & MTR-12):**
+  - Tampilan dinamis status `pending`, `approved`, atau `rejected`.
+  - Tombol modal interaktif "Edit & Ajukan Ulang" (resubmit) yang langsung memuat data lama dan mengunggah perbaikan tanpa pindah halaman.
+
+---
+
+#### TAHAP LW-3: Manajemen Venue & Lapangan (MTR-04, MTR-05, MTR-05b)
+*Tujuan: CRUD Venue dan Lapangan dengan modal responsif dan manajemen galeri foto interaktif.*
+- **LW-3.1 Komponen `VenueManager` (MTR-04 & MTR-05b):**
+  - List venue milik mitra, filter status venue (`draft`, `pending_review`, `aktif`, `nonaktif`).
+  - Modal Form Tambah & Edit Venue (validasi jam buka/tutup dan kota).
+  - Aksi instan: Ajukan Moderasi, Aktifkan/Nonaktifkan Venue dengan modal konfirmasi reaktif.
+- **LW-3.2 Komponen `FieldManager` (MTR-04 & MTR-05):**
+  - Daftar lapangan per venue terpilih.
+  - Form Wizard / Modal Tambah & Edit Lapangan (pilih cabor, tarif dasar, fasilitas checkbox).
+  - **Manajemen Foto Lapangan:** Upload drag-and-drop foto baru, live preview thumbnail, tombol "Jadikan Foto Utama" dan hapus foto seketika tanpa reload halaman.
+
+---
+
+#### TAHAP LW-4: Jadwal Operasional & Blokir Slot (MTR-06) — High Value
+*Tujuan: Mengubah halaman jadwal & slot menjadi interaktif penuh.*
+- **LW-4.1 Komponen `ScheduleManager`:**
+  - **Dual Dropdown Reaktif:** Dropdown Venue (kiri) & Dropdown Lapangan (kanan) terhubung dengan state komponen (tanpa perlu redirect URL browser penuh).
+  - **Weekly Schedule Form:** Form jam buka Senin–Minggu. Tombol "Salin ke Semua Hari" bekerja instan di memory state sebelum disimpan.
+- **LW-4.2 Slot Generator Grid & Modal Blokir:**
+  - Visualisasi slot operasional harian ter-generate otomatis saat tanggal atau lapangan diganti.
+  - Modal "Tambah Blokir / Maintenance": input jam & alasan blokir, langsung menambahkan data dan memperbarui tampilan kalender slot secara instan.
+  - Hapus blokir slot dengan konfirmasi reaktif.
+
+---
+
+#### TAHAP LW-5: Pengaturan Harga Peak / Off-Peak (MTR-07) — High Value
+*Tujuan: Menjadikan simulator harga dan aturan jam sibuk bekerja secara real-time.*
+- **LW-5.1 Komponen `PricingManager`:**
+  - Dual dropdown venue & lapangan yang sinkron dengan komponen jadwal.
+  - Radio button skema: Flat vs Peak/Off-Peak.
+  - **Dynamic Peak Rules Repeater:** Tombol "+ Tambah Aturan Peak" menambah baris aturan (hari & jam) secara dinamis tanpa JavaScript kustom.
+  - **Live Pricing Simulator:** Perhitungan simulasi harga 4 kondisi (Weekday Siang/Malam, Weekend Siang/Malam) terhitung otomatis secara reaktif melalui PHP computed property setiap kali nilai input diubah.
+
+---
+
+#### TAHAP LW-6: Pesanan, Kalender Booking & Bulk Completion (MTR-08, MTR-09, MTR-10) — High Value
+*Tujuan: Manajemen operasional pesanan harian tanpa jeda muat.*
+- **LW-6.1 Komponen `OrderManager` & `BookingCalendar`:**
+  - Filter pencarian nama/ID, filter status sesi, filter status pembayaran, dan filter tanggal menggunakan query string browser (`#[Url]`).
+  - Tampilan Kalender Sesi & Tabel Pesanan dengan pagination Livewire.
+- **LW-6.2 Slide-over / Modal Detail Pesanan (MTR-09):**
+  - Mengklik pesanan langsung membuka drawer/modal detail data penyewa, jam slot, dan bukti pembayaran tanpa meninggalkan tabel.
+- **LW-6.3 Aksi Status Pesanan & Bulk Completion (MTR-10):**
+  - Tombol aksi instan: "Konfirmasi Kehadiran", "Tandai No-Show", dan "Selesaikan Booking".
+  - **Bulk Selection:** Checkbox "Pilih Semua" atau pilih per item, bar melayang (floating action bar) dengan penghitung jumlah terpilih, serta tombol modal konfirmasi "Selesaikan Semua Terpilih" dengan eksekusi background yang aman.
+
+---
+
+#### TAHAP LW-7: Laporan Pendapatan & Ekspor (MTR-11)
+*Tujuan: Pelaporan finansial yang responsif dan fleksibel.*
+- **LW-7.1 Komponen `ReportManager`:**
+  - Date Range Picker & filter lapangan reaktif.
+  - Kartu Ringkasan Finansial (Pendapatan Kotor, Potongan Komisi, Pendapatan Bersih) otomatis terhitung ulang saat filter berubah.
+  - Tabel transaksi pendapatan dengan pagination reaktif.
+  - Tombol Ekspor CSV / Excel yang memicu download langsung melalui browser download stream.
+
+---
+
+#### TAHAP LW-8: Dashboard Utama Mitra (MTR-03)
+*Tujuan: Pusat kendali operasional harian yang cepat dan informatif.*
+- **LW-8.1 Komponen `MitraDashboardOverview`:**
+  - Kartu Metrik Ringkas: "Booking Hari Ini", "Pendapatan Hari Ini", "Status Lapangan Aktif".
+  - Widget Tindakan Cepat (Pesanan Butuh Verifikasi, Booking Siap Selesai).
+  - Tautan cepat dengan `wire:navigate` untuk transisi halaman secepat aplikasi desktop/SPA.
+
+---
+
+#### TAHAP LW-9: Pengujian (Testing), Pembersihan & Dokumentasi
+*Tujuan: Menjamin stabilitas kualitas dan nol regresi.*
+- **LW-9.1 Unit & Feature Testing Komponen Livewire:**
+  - Buat automated tests menggunakan `Livewire::test(...)`:
+    - Menguji otorisasi Policy (mitra lain dilarang mengakses/mengubah data).
+    - Menguji validasi form (misal: jam tutup < jam buka, harga negatif).
+    - Menguji mutasi database dan pemancaran event (`assertDispatched`).
+- **LW-9.2 Pembersihan Kode (Refactoring):**
+  - Hapus controller atau route lama yang fungsinya sudah digantikan sepenuhnya oleh Livewire Full-Page Component.
+  - Pastikan styling tetap mematuhi SportPlace Design System (DS II) dan font Poppins.
+  - Jalankan `vendor/bin/pint` dan suite PHPUnit untuk memastikan seluruh test lulus hijau.
+
+---
+
+### C. Ringkasan Komponen Livewire yang Direncanakan
+
+| Modul | Nama Komponen Livewire | Path Target | Menggantikan |
+|---|---|---|---|
+| Notifikasi | `MitraNotificationBell` | `app/Livewire/Mitra/Notifications/NotificationBell.php` | Navigasi notifikasi di `x-layouts.mitra` |
+| Notifikasi | `MitraNotificationList` | `app/Livewire/Mitra/Notifications/NotificationList.php` | `NotificationController@index` |
+| Onboarding | `MitraRegistrationForm` | `app/Livewire/Mitra/Onboarding/RegistrationForm.php` | `OnboardingController@create,store` |
+| Onboarding | `MitraStatusView` | `app/Livewire/Mitra/Onboarding/StatusView.php` | `OnboardingController@showStatus,resubmit` |
+| Venue | `VenueManager` | `app/Livewire/Mitra/Venues/VenueManager.php` | `VenueController` (index, create, edit) |
+| Lapangan | `FieldManager` | `app/Livewire/Mitra/Fields/FieldManager.php` | `FieldController` (index, create, edit, photo) |
+| Jadwal | `ScheduleManager` | `app/Livewire/Mitra/Schedules/ScheduleManager.php` | `ScheduleController` & script index |
+| Harga | `PricingManager` | `app/Livewire/Mitra/Pricing/PricingManager.php` | `PricingController` & script index |
+| Pesanan | `OrderManager` | `app/Livewire/Mitra/Orders/OrderManager.php` | `OrderController` & bulk complete |
+| Laporan | `ReportManager` | `app/Livewire/Mitra/Reports/ReportManager.php` | `ReportController@index` |
+| Dashboard | `MitraDashboardOverview` | `app/Livewire/Mitra/Dashboard/DashboardOverview.php` | `MitraDashboardController@index` |
+
+---
 
 ===
 
