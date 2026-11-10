@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Portal Mitra — SportPlace' }}</title>
 
     <!-- Google Fonts Poppins (DS II §1) -->
@@ -10,9 +11,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 </head>
 <body class="h-full font-sans text-slate-800 antialiased flex flex-col md:flex-row bg-[#F4F7F5] overflow-x-hidden">
+
+    <!-- Global Toast Manager (Alpine / Livewire Events & Flash Session) -->
+    <x-mitra.toast-manager />
 
     <!-- Backdrop Gelap untuk Mobile saat Sidebar Terbuka -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300 backdrop-blur-xs" aria-hidden="true"></div>
@@ -39,22 +44,7 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
-            @php
-                $mitraUnreadNotifCount = auth()->user()?->unreadNotifications()->count() ?? 0;
-            @endphp
-            <a href="{{ route('mitra.notifications.index') }}" class="flex items-center justify-between px-4 py-2.5 rounded-full text-sm font-medium transition {{ request()->routeIs('mitra.notifications.*') ? 'bg-[#0B7B69] text-white shadow-xs' : 'text-emerald-100/70 hover:bg-[#07261F] hover:text-white' }}">
-                <div class="flex items-center gap-3">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    <span>Notifikasi</span>
-                </div>
-                @if ($mitraUnreadNotifCount > 0)
-                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#DEEF25] text-slate-900 tabular-nums">
-                        {{ $mitraUnreadNotifCount }}
-                    </span>
-                @endif
-            </a>
+            <livewire:mitra.notifications.notification-bell variant="sidebar" />
 
             <div class="pt-3 px-4 pb-1 text-[10px] font-bold tracking-wider text-emerald-400/60 uppercase">Operasional</div>
             <a href="{{ url('/mitra/venues') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition {{ (request()->is('mitra/venues*') || request()->is('mitra/fields*')) ? 'bg-[#0B7B69] text-white shadow-xs' : 'text-emerald-100/70 hover:bg-[#07261F] hover:text-white' }}">
@@ -135,14 +125,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('mitra.notifications.index') }}" class="relative p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Notifikasi">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    @if ($mitraUnreadNotifCount > 0)
-                        <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#0B7B69] ring-2 ring-white"></span>
-                    @endif
-                </a>
+                <livewire:mitra.notifications.notification-bell variant="header" />
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="text-xs font-semibold text-rose-600 hover:underline min-h-[44px] px-2 flex items-center">Keluar</button>
@@ -288,5 +271,6 @@
             });
         });
     </script>
+    @livewireScripts
 </body>
 </html>

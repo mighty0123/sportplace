@@ -446,22 +446,22 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-0: Fondasi & Integrasi Layout Dasar
 *Tujuan: Mempersiapkan layout Blade agar siap menjalankan komponen Livewire tanpa merusak styling yang ada.*
-- **LW-0.1 Integrasi Asset Livewire:**
+- [x] **LW-0.1 Integrasi Asset Livewire:**
   - Tambahkan `@livewireStyles` dan `@livewireScripts` (atau direktif Livewire 4) ke dalam `resources/views/components/layouts/mitra.blade.php`.
   - Pastikan kompatibilitas dengan Vite dan Tailwind CSS v4.
-- **LW-0.2 Sistem Event & Notifikasi Toast Global:**
+- [x] **LW-0.2 Sistem Event & Notifikasi Toast Global:**
   - Siapkan listener Alpine/Livewire global di layout untuk event `$this->dispatch('notify', type: 'success', message: '...')` agar toast notifikasi bekerja otomatis di seluruh komponen.
-- **LW-0.3 Base Component & Trait Mitra:**
+- [x] **LW-0.3 Base Component & Trait Mitra:**
   - Siapkan trait bantuan (misal: `WithMitraAuthorization`) untuk menjamin setiap komponen otomatis mengambil profil mitra yang sedang login dan menolak akses tidak sah.
 
 ---
 
 #### TAHAP LW-1: Notifikasi & Komponen Shell Interaktif (Low Risk / Quick Win)
 *Tujuan: Mengubah sistem notifikasi menjadi reaktif tanpa reload.*
-- **LW-1.1 Komponen `MitraNotificationBell`:**
+- [x] **LW-1.1 Komponen `MitraNotificationBell`:**
   - Lokasi: Header & Sidebar layout mitra.
   - Fitur: Live counter unread badge, auto-refresh via event atau polling berkala, dropdown preview notifikasi cepat.
-- **LW-1.2 Komponen `MitraNotificationList`:**
+- [x] **LW-1.2 Komponen `MitraNotificationList`:**
   - Menggantikan halaman `resources/views/mitra/notifications/index.blade.php`.
   - Fitur: Tab filter (Semua / Belum Dibaca), aksi "Tandai Semua Dibaca", dan pagination tanpa reload halaman.
 

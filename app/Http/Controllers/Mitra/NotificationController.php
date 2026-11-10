@@ -12,23 +12,9 @@ class NotificationController extends Controller
     /**
      * Tampilkan daftar notifikasi milik mitra (FR-NOTIF-001, BR-027).
      */
-    public function index(Request $request): View
+    public function index(): View
     {
-        $user = $request->user();
-        $filter = $request->query('filter', 'all');
-
-        $query = $filter === 'unread'
-            ? $user->unreadNotifications()
-            : $user->notifications();
-
-        $notifications = $query->paginate(15)->withQueryString();
-        $unreadCount = $user->unreadNotifications()->count();
-
-        return view('mitra.notifications.index', [
-            'notifications' => $notifications,
-            'filter' => $filter,
-            'unreadCount' => $unreadCount,
-        ]);
+        return view('mitra.notifications.index');
     }
 
     /**
