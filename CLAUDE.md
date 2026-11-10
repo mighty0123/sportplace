@@ -469,10 +469,10 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-2: Onboarding & Verifikasi Mitra (MTR-01, MTR-02, MTR-12)
 *Tujuan: Meningkatkan UX pendaftaran mitra dengan validasi berkas instan.*
-- **LW-2.1 Komponen `MitraRegistrationForm` (MTR-01):**
+- [x] **LW-2.1 Komponen `MitraRegistrationForm` (MTR-01):**
   - Live validation nomor KTP (16 digit) dan NPWP.
   - Multi-file upload dokumen KTP & NPWP menggunakan `Livewire\WithFileUploads` dengan indikator progres real-time.
-- **LW-2.2 Komponen `MitraVerificationStatus` (MTR-02 & MTR-12):**
+- [x] **LW-2.2 Komponen `MitraVerificationStatus` (MTR-02 & MTR-12):**
   - Tampilan dinamis status `pending`, `approved`, atau `rejected`.
   - Tombol modal interaktif "Edit & Ajukan Ulang" (resubmit) yang langsung memuat data lama dan mengunggah perbaikan tanpa pindah halaman.
 
