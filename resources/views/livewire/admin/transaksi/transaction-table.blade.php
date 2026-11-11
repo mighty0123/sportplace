@@ -51,7 +51,7 @@
             <div class="relative mt-1.5">
                 <x-ui.icon name="search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                 <input id="cari-trx" type="search" maxlength="100" autocomplete="off" wire:model.live.debounce.300ms="search"
-                    placeholder="ID booking, penyewa, atau ID transaksi"
+                    placeholder="Kode booking, penyewa, atau ID transaksi"
                     class="min-h-11 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3 text-body-sm text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand lg:min-h-10">
             </div>
         </div>
@@ -132,7 +132,7 @@
                             @endphp
                             <tr wire:key="row-{{ $r->id }}" class="align-top">
                                 <td class="px-4 py-3.5">
-                                    <a href="{{ $url }}" class="font-semibold tabular-nums text-ink hover:underline">{{ TM::code($r->id) }}</a>
+                                    <a href="{{ $url }}" class="font-semibold tabular-nums text-ink hover:underline">{{ TM::code($r->id, $r->kode_booking) }}</a>
                                     <p class="text-caption text-ink-muted">{{ \Carbon\CarbonImmutable::parse($r->created_at)->locale('id')->translatedFormat('j M Y, H.i') }}</p>
                                 </td>
                                 <td class="px-4 py-3.5">
@@ -162,12 +162,20 @@
                                 </td>
                                 <td class="px-4 py-3.5">
                                     <x-admin.status-badge :status="$r->status" :label="TM::BOOKING_STATUS[$r->status] ?? null" />
+                                    @if ($r->status === 'pending')
+                                        @php
+                                            $deadline = $r->expires_at
+                                                ? \Carbon\CarbonImmutable::parse($r->expires_at)
+                                                : \Carbon\CarbonImmutable::parse($r->created_at)->addMinutes((int) config('booking.payment_window_minutes', 15));
+                                        @endphp
+                                        <p class="mt-1 text-caption tabular-nums text-ink-muted">Batas bayar {{ $deadline->format('H.i') }}</p>
+                                    @endif
                                     @if ($flags)
                                         <x-ui.badge tone="warning" icon="alert-circle" class="mt-1" title="{{ implode(' ', $flags) }}">Perlu dicek</x-ui.badge>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3.5 text-right">
-                                    <x-ui.button variant="outline" size="sm" :href="$url" aria-label="Lihat {{ TM::code($r->id) }}">Lihat</x-ui.button>
+                                    <x-ui.button variant="outline" size="sm" :href="$url" aria-label="Lihat {{ TM::code($r->id, $r->kode_booking) }}">Lihat</x-ui.button>
                                 </td>
                             </tr>
                         @endforeach
@@ -192,7 +200,7 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <a href="{{ $url }}" class="block text-label-lg font-semibold tabular-nums text-ink after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-                                    <span class="sr-only">Lihat </span>{{ TM::code($r->id) }}
+                                    <span class="sr-only">Lihat </span>{{ TM::code($r->id, $r->kode_booking) }}
                                 </a>
                                 <p class="text-caption text-ink-muted">{{ \Carbon\CarbonImmutable::parse($r->created_at)->locale('id')->translatedFormat('j M Y, H.i') }}</p>
                             </div>
