@@ -33,7 +33,6 @@ class TransactionMonitor
         'no_items'        => ['(NOT ' . self::ITEMS . ')', 'Booking tidak memiliki rincian slot.'],
         'items_mismatch'  => ['(' . self::ITEMS . ' AND ABS(' . self::ITEMS_SUM . ' - h.total_tagihan) > 0.5)', 'Total tagihan berbeda dari jumlah harga slot.'],
         'refund_over'     => ['(' . self::REFUND_ACTIVE . ' > ' . self::PAID_SUM . ' + 0.5)', 'Total refund melebihi nominal yang berhasil dibayar.'],
-        'overdue_pending' => ["(h.status = 'pending' AND h.expires_at IS NOT NULL AND h.expires_at < NOW() AND NOT " . self::PAID . ')','Melewati batas bayar, tetapi belum berstatus kedaluwarsa. Penjadwal mungkin tidak berjalan.'],
     ];
 
     // ---- filter
@@ -254,7 +253,7 @@ class TransactionMonitor
     public function flagsFor(object $row): array
     {
         $out = [];
-        foreach (self::FLAGS as $key => [, $message]) {
+        foreach ($this->flagDefs() as $key => [, $message]) {
             if (! empty($row->{"flag_{$key}"})) {
                 $out[] = $key === 'paid_not_booked'
                     ? sprintf($message, mb_strtolower(self::BOOKING_STATUS[$row->status] ?? $row->status))
@@ -276,7 +275,8 @@ class TransactionMonitor
     private function core(): string
     {
         $count = fn (string $status) => "(SELECT COUNT(*) FROM payments p WHERE p.header_id = h.id AND p.status_pembayaran = '{$status}')";
-        $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys(self::FLAGS), self::FLAGS));
+        $defs  = $this->flagDefs();
+        $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys($defs), $defs));
 
         return "h.id, h.kode_booking, h.total_tagihan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name, u.email as customer_email,
             (SELECT COUNT(*) FROM booking_details d WHERE d.header_id = h.id) as item_count,
@@ -288,9 +288,21 @@ class TransactionMonitor
             {$flags}";
     }
 
+    private function flagDefs(): array
+    {
+        $window = max(1, (int) config('booking.payment_window_minutes', 15));
+
+        return self::FLAGS + [
+            'overdue_pending' => [
+                "(h.status = 'pending' AND COALESCE(h.expires_at, h.created_at + INTERVAL {$window} MINUTE) < NOW() AND NOT " . self::PAID . ')',
+                'Melewati batas bayar, tetapi belum berstatus kedaluwarsa. Penjadwal mungkin tidak berjalan.',
+            ],
+        ];
+    }
+
     private function anyFlag(): string
     {
-        return '(' . implode(' OR ', array_column(self::FLAGS, 0)) . ')';
+        return '(' . implode(' OR ', array_column($this->flagDefs(), 0)) . ')';
     }
 
     private function parseDate(string $s): ?CarbonImmutable
