@@ -43,12 +43,10 @@
                     <p class="text-body-sm text-ink-muted"><span class="break-all">{{ $trx->customer_email }}</span>{{ $trx->customer_phone ? ', ' . $trx->customer_phone : '' }}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4 lg:text-right">
-                <div>
-                    <p class="text-caption text-ink-muted">Total tagihan</p>
-                    <p class="text-metric tabular-nums text-ink">{{ $rp($trx->total_tagihan) }}</p>
-                </div>
-                <x-admin.status-badge :status="$stateStatus[$state]" :label="TM::PAYMENT_STATE[$state]" />
+            <div class="lg:text-right">
+                <p class="text-caption text-ink-muted">Total tagihan</p>
+                <p class="text-metric tabular-nums text-ink">{{ $rp($trx->total_tagihan) }}</p>
+                <p class="text-caption tabular-nums text-ink-muted">Sudah dibayar {{ $rp($ledger['dibayar']) }}</p>
             </div>
         </div>
     </x-ui.card>
@@ -99,7 +97,10 @@
 
             {{-- Pembayaran --}}
             <x-ui.card class="min-w-0">
-                <h2 class="text-h6 text-ink">Pembayaran</h2>
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="text-h6 text-ink">Pembayaran</h2>
+                    <x-admin.status-badge :status="$stateStatus[$state]" :label="TM::PAYMENT_STATE[$state]" />
+                </div>
                 @if ($payments->isEmpty())
                     <p class="mt-2 text-body-sm text-ink-muted">Belum ada upaya pembayaran untuk booking ini.</p>
                 @else
@@ -169,6 +170,12 @@
                 <h2 class="text-h6 text-ink">Rekonsiliasi uang</h2>
                 <dl class="mt-2 space-y-2 text-body-sm">
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Total tagihan</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan']) }}</dd></div>
+                    @if ($items->isNotEmpty() && abs($ledger['tagihan'] - $itemsTotal) > 0.5)
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-muted">Selisih dari harga slot</dt>
+                            <dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan'] - $itemsTotal) }}</dd>
+                        </div>
+                    @endif
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Berhasil dibayar</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['dibayar']) }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Refund selesai</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['refund_selesai']) }}</dd></div>
                     @if ($ledger['refund_berjalan'] > 0)

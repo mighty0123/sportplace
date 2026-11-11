@@ -12,8 +12,8 @@ class TransactionMonitor
 {
     // Label usulan: arti status 'payment' belum diputuskan
     public const BOOKING_STATUS = ['pending' => 'Menunggu bayar', 'payment' => 'Dibayar', 'canceled' => 'Dibatalkan', 'expired' => 'Kedaluwarsa'];
-    public const PAYMENT_STATE  = ['lunas' => 'Lunas', 'menunggu' => 'Menunggu bayar', 'gagal' => 'Gagal', 'belum' => 'Belum ada pembayaran'];
-    public const PERIODS = ['hari-ini' => 'Hari ini', '7' => '7 hari terakhir', '30' => '30 hari terakhir', '90' => '90 hari terakhir', 'semua' => 'Semua waktu', 'kustom' => 'Pilih tanggal'];
+    public const PAYMENT_STATE = ['lunas' => 'Lunas', 'menunggu' => 'Menunggu bayar', 'gagal' => 'Gagal', 'belum' => 'Belum bayar'];
+    public const PERIODS = ['hari-ini' => 'Hari ini', '7' => '7 hari', '30' => '30 hari', '90' => '90 hari', 'semua' => 'Semua waktu', 'kustom' => 'Pilih tanggal'];
     public const SORTS   = ['terbaru' => 'Terbaru dulu', 'terlama' => 'Terlama dulu', 'nominal' => 'Nominal terbesar'];
 
     private const PAID   = "EXISTS (SELECT 1 FROM payments p WHERE p.header_id = h.id AND p.status_pembayaran = 'succes')";
@@ -31,7 +31,6 @@ class TransactionMonitor
         'paid_not_booked' => ["(h.status IN ('pending', 'expired', 'canceled') AND " . self::PAID . ')', 'Ada pembayaran berhasil, tetapi status booking %s. Uang sudah masuk, periksa apakah perlu refund.'],
         'amount_mismatch' => ['(' . self::PAID . ' AND ABS(' . self::PAID_SUM . ' - h.total_tagihan) > 0.5)', 'Nominal yang berhasil dibayar berbeda dari total tagihan.'],
         'no_items'        => ['(NOT ' . self::ITEMS . ')', 'Booking tidak memiliki rincian slot.'],
-        'items_mismatch'  => ['(' . self::ITEMS . ' AND ABS(' . self::ITEMS_SUM . ' - h.total_tagihan) > 0.5)', 'Total tagihan berbeda dari jumlah harga slot.'],
         'refund_over'     => ['(' . self::REFUND_ACTIVE . ' > ' . self::PAID_SUM . ' + 0.5)', 'Total refund melebihi nominal yang berhasil dibayar.'],
     ];
 
