@@ -480,11 +480,11 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-3: Manajemen Venue & Lapangan (MTR-04, MTR-05, MTR-05b)
 *Tujuan: CRUD Venue dan Lapangan dengan modal responsif dan manajemen galeri foto interaktif.*
-- **LW-3.1 Komponen `VenueManager` (MTR-04 & MTR-05b):**
+- [x] **LW-3.1 Komponen `VenueManager` (MTR-04 & MTR-05b):**
   - List venue milik mitra, filter status venue (`draft`, `pending_review`, `aktif`, `nonaktif`).
   - Modal Form Tambah & Edit Venue (validasi jam buka/tutup dan kota).
   - Aksi instan: Ajukan Moderasi, Aktifkan/Nonaktifkan Venue dengan modal konfirmasi reaktif.
-- **LW-3.2 Komponen `FieldManager` (MTR-04 & MTR-05):**
+- [x] **LW-3.2 Komponen `FieldManager` (MTR-04 & MTR-05):**
   - Daftar lapangan per venue terpilih.
   - Form Wizard / Modal Tambah & Edit Lapangan (pilih cabor, tarif dasar, fasilitas checkbox).
   - **Manajemen Foto Lapangan:** Upload drag-and-drop foto baru, live preview thumbnail, tombol "Jadikan Foto Utama" dan hapus foto seketika tanpa reload halaman.
