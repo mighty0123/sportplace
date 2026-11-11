@@ -127,6 +127,7 @@ class TransactionMonitor
                 if (preg_match('/^(?:bk-?)?0*(\d{1,18})$/i', $term, $m)) {
                     $w->orWhere('h.id', (int) $m[1]);
                 }
+                $w->orWhere('h.kode_booking', 'like', $like);
                 $w->orWhere('u.name', 'like', $like)->orWhere('u.email', 'like', $like)
                     ->orWhereExists(fn ($e) => $e->selectRaw('1')->from('payments as p')
                         ->whereColumn('p.header_id', 'h.id')->where('p.pg_transaction_id', 'like', $like));
@@ -233,11 +234,10 @@ class TransactionMonitor
 
     // ----- turunan
 
-    public static function code(int $id): string
+    public static function code(int $id, ?string $kode = null): string
     {
-        return 'BK-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        return $kode ?: 'BK-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
     }
-
     /** Status pembayaran diturunkan dari tabel payments */
     public function paymentState(object $row): string
     {
@@ -253,7 +253,7 @@ class TransactionMonitor
     public function flagsFor(object $row): array
     {
         $out = [];
-        foreach (self::FLAGS as $key => [, $message]) {
+        foreach ($this->flagDefs() as $key => [, $message]) {
             if (! empty($row->{"flag_{$key}"})) {
                 $out[] = $key === 'paid_not_booked'
                     ? sprintf($message, mb_strtolower(self::BOOKING_STATUS[$row->status] ?? $row->status))
@@ -275,9 +275,10 @@ class TransactionMonitor
     private function core(): string
     {
         $count = fn (string $status) => "(SELECT COUNT(*) FROM payments p WHERE p.header_id = h.id AND p.status_pembayaran = '{$status}')";
-        $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys(self::FLAGS), self::FLAGS));
+        $defs  = $this->flagDefs();
+        $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys($defs), $defs));
 
-        return "h.id, h.total_tagihan, h.status, h.created_at, u.id as customer_id, u.name as customer_name, u.email as customer_email,
+        return "h.id, h.kode_booking, h.total_tagihan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name, u.email as customer_email,
             (SELECT COUNT(*) FROM booking_details d WHERE d.header_id = h.id) as item_count,
             " . self::PAID_SUM . " as paid_total,
             {$count('succes')} as pay_succes, {$count('pending')} as pay_pending, {$count('failed')} as pay_failed,
@@ -287,9 +288,21 @@ class TransactionMonitor
             {$flags}";
     }
 
+    private function flagDefs(): array
+    {
+        $window = max(1, (int) config('booking.payment_window_minutes', 15));
+
+        return self::FLAGS + [
+            'overdue_pending' => [
+                "(h.status = 'pending' AND COALESCE(h.expires_at, h.created_at + INTERVAL {$window} MINUTE) < NOW() AND NOT " . self::PAID . ')',
+                'Melewati batas bayar, tetapi belum berstatus kedaluwarsa. Penjadwal mungkin tidak berjalan.',
+            ],
+        ];
+    }
+
     private function anyFlag(): string
     {
-        return '(' . implode(' OR ', array_column(self::FLAGS, 0)) . ')';
+        return '(' . implode(' OR ', array_column($this->flagDefs(), 0)) . ')';
     }
 
     private function parseDate(string $s): ?CarbonImmutable
