@@ -493,10 +493,10 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-4: Jadwal Operasional & Blokir Slot (MTR-06) — High Value
 *Tujuan: Mengubah halaman jadwal & slot menjadi interaktif penuh.*
-- **LW-4.1 Komponen `ScheduleManager`:**
+- [x] **LW-4.1 Komponen `ScheduleManager`:**
   - **Dual Dropdown Reaktif:** Dropdown Venue (kiri) & Dropdown Lapangan (kanan) terhubung dengan state komponen (tanpa perlu redirect URL browser penuh).
   - **Weekly Schedule Form:** Form jam buka Senin–Minggu. Tombol "Salin ke Semua Hari" bekerja instan di memory state sebelum disimpan.
-- **LW-4.2 Slot Generator Grid & Modal Blokir:**
+- [x] **LW-4.2 Slot Generator Grid & Modal Blokir:**
   - Visualisasi slot operasional harian ter-generate otomatis saat tanggal atau lapangan diganti.
   - Modal "Tambah Blokir / Maintenance": input jam & alasan blokir, langsung menambahkan data dan memperbarui tampilan kalender slot secara instan.
   - Hapus blokir slot dengan konfirmasi reaktif.
