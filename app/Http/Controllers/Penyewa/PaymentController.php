@@ -8,9 +8,12 @@ use App\Models\BookingHeader;
 use App\Models\Field;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\MidtransService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
@@ -19,7 +22,7 @@ class PaymentController extends Controller
      * Tampilkan halaman Review & Konfirmasi Pembayaran (Checkout).
      * Pengguna memeriksa detail jadwal, kontak pemesan, metode bayar, dan voucher sebelum mengklik "Bayar Sekarang".
      */
-    public function review(?int $id = null, ?Request $request = null): View
+    public function review(?int $id = null, ?Request $request = null): View|RedirectResponse
     {
         Carbon::setLocale('id');
         $request = $request ?? request();
@@ -165,7 +168,17 @@ class PaymentController extends Controller
 
             $lineItems = [];
             $subtotal = 0;
+            $tz = config('app.timezone', 'Asia/Makassar');
+            $now = Carbon::now($tz);
+
             foreach ($parsedSlots as $slot) {
+                // Cegah jika jam mulai slot sudah lewat waktu saat ini
+                $slotStartDateTime = Carbon::parse("{$tanggalSewaRaw} {$slot['start']}", $tz);
+                if ($slotStartDateTime->lte($now)) {
+                    return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewaRaw])
+                        ->with('warning', "Slot jam {$slot['start']} sudah lewat jam mulai dan tidak dapat dipesan. Silakan pilih jadwal lain.");
+                }
+
                 $lineItems[] = [
                     'label' => "Sewa {$field->nama_lapangan} ({$slot['start']} - {$slot['end']} WIB)",
                     'price' => (float) $slot['price'],
@@ -204,8 +217,8 @@ class PaymentController extends Controller
 
         // Biaya & Diskon
         $serviceFee = 2500;
-        $promoDiscount = 20000;
-        $totalBayar = max(0, $subtotal + $serviceFee - $promoDiscount);
+        $promoDiscount = 0;
+        $totalBayar = max(0, $subtotal + $serviceFee);
         $slotsPayload = json_encode($parsedSlots);
 
         return view('penyewa.review-pembayaran', [
@@ -235,7 +248,12 @@ class PaymentController extends Controller
      * Proses submit pembayaran dari halaman Review Pembayaran.
      * Mengubah status pesanan menjadi lunas/payment dan mengalihkan ke Halaman Tiket Arena & Invoice.
      */
-    public function processPayment(?int $id = null, ?Request $request = null): RedirectResponse
+    /**
+     * Proses submit pembayaran dari halaman Review Pembayaran.
+     * Mengunci slot dengan status 'pending', membuat transaksi Midtrans Snapbox,
+     * dan mengembalikan Snap token untuk memicu popup pembayaran di frontend.
+     */
+    public function processPayment(?int $id = null, ?Request $request = null): RedirectResponse|JsonResponse
     {
         $request = $request ?? request();
         $user = auth()->user() ?? User::where('role', 'customer')->first();
@@ -251,7 +269,7 @@ class PaymentController extends Controller
         );
         $field = Field::with(['venue.city', 'sport'])->find($fieldId) ?? Field::first();
 
-        $paymentMethod = $request?->input('metode_pembayaran', 'BCA Virtual Account');
+        $paymentMethod = $request?->input('metode_pembayaran', 'Midtrans');
         $tanggalSewa = $request?->input('tanggal_sewa') ?? session('selected_date') ?? now()->addDay()->format('Y-m-d');
 
         // Ambil slot jadwal yang dipilih
@@ -276,19 +294,60 @@ class PaymentController extends Controller
         // Hitung total tagihan dari slot yang sebenarnya
         $subtotal = array_sum(array_column($parsedSlots, 'price'));
         $serviceFee = 2500;
-        $promoDiscount = 20000;
-        $calculatedTotal = max(0, $subtotal + $serviceFee - $promoDiscount);
+        $promoDiscount = 0;
+        $calculatedTotal = max(0, $subtotal + $serviceFee);
 
         $totalBayar = (float) ($request?->input('total_bayar', 0));
         if ($totalBayar <= 0) {
             $totalBayar = $calculatedTotal;
         }
 
-        // Buat record booking baru yang terhubung ke lapangan yang DIPILIH pengguna
+        // Validasi ketersediaan setiap slot sebelum pemesanan
+        $tz = config('app.timezone', 'Asia/Makassar');
+        $now = Carbon::now($tz);
+        foreach ($parsedSlots as $slot) {
+            $jamMulai = strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'];
+            $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'];
+            $startStr = substr($jamMulai, 0, 5);
+
+            // Cek apakah slot sudah lewat jam mulai (langsung dikunci begitu lewat jam_mulai)
+            $slotStartDateTime = Carbon::parse("{$tanggalSewa} {$startStr}", $tz);
+            if ($slotStartDateTime->lte($now)) {
+                $errorMsg = "Slot jam {$startStr} sudah lewat jam mulai dan tidak dapat dipesan.";
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $errorMsg], 422);
+                }
+                return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewa])
+                    ->with('warning', $errorMsg);
+            }
+
+            // Cek apakah slot sudah dibooking atau sedang ditahan
+            $conflictBooking = BookingDetail::where('field_id', $field->id)
+                ->whereDate('tanggal_sewa', $tanggalSewa)
+                ->whereHas('header', function ($q) {
+                    $q->whereIn('status', ['payment', 'pending']);
+                })
+                ->where(function ($q) use ($jamMulai, $jamSelesai) {
+                    $q->where('jam_mulai', '<', $jamSelesai)
+                      ->where('jam_selesai', '>', $jamMulai);
+                })
+                ->first();
+
+            if ($conflictBooking) {
+                $errorMsg = "Slot jam {$startStr} sudah dipesan atau sedang dalam proses pembayaran oleh pengguna lain.";
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $errorMsg], 422);
+                }
+                return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewa])
+                    ->with('warning', $errorMsg);
+            }
+        }
+
+        // Buat record booking baru dengan status 'pending' (slot ditahan sementara hingga pembayaran selesai)
         $booking = BookingHeader::create([
             'penyewa_id'    => $user->id,
             'total_tagihan' => $totalBayar,
-            'status'        => 'payment',
+            'status'        => 'pending',
             'created_at'    => now(),
         ]);
 
@@ -309,13 +368,56 @@ class PaymentController extends Controller
             ]);
         }
 
+        // Siapkan order_id unik untuk transaksi Midtrans
+        $orderId = 'SP-' . $booking->id . '-' . time();
+
+        // Rincian item untuk parameter Snap Midtrans
+        $itemDetails = [];
+        foreach ($parsedSlots as $slot) {
+            $itemDetails[] = [
+                'id'       => 'SLOT-' . $field->id . '-' . str_replace(':', '', $slot['start']),
+                'price'    => (int) $slot['price'],
+                'quantity' => 1,
+                'name'     => substr("Sewa {$field->nama_lapangan} ({$slot['time']})", 0, 50),
+            ];
+        }
+        $itemDetails[] = [
+            'id'       => 'FEE-PLATFORM',
+            'price'    => (int) $serviceFee,
+            'quantity' => 1,
+            'name'     => 'Biaya Layanan Platform',
+        ];
+
+        // Buat Snap Transaction token dari Midtrans API
+        $snapToken = null;
+        $midtransService = app(MidtransService::class);
+        if ($midtransService->isConfigured()) {
+            try {
+                $midtransPayload = [
+                    'transaction_details' => [
+                        'order_id'     => $orderId,
+                        'gross_amount' => (int) $totalBayar,
+                    ],
+                    'customer_details' => [
+                        'first_name' => $user->name ?? 'Customer Budi',
+                        'email'      => $user->email ?? 'customer@sportplace.com',
+                        'phone'      => $user->no_hp ?? '081234567890',
+                    ],
+                    'item_details' => $itemDetails,
+                ];
+                $snapToken = $midtransService->createSnapToken($midtransPayload);
+            } catch (\Throwable $e) {
+                Log::error('Gagal generate Midtrans Snap token: ' . $e->getMessage());
+            }
+        }
+
+        // Catat di tabel payments dengan status 'pending'
         Payment::create([
             'header_id'         => $booking->id,
-            'pg_transaction_id' => '954' . rand(1000, 9999),
-            'metode_pembayaran' => $paymentMethod,
+            'pg_transaction_id' => $orderId,
+            'metode_pembayaran' => 'Midtrans',
             'nominal_bayar'     => $totalBayar,
-            'status_pembayaran' => 'succes',
-            'paid_at'           => now(),
+            'status_pembayaran' => 'pending',
             'created_at'        => now(),
         ]);
 
@@ -325,10 +427,21 @@ class PaymentController extends Controller
             'last_field_id'     => $field->id,
             'selected_date'     => $tanggalSewa,
             'selected_slots'    => $parsedSlots,
+            'latest_snap_token' => $snapToken,
         ]);
 
+        // Jika request via AJAX / Fetch (dari Snap popup handler)
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'      => true,
+                'snap_token'   => $snapToken,
+                'booking_id'   => $booking->id,
+                'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->id]),
+            ]);
+        }
+
         return redirect()->route('penyewa.booking.detail', ['id' => $booking->id])
-            ->with('success', 'Pembayaran berhasil dikonfirmasi! Tiket check-in arena Anda sudah aktif dan siap digunakan.');
+            ->with('info', 'Pesanan berhasil dibuat. Silakan selesaikan pembayaran via Midtrans.');
     }
 
     /**
@@ -507,13 +620,54 @@ class PaymentController extends Controller
         }
 
         $serviceFee = 2500;
-        $promoDiscount = 20000;
+        $promoDiscount = 0;
         $totalBayar = (float) $booking->total_tagihan;
 
+        // Auto-sinkronisasi status pembayaran dengan Midtrans jika ada query ?paid=1 atau status masih pending
+        if ($booking->payment) {
+            $isPaidQuery = $request?->query('paid') == '1';
+            $isPendingStatus = !in_array(strtolower($booking->status), ['payment', 'complated', 'completed', 'canceled', 'cancelled']);
+
+            if ($isPaidQuery) {
+                $booking->payment->update([
+                    'status_pembayaran' => 'succes',
+                    'paid_at'           => now(),
+                ]);
+                $booking->update(['status' => 'payment']);
+                $booking->refresh();
+            } elseif ($isPendingStatus) {
+                $midtransService = app(MidtransService::class);
+                if ($midtransService->isConfigured()) {
+                    $orderId = $booking->payment->pg_transaction_id;
+                    $midtransStatus = $midtransService->getStatus($orderId);
+                    if ($midtransStatus) {
+                        $trxStatus = $midtransStatus['transaction_status'] ?? '';
+                        $fraudStatus = $midtransStatus['fraud_status'] ?? '';
+                        $paymentType = $midtransStatus['payment_type'] ?? 'Midtrans';
+
+                        if ($trxStatus === 'settlement' || ($trxStatus === 'capture' && $fraudStatus === 'accept')) {
+                            $booking->payment->update([
+                                'status_pembayaran' => 'succes',
+                                'paid_at'           => now(),
+                                'metode_pembayaran' => "Midtrans ({$paymentType})",
+                            ]);
+                            $booking->update(['status' => 'payment']);
+                            $booking->refresh();
+                        } elseif (in_array($trxStatus, ['cancel', 'deny', 'expire'])) {
+                            $booking->payment->update(['status_pembayaran' => 'failed']);
+                            $booking->update(['status' => 'canceled']);
+                            $booking->refresh();
+                        }
+                    }
+                }
+            }
+        }
+
         // Payment Method & Status
-        $paymentMethod = $booking->payment?->metode_pembayaran ?? 'BCA Virtual Account';
+        $paymentMethod = $booking->payment?->metode_pembayaran ?? 'Midtrans Payment Gateway';
         $isPaid = in_array(strtolower($booking->status), ['payment', 'complated', 'completed']);
         $isCancelled = in_array(strtolower($booking->status), ['cancelled', 'canceled']);
+        $snapToken = session('latest_snap_token');
 
         $statusLabel = match(strtolower($booking->status)) {
             'payment', 'complated', 'completed' => 'Terkonfirmasi',
@@ -545,6 +699,7 @@ class PaymentController extends Controller
             'isPaid'          => $isPaid,
             'isCancelled'     => $isCancelled,
             'statusLabel'     => $statusLabel,
+            'snapToken'       => $snapToken,
         ]);
     }
 
@@ -661,5 +816,55 @@ class PaymentController extends Controller
         });
 
         return $slots;
+    }
+
+    /**
+     * Webhook HTTP Notification dari Midtrans Gateway.
+     * Dipanggil secara asinkron oleh server Midtrans untuk sinkronisasi status pembayaran realtime.
+     */
+    public function handleNotification(Request $request): JsonResponse
+    {
+        $payload = $request->all();
+        $orderId = $payload['order_id'] ?? null;
+        $statusCode = (string) ($payload['status_code'] ?? '');
+        $grossAmount = (string) ($payload['gross_amount'] ?? '');
+        $signatureKey = (string) ($payload['signature_key'] ?? '');
+
+        $midtransService = app(MidtransService::class);
+
+        // Verifikasi keaslian webhook notification
+        if (!$midtransService->verifySignature($orderId, $statusCode, $grossAmount, $signatureKey)) {
+            Log::warning('Midtrans Notification: Signature tidak valid', $payload);
+            return response()->json(['message' => 'Invalid signature'], 403);
+        }
+
+        $payment = Payment::where('pg_transaction_id', $orderId)->first();
+        if (!$payment) {
+            Log::warning("Midtrans Notification: Transaksi {$orderId} tidak ditemukan");
+            return response()->json(['message' => 'Transaction not found'], 404);
+        }
+
+        $transactionStatus = $payload['transaction_status'] ?? '';
+        $fraudStatus = $payload['fraud_status'] ?? '';
+        $paymentType = $payload['payment_type'] ?? 'Midtrans';
+
+        $booking = $payment->header;
+
+        if ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept')) {
+            $payment->update([
+                'status_pembayaran' => 'succes',
+                'paid_at'           => now(),
+                'metode_pembayaran' => "Midtrans ({$paymentType})",
+            ]);
+            $booking?->update(['status' => 'payment']);
+        } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+            $payment->update(['status_pembayaran' => 'failed']);
+            $booking?->update(['status' => 'canceled']);
+        } elseif ($transactionStatus === 'pending') {
+            $payment->update(['status_pembayaran' => 'pending']);
+            $booking?->update(['status' => 'pending']);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 }

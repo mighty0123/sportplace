@@ -16,7 +16,7 @@
 <body class="h-full font-sans text-slate-800 antialiased bg-[#F4F7F5] flex flex-col min-h-screen">
 
     <!-- ========== TOP NAVBAR COMPONENT ========== -->
-    <x-penyewa.navbar :active="$active ?? 'dashboard'" />
+    <x-public.navbar />
 
     <!-- ========== MAIN PAGE CONTENT ========== -->
     <main class="flex-1 max-w-screen-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

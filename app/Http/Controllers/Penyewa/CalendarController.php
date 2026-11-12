@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BookingDetail;
 use App\Models\Field;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -15,7 +16,7 @@ class CalendarController extends Controller
      * Tampilkan halaman Jadwal & Kalender Pemesanan Lapangan per tanggal.
      * Pengguna memilih tanggal, lalu slot jam untuk hari tersebut ditampilkan dalam grid kartu.
      */
-    public function index(Request $request, ?int $id = null): View
+    public function index(Request $request, ?int $id = null): View|RedirectResponse
     {
         // 1. Tentukan Lapangan yang dipilih
         $fieldId = $id ?? (int) $request->query('field', 0);
@@ -66,14 +67,12 @@ class CalendarController extends Controller
         ];
 
         // 3. Tanggal yang Dipilih (Default: Hari Ini)
-        $today = Carbon::today();
+        $tz = config('app.timezone', 'Asia/Makassar');
+        $today = Carbon::today($tz);
         $dateParam = $request->query('date', $today->format('Y-m-d'));
 
         try {
-            $selectedCarbon = Carbon::parse($dateParam);
-            if ($selectedCarbon->lt($today)) {
-                $selectedCarbon = $today->copy();
-            }
+            $selectedCarbon = Carbon::parse($dateParam, $tz)->startOfDay();
         } catch (\Exception $e) {
             $selectedCarbon = $today->copy();
         }
@@ -100,7 +99,7 @@ class CalendarController extends Controller
             $fullDateStr = $d->format('Y-m-d');
             $dates[] = [
                 'day'       => $dayNamesIndo[$d->dayOfWeekIso] ?? $d->format('D'),
-                'day_full'  => $d->format('l'),
+                'day_full'  => $fullDayNamesIndo[$d->dayOfWeekIso] ?? $d->format('l'),
                 'date'      => $d->format('d') . ' ' . ($monthNamesIndo[$d->month] ?? $d->format('M')),
                 'date_short'=> $d->format('d M'),
                 'full_date' => $fullDateStr,
@@ -114,7 +113,8 @@ class CalendarController extends Controller
             $selectedCarbon->format('Y');
 
         // 5. Booking yang ada pada hari yang dipilih untuk lapangan ini
-        $dayBookings = BookingDetail::where('field_id', $field->id)
+        $dayBookings = BookingDetail::with('header')
+            ->where('field_id', $field->id)
             ->whereDate('tanggal_sewa', $selectedDateStr)
             ->get();
 
@@ -127,6 +127,8 @@ class CalendarController extends Controller
         }
 
         // 7. Siapkan Slot Jam untuk SATU Hari Tersebut
+        $now = Carbon::now($tz);
+
         $timeSlots = [];
         for ($hour = $jamBuka; $hour < $jamTutup; $hour++) {
             $startStr = sprintf('%02d:00', $hour);
@@ -134,10 +136,50 @@ class CalendarController extends Controller
             $timeLabel = "{$startStr} - {$endStr}";
             $slotId = "slot_{$field->id}_{$selectedCarbon->format('Ymd')}_{$hour}";
 
-            // Cek ketersediaan
-            $isBooked = $dayBookings->contains(function ($b) use ($selectedDateStr, $startStr) {
-                return $b->tanggal_sewa === $selectedDateStr && substr($b->jam_mulai, 0, 5) === $startStr;
+            // 1. Cek apakah jam mulai slot sudah lewat dari waktu saat ini.
+            // Begitu waktu sekarang melewati jam_mulai ($startStr), slot LANGSUNG dikunci (lock / lewat), tidak menunggu jam_selesai.
+            $slotStartDateTime = Carbon::parse("{$selectedDateStr} {$startStr}", $tz);
+            $isPast = $selectedCarbon->lt($today) || ($selectedCarbon->isSameDay($today) && $slotStartDateTime->lte($now));
+
+            // 2. Cek apakah ada booking yang overlapping pada jam slot ini
+            $matchingBooking = $dayBookings->first(function ($b) use ($selectedDateStr, $startStr) {
+                $bDate = Carbon::parse($b->tanggal_sewa)->format('Y-m-d');
+                if ($bDate !== $selectedDateStr) {
+                    return false;
+                }
+                $bStart = substr($b->jam_mulai, 0, 5);
+                $bEnd   = substr($b->jam_selesai, 0, 5);
+                return ($startStr >= $bStart && $startStr < $bEnd);
             });
+
+            // Tentukan status booking
+            $headerStatus = $matchingBooking ? strtolower(trim($matchingBooking->header?->status ?? '')) : null;
+
+            // Prioritas penentuan status slot:
+            // 1) Booked: jika ada booking yang sudah terbayar / confirmed / completed
+            // 2) Lewat: jika jam slot sudah terlewati
+            // 3) Ditahan: jika ada booking yang statusnya pending (sedang proses pembayaran)
+            // 4) Available: slot bebas untuk dipesan
+            $isConfirmed = $matchingBooking && (
+                in_array($headerStatus, ['payment', 'completed', 'confirmed']) ||
+                (!$headerStatus && in_array($matchingBooking->status_item, ['ongoing', 'completed']))
+            );
+
+            $isPending = $matchingBooking && ($headerStatus === 'pending');
+
+            if ($isConfirmed) {
+                $status = 'booked';
+                $label  = 'Booked';
+            } elseif ($isPast) {
+                $status = 'past';
+                $label  = 'Lewat';
+            } elseif ($isPending) {
+                $status = 'pending';
+                $label  = 'Ditahan';
+            } else {
+                $status = 'available';
+                $label  = 'Available';
+            }
 
             // Hitung harga slot (cek meta harga siang/malam jika ada)
             $slotPrice = (int) $field->harga_perjam;
@@ -158,8 +200,8 @@ class CalendarController extends Controller
                 'time_end'    => $endStr,
                 'time_label'  => $timeLabel,
                 'price'       => $slotPrice,
-                'status'      => $isBooked ? 'booked' : 'available',
-                'label'       => $isBooked ? 'Booked' : 'Available',
+                'status'      => $status,
+                'label'       => $label,
                 'court_name'  => $field->nama_lapangan,
             ];
         }

@@ -265,131 +265,68 @@
                     <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">
-                                Pilih Metode Pembayaran
+                                Metode Pembayaran Online
                             </h3>
                             <p class="text-xs text-slate-500 mt-0.5">
-                                Verifikasi otomatis 24 jam dengan konfirmasi instan.
+                                Pembayaran aman, instan & terverifikasi otomatis via Midtrans Gateway.
                             </p>
                         </div>
                         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200/80">
-                            Lunas Otomatis
+                            Instant Verification
                         </span>
                     </div>
 
-                    <!-- Kategori 1: Virtual Account -->
-                    <div class="space-y-2.5">
-                        <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Virtual Account (Bank Transfer)</span>
+                    <!-- Single Midtrans Gateway Card -->
+                    <div class="relative p-4 sm:p-5 rounded-2xl border-2 border-[#0B7B69] bg-emerald-50/40 transition shadow-2xs space-y-3.5">
+                        <input type="hidden" name="metode_pembayaran" value="Midtrans">
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <!-- BCA Virtual Account (Default) -->
-                            <label class="payment-option relative flex items-center gap-3 p-3.5 rounded-xl border-2 border-[#0B7B69] bg-emerald-50/40 cursor-pointer transition">
-                                <input type="radio" name="metode_pembayaran" value="BCA Virtual Account" checked class="text-[#0B7B69] focus:ring-[#0B7B69] w-4 h-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-900">BCA Virtual Account</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800">BCA</span>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">Verifikasi otomatis tanpa bukti transfer</p>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-11 h-11 rounded-xl bg-[#07362B] text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
                                 </div>
-                            </label>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="text-sm sm:text-base font-extrabold text-slate-900">Midtrans Payment Gateway</h4>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#0B7B69] text-white">TERHUBUNG</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-0.5">
+                                        Satu gerbang pembayaran untuk QRIS, Transfer Virtual Account Bank, E-Wallet & Kartu Kredit.
+                                    </p>
+                                </div>
+                            </div>
 
-                            <!-- Mandiri Virtual Account -->
-                            <label class="payment-option relative flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition">
-                                <input type="radio" name="metode_pembayaran" value="Mandiri Virtual Account" class="text-[#0B7B69] focus:ring-[#0B7B69] w-4 h-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-800">Mandiri Virtual Account</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800">MANDIRI</span>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">Livin' by Mandiri & ATM</p>
-                                </div>
-                            </label>
-
-                            <!-- BNI Virtual Account -->
-                            <label class="payment-option relative flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition">
-                                <input type="radio" name="metode_pembayaran" value="BNI Virtual Account" class="text-[#0B7B69] focus:ring-[#0B7B69] w-4 h-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-800">BNI Virtual Account</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-teal-100 text-teal-800">BNI</span>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">BNI Mobile Banking & ATM</p>
-                                </div>
-                            </label>
-
-                            <!-- BRI Virtual Account -->
-                            <label class="payment-option relative flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition">
-                                <input type="radio" name="metode_pembayaran" value="BRI Virtual Account" class="text-[#0B7B69] focus:ring-[#0B7B69] w-4 h-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-800">BRI Virtual Account (BRIVA)</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-900">BRI</span>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">BRImo & ATM BRI</p>
-                                </div>
-                            </label>
+                            <div class="w-6 h-6 rounded-full bg-[#0B7B69] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Kategori 2: QRIS & E-Wallet -->
-                    <div class="space-y-2.5 pt-2 border-t border-slate-100">
-                        <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider">QRIS & Instant E-Wallet</span>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <!-- QRIS -->
-                            <label class="payment-option relative flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition">
-                                <input type="radio" name="metode_pembayaran" value="QRIS" class="text-[#0B7B69] focus:ring-[#0B7B69] w-4 h-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-800">QRIS (Semua E-Wallet & Bank)</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-rose-100 text-rose-800">QRIS</span>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">GoPay, OVO, Dana, ShopeePay</p>
-                                </div>
-                            </label>
-
-                            <!-- GoPay Direct -->
-                            <label class="payment-option relative flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition">
-                                <input type="radio" name="metode_pembayaran" value="GoPay" class="text-[#0B7B69] focus:ring-[#0B7B69] w-4 h-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-slate-800">GoPay</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">GOPAY</span>
-                                    </div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">Aplikasi Gojek terhubung</p>
-                                </div>
-                            </label>
+                        <!-- Channels Badges -->
+                        <div class="pt-2.5 border-t border-emerald-100 flex flex-wrap items-center gap-1.5">
+                            <span class="text-[11px] font-bold text-slate-500 mr-1 uppercase tracking-wider">Saluran Didukung:</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">QRIS</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-900 border border-blue-200">BCA VA</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200">Mandiri VA</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-teal-100 text-teal-900 border border-teal-200">BNI VA</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-sky-100 text-sky-900 border border-sky-200">BRI VA</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200">GoPay</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-orange-100 text-orange-900 border border-orange-200">ShopeePay</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-200">Kartu Kredit</span>
                         </div>
-                    </div>
-                </div>
 
-                {{-- 4. CARD PROMO VOUCHER --}}
-                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                        <!-- Notice Box -->
+                        <div class="p-3 rounded-xl bg-white/90 border border-emerald-200 flex items-start gap-2.5 text-xs text-slate-600">
+                            <svg class="w-4 h-4 text-[#0B7B69] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span>Voucher Promo Diskon</span>
-                        </span>
-                        <span class="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
-                            Diskon Rp 20.000 Aktif
-                        </span>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="text"
-                            value="SPORTSPACEBARU"
-                            readonly
-                            class="flex-1 bg-slate-50 border border-emerald-300 text-emerald-800 font-mono font-bold text-xs rounded-xl px-3.5 py-2.5 outline-none"
-                        >
-                        <button
-                            type="button"
-                            class="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 font-bold text-xs hover:bg-emerald-100 transition shrink-0 cursor-default"
-                        >
-                            Tersedia
-                        </button>
+                            <span class="leading-relaxed">
+                                Saat Anda menekan tombol <strong>Bayar Sekarang</strong>, jendela resmi <strong>Midtrans Snap</strong> akan muncul langsung di layar untuk menyelesaikan simulasi pembayaran secara interaktif dan nyata.
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -442,16 +379,6 @@
                             <span>• Biaya Layanan Platform</span>
                             <span class="font-bold text-slate-800 tabular-nums shrink-0">Rp {{ number_format($serviceFee, 0, ',', '.') }}</span>
                         </div>
-
-                        <div class="flex items-center justify-between text-emerald-700 font-semibold">
-                            <span class="flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
-                                <span>Promo (SPORTSPACEBARU)</span>
-                            </span>
-                            <span class="tabular-nums shrink-0">-Rp {{ number_format($promoDiscount, 0, ',', '.') }}</span>
-                        </div>
                     </div>
 
                     <!-- Total divider -->
@@ -462,9 +389,6 @@
                                 Rp {{ number_format($totalBayar, 0, ',', '.') }}
                             </span>
                         </div>
-                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800">
-                            HEMAT Rp 20rb
-                        </span>
                     </div>
 
                     <!-- Terms agreement checkbox -->
@@ -518,29 +442,13 @@
 
 </div>
 
-{{-- Interactive Radio Selection & Countdown JS --}}
+{{-- Midtrans Snap SDK Library --}}
+<script src="{{ config('midtrans.snap_url') }}" data-client-key="{{ config('midtrans.client_key') }}"></script>
+
+{{-- Interactive Midtrans Snap Payment & Countdown JS --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Payment Method Radio Styling Highlight
-    const paymentOptions = document.querySelectorAll('.payment-option');
-    paymentOptions.forEach(option => {
-        const radio = option.querySelector('input[type="radio"]');
-        if (!radio) return;
-
-        radio.addEventListener('change', function () {
-            paymentOptions.forEach(opt => {
-                opt.classList.remove('border-2', 'border-[#0B7B69]', 'bg-emerald-50/40');
-                opt.classList.add('border-slate-200', 'bg-white');
-            });
-
-            if (radio.checked) {
-                option.classList.remove('border-slate-200', 'bg-white');
-                option.classList.add('border-2', 'border-[#0B7B69]', 'bg-emerald-50/40');
-            }
-        });
-    });
-
-    // 2. Countdown Timer (14:59 down to 00:00)
+    // 1. Countdown Timer (14:59 down to 00:00)
     let totalSeconds = 14 * 60 + 59;
     const timerElem = document.getElementById('countdown-timer');
 
@@ -556,6 +464,90 @@ document.addEventListener('DOMContentLoaded', function () {
             const secs = totalSeconds % 60;
             timerElem.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
         }, 1000);
+    }
+
+    // 2. Intercept Form Submit & Trigger Midtrans Snap Popup
+    const checkoutForm = document.getElementById('checkout-form');
+    const btnPayNow = document.getElementById('btn-pay-now');
+    let isSubmitting = false;
+
+    if (checkoutForm && btnPayNow) {
+        checkoutForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (isSubmitting) return;
+
+            const termsAgree = document.getElementById('terms-agree');
+            if (termsAgree && !termsAgree.checked) {
+                alert('Harap setujui Syarat & Ketentuan Sewa terlebih dahulu.');
+                return;
+            }
+
+            isSubmitting = true;
+            btnPayNow.disabled = true;
+            const originalBtnHtml = btnPayNow.innerHTML;
+            btnPayNow.innerHTML = `
+                <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Menghubungkan Midtrans...</span>
+            `;
+
+            try {
+                const formData = new FormData(checkoutForm);
+                const response = await fetch(checkoutForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                });
+
+                const res = await response.json();
+
+                if (!response.ok || !res.success) {
+                    throw new Error(res.message || 'Gagal membuat tagihan pembayaran.');
+                }
+
+                // Jika token Snap diterima, panggil window.snap.pay
+                if (window.snap && res.snap_token) {
+                    window.snap.pay(res.snap_token, {
+                        onSuccess: function (result) {
+                            console.log('Midtrans Payment Success:', result);
+                            window.location.href = res.redirect_url + '?paid=1';
+                        },
+                        onPending: function (result) {
+                            console.log('Midtrans Payment Pending:', result);
+                            window.location.href = res.redirect_url + '?pending=1';
+                        },
+                        onError: function (result) {
+                            console.error('Midtrans Payment Error:', result);
+                            alert('Pembayaran gagal atau dibatalkan. Silakan coba kembali.');
+                            resetPayButton();
+                        },
+                        onClose: function () {
+                            console.log('Midtrans Snap popup ditutup oleh pengguna');
+                            // Arahkan ke halaman detail booking karena slot sudah di-hold (pending)
+                            window.location.href = res.redirect_url + '?waiting=1';
+                        }
+                    });
+                } else {
+                    // Fallback jika SDK Snap tidak termuat
+                    window.location.href = res.redirect_url;
+                }
+            } catch (err) {
+                alert(err.message || 'Terjadi kesalahan sistem saat menghubungi gateway pembayaran Midtrans.');
+                resetPayButton();
+            }
+
+            function resetPayButton() {
+                isSubmitting = false;
+                btnPayNow.disabled = false;
+                btnPayNow.innerHTML = originalBtnHtml;
+            }
+        });
     }
 });
 </script>

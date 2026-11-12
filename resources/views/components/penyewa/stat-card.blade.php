@@ -2,9 +2,9 @@
     'label'      => 'Label',
     'value'      => '0',
     'badge'      => null,
-    'badgeType'  => 'pill-green', // 'pill-green' | 'text-gray' | 'trend-green'
+    'badgeType'  => 'pill-green', // 'pill-green' | 'text-gray' | 'trend-green' | 'trend-red' | 'trend-up' | 'trend-down' | 'trend-neutral' | 'trend-auto'
     'note'       => null,
-    'noteIcon'   => null,         // 'dot' | 'calendar' | 'check'
+    'noteIcon'   => null,         // 'dot' | 'calendar' | 'check' | 'trend-up' | 'trend-down' | 'trend-neutral'
     'icon'       => 'calendar',   // 'flag' | 'clock' | 'trophy' | 'calendar'
 ])
 
@@ -16,6 +16,21 @@
         'calendar' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>',
     ];
     $iconPath = $icons[$icon] ?? $icons['calendar'];
+
+    // Deteksi cerdas status tren (turun / naik / netral)
+    $badgeStr = trim((string) ($badge ?? ''));
+    $noteStr = trim((string) ($note ?? ''));
+
+    $isTrendType = in_array($badgeType, ['trend', 'trend-auto', 'trend-green', 'trend-red', 'trend-up', 'trend-down', 'trend-neutral']);
+
+    $isNegativeTrend = in_array($badgeType, ['trend-red', 'trend-down']) ||
+        ($isTrendType && str_starts_with($badgeStr, '-'));
+
+    $isPositiveTrend = (in_array($badgeType, ['trend-green', 'trend-up']) && !$isNegativeTrend) ||
+        ($isTrendType && str_starts_with($badgeStr, '+'));
+
+    $isNeutralTrend = in_array($badgeType, ['trend-neutral']) ||
+        ($isTrendType && !$isNegativeTrend && !$isPositiveTrend);
 @endphp
 
 <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs hover:shadow-md transition-shadow duration-200 flex flex-col justify-between">
@@ -36,15 +51,32 @@
         </span>
 
         @if ($badge)
-            @if ($badgeType === 'pill-green')
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100/80 text-emerald-800">
-                    {{ $badge }}
+            @if ($isNegativeTrend)
+                {{-- Tren Menurun (Merah) --}}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
+                    <svg class="w-3 h-3 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                    </svg>
+                    <span>{{ $badge }}</span>
                 </span>
-            @elseif ($badgeType === 'trend-green')
+            @elseif ($isPositiveTrend)
+                {{-- Tren Meningkat (Hijau) --}}
                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100/80 text-emerald-800">
-                    <svg class="w-3 h-3 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3 h-3 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                     </svg>
+                    <span>{{ $badge }}</span>
+                </span>
+            @elseif ($isNeutralTrend)
+                {{-- Tren Netral (Abu-abu) --}}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                    <svg class="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14"/>
+                    </svg>
+                    <span>{{ $badge }}</span>
+                </span>
+            @elseif ($badgeType === 'pill-green')
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100/80 text-emerald-800">
                     {{ $badge }}
                 </span>
             @elseif ($badgeType === 'text-gray')
@@ -68,6 +100,14 @@
                 @elseif ($noteIcon === 'calendar')
                     <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                @elseif ($noteIcon === 'trend-down' || ($noteIcon === 'check' && str_starts_with($noteStr, '-')))
+                    <svg class="w-3.5 h-3.5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                    </svg>
+                @elseif ($noteIcon === 'trend-up')
+                    <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                     </svg>
                 @elseif ($noteIcon === 'check')
                     <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

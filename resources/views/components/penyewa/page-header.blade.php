@@ -13,7 +13,7 @@
 
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             {{ $displayTitle }}
         </h1>
         @if ($subtitle)

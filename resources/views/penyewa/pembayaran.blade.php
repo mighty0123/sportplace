@@ -256,15 +256,17 @@
                         <span class="font-bold text-slate-800 tabular-nums shrink-0">Rp {{ number_format($serviceFee, 0, ',', '.') }}</span>
                     </div>
 
-                    <div class="flex items-center justify-between text-emerald-700 font-semibold">
-                        <span class="flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                            </svg>
-                            <span>Promo Diskon (SPORTSPACEBARU)</span>
-                        </span>
-                        <span class="tabular-nums shrink-0">-Rp {{ number_format($promoDiscount, 0, ',', '.') }}</span>
-                    </div>
+                    @if (($promoDiscount ?? 0) > 0)
+                        <div class="flex items-center justify-between text-emerald-700 font-semibold">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                </svg>
+                                <span>Promo Diskon</span>
+                            </span>
+                            <span class="tabular-nums shrink-0">-Rp {{ number_format($promoDiscount, 0, ',', '.') }}</span>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Divider & Total -->
@@ -338,58 +340,87 @@
 
                 <!-- Ticket Body -->
                 <div class="p-6 text-center space-y-4">
-                    <p class="text-xs text-slate-500 leading-relaxed px-2">
-                        Tunjukkan QR code ini kepada petugas resepsionis arena saat tiba di lokasi
-                    </p>
+                    @if ($isPaid)
+                        <p class="text-xs text-slate-500 leading-relaxed px-2">
+                            Tunjukkan QR code ini kepada petugas resepsionis arena saat tiba di lokasi
+                        </p>
 
-                    <!-- QR Code Canvas / Vector -->
-                    <div class="relative w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-center">
-                        {{-- SVG QR Code Representation with SportPlace emblem center --}}
-                        <svg class="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                            <!-- Top Left Finder Pattern -->
-                            <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                            <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                        <!-- QR Code Canvas / Vector -->
+                        <div class="relative w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-center">
+                            {{-- SVG QR Code Representation with SportPlace emblem center --}}
+                            <svg class="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
+                                <!-- Top Left Finder Pattern -->
+                                <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor"/>
 
-                            <!-- Top Right Finder Pattern -->
-                            <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                            <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                                <!-- Top Right Finder Pattern -->
+                                <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor"/>
 
-                            <!-- Bottom Left Finder Pattern -->
-                            <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                            <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor"/>
+                                <!-- Bottom Left Finder Pattern -->
+                                <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor"/>
 
-                            <!-- QR Data Grid Blocks -->
-                            <rect x="36" y="8" width="5" height="5"/>
-                            <rect x="46" y="8" width="5" height="5"/>
-                            <rect x="56" y="8" width="5" height="5"/>
-                            <rect x="36" y="18" width="5" height="5"/>
-                            <rect x="46" y="24" width="5" height="5"/>
-                            <rect x="56" y="18" width="5" height="5"/>
+                                <!-- QR Data Grid Blocks -->
+                                <rect x="36" y="8" width="5" height="5"/>
+                                <rect x="46" y="8" width="5" height="5"/>
+                                <rect x="56" y="8" width="5" height="5"/>
+                                <rect x="36" y="18" width="5" height="5"/>
+                                <rect x="46" y="24" width="5" height="5"/>
+                                <rect x="56" y="18" width="5" height="5"/>
 
-                            <rect x="8" y="36" width="5" height="5"/>
-                            <rect x="18" y="42" width="5" height="5"/>
-                            <rect x="24" y="36" width="5" height="5"/>
-                            <rect x="8" y="52" width="5" height="5"/>
-                            <rect x="24" y="52" width="5" height="5"/>
+                                <rect x="8" y="36" width="5" height="5"/>
+                                <rect x="18" y="42" width="5" height="5"/>
+                                <rect x="24" y="36" width="5" height="5"/>
+                                <rect x="8" y="52" width="5" height="5"/>
+                                <rect x="24" y="52" width="5" height="5"/>
 
-                            <rect x="69" y="36" width="5" height="5"/>
-                            <rect x="79" y="42" width="5" height="5"/>
-                            <rect x="89" y="36" width="5" height="5"/>
-                            <rect x="74" y="52" width="5" height="5"/>
-                            <rect x="84" y="58" width="5" height="5"/>
+                                <rect x="69" y="36" width="5" height="5"/>
+                                <rect x="79" y="42" width="5" height="5"/>
+                                <rect x="89" y="36" width="5" height="5"/>
+                                <rect x="74" y="52" width="5" height="5"/>
+                                <rect x="84" y="58" width="5" height="5"/>
 
-                            <rect x="36" y="69" width="5" height="5"/>
-                            <rect x="46" y="76" width="5" height="5"/>
-                            <rect x="56" y="69" width="5" height="5"/>
-                            <rect x="36" y="86" width="5" height="5"/>
-                            <rect x="46" y="86" width="5" height="5"/>
-                            <rect x="56" y="86" width="5" height="5"/>
+                                <rect x="36" y="69" width="5" height="5"/>
+                                <rect x="46" y="76" width="5" height="5"/>
+                                <rect x="56" y="69" width="5" height="5"/>
+                                <rect x="36" y="86" width="5" height="5"/>
+                                <rect x="46" y="86" width="5" height="5"/>
+                                <rect x="56" y="86" width="5" height="5"/>
 
-                            <!-- Center SportPlace Lightning Emblem -->
-                            <circle cx="50" cy="50" r="14" fill="#06231D"/>
-                            <path d="M51 41l-6 10h5l-2 8 8-11h-5l2-7z" fill="#10B981"/>
-                        </svg>
-                    </div>
+                                <!-- Center SportPlace Lightning Emblem -->
+                                <circle cx="50" cy="50" r="14" fill="#06231D"/>
+                                <path d="M51 41l-6 10h5l-2 8 8-11h-5l2-7z" fill="#10B981"/>
+                            </svg>
+                        </div>
+                    @else
+                        <!-- Pending / Unpaid State -->
+                        <div class="relative w-48 h-48 mx-auto bg-amber-50/60 p-4 rounded-2xl border-2 border-dashed border-amber-300 flex flex-col items-center justify-center text-center space-y-2">
+                            <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+                                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold text-amber-900">Tiket Belum Aktif</span>
+                            <span class="text-[11px] text-amber-700 leading-tight">QR Code akan terbit otomatis begitu pembayaran selesai terkonfirmasi</span>
+                        </div>
+
+                        @if (!empty($snapToken))
+                            <div class="pt-2">
+                                <button
+                                    type="button"
+                                    id="btn-resume-pay"
+                                    onclick="openMidtransSnap('{{ $snapToken }}')"
+                                    class="w-full py-3 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white font-extrabold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span>Lanjutkan Bayar via Midtrans</span>
+                                </button>
+                            </div>
+                        @endif
+                    @endif
 
                     <!-- Kode Booking Box -->
                     <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex items-center justify-between">
@@ -575,6 +606,34 @@ function copyTicketCode(code) {
         } catch (e) {
             prompt('Salin kode booking:', val);
         }
+    }
+}
+</script>
+
+{{-- Midtrans Snap SDK & Resume Pay Handler --}}
+<script src="{{ config('midtrans.snap_url') }}" data-client-key="{{ config('midtrans.client_key') }}"></script>
+<script>
+function openMidtransSnap(token) {
+    if (window.snap && token) {
+        window.snap.pay(token, {
+            onSuccess: function (result) {
+                console.log('Payment success:', result);
+                window.location.href = window.location.pathname + '?paid=1';
+            },
+            onPending: function (result) {
+                console.log('Payment pending:', result);
+                window.location.reload();
+            },
+            onError: function (result) {
+                console.error('Payment error:', result);
+                alert('Terjadi kesalahan saat memproses pembayaran Midtrans.');
+            },
+            onClose: function () {
+                console.log('Snap modal closed');
+            }
+        });
+    } else {
+        alert('Token pembayaran Midtrans tidak valid atau telah kedaluwarsa.');
     }
 }
 </script>

@@ -71,6 +71,10 @@ Route::prefix('penyewa')->name('penyewa.')->group(function () {
 // Shortcut URL publik
 Route::redirect('/lapangan', '/penyewa/lapangan');
 
+// Webhook HTTP Notification Midtrans Gateway (Publik, tanpa CSRF / Auth)
+Route::post('/api/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification');
+Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification.alt');
+
 // Area Terproteksi Penyewa — Wajib login untuk booking, checkout, pembayaran, riwayat, dan profil (PRD FR-BOOK-002, FR-PAY-001)
 Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
