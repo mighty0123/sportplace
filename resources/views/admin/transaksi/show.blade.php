@@ -97,10 +97,7 @@
 
             {{-- Pembayaran --}}
             <x-ui.card class="min-w-0">
-                <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-h6 text-ink">Pembayaran</h2>
-                    <x-admin.status-badge :status="$stateStatus[$state]" :label="TM::PAYMENT_STATE[$state]" />
-                </div>
+                <h2 class="text-h6 text-ink">Pembayaran</h2>
                 @if ($payments->isEmpty())
                     <p class="mt-2 text-body-sm text-ink-muted">Belum ada upaya pembayaran untuk booking ini.</p>
                 @else
@@ -205,7 +202,6 @@
                     @endunless
                     <x-admin.info-row label="Jumlah slot" :value="(string) $items->count()" />
                 </dl>
-                <p class="mt-2 text-caption text-ink-muted">Kode diturunkan dari nomor booking, belum ada kolom kode tersendiri di database.</p>
             </x-ui.card>
         </div>
     </div>
