@@ -36,3 +36,4 @@ class PaymentWebhookEvent extends Model
         return $this->belongsTo(Payment::class, 'payment_id');
     }
 }
+

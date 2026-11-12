@@ -81,7 +81,7 @@
             </p>
         </div>
 
-        <!-- Legend Indicators -->
+        <!-- Legend Indicators (Hanya Available, Dipilih, dan Booked) -->
         <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-semibold text-slate-600">
             <div class="flex items-center gap-1.5">
                 <span class="w-3 h-3 rounded-full bg-[#10B981] shrink-0"></span>
@@ -90,22 +90,12 @@
 
             <div class="flex items-center gap-1.5">
                 <span class="w-3 h-3 rounded-full bg-[#0B7B69] shrink-0 ring-2 ring-emerald-200"></span>
-                <span>Dipilih Anda</span>
-            </div>
-
-            <div class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-full bg-amber-500 shrink-0 ring-2 ring-amber-200"></span>
-                <span>Ditahan</span>
+                <span>Dipilih</span>
             </div>
 
             <div class="flex items-center gap-1.5">
                 <span class="w-3 h-3 rounded-full bg-slate-400 shrink-0"></span>
                 <span>Booked</span>
-            </div>
-
-            <div class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-full bg-slate-200 shrink-0"></span>
-                <span>Lewat</span>
             </div>
         </div>
     </div>
@@ -280,12 +270,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (currentStatus !== 'booked') {
-                    card.setAttribute('data-status', 'past');
-                    card.className = 'slot-card group relative rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-center items-center text-center gap-1.5 select-none bg-slate-100/60 border-slate-200/60 opacity-40 cursor-not-allowed';
+                    card.setAttribute('data-status', 'booked');
+                    card.className = 'slot-card group relative rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-center items-center text-center gap-1.5 select-none bg-slate-50/80 border-slate-200/70 opacity-60 cursor-not-allowed';
 
                     const timeEl = card.querySelector('p:first-child');
                     if (timeEl) {
-                        timeEl.className = 'text-xs sm:text-sm font-extrabold tracking-tight leading-snug text-slate-400';
+                        timeEl.className = 'text-xs sm:text-sm font-extrabold tracking-tight leading-snug text-slate-500';
                     }
                     const priceEl = card.querySelector('p:nth-child(2)');
                     if (priceEl) {
@@ -293,8 +283,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     const statusLabel = card.querySelector('.slot-status-label');
                     if (statusLabel) {
-                        statusLabel.textContent = 'Lewat';
-                        statusLabel.className = 'slot-status-label inline-flex items-center gap-1 text-xs font-medium text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md';
+                        statusLabel.textContent = 'Booked';
+                        statusLabel.className = 'slot-status-label inline-flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md';
                     }
                 }
             }
@@ -304,6 +294,83 @@ document.addEventListener('DOMContentLoaded', function () {
     // Jalankan penguncian saat halaman dibuka dan pantau tiap 10 detik
     lockPastSlots();
     setInterval(lockPastSlots, 10000);
+
+    // Sinkronisasi status slot dari server (misal: booking kedaluwarsa balik ke Available, atau slot diambil orang berubah jadi Booked)
+    function syncSlotStatuses() {
+        const url = new URL(window.location.href);
+        fetch(url.toString(), {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) return null;
+            return response.json();
+        })
+        .then(data => {
+            if (!data || !Array.isArray(data.timeSlots)) return;
+
+            data.timeSlots.forEach(slot => {
+                const card = document.querySelector(`[data-slot-id="${slot.id}"]`);
+                if (!card) return;
+
+                const currentStatus = card.getAttribute('data-status');
+
+                // Jika slot sedang dipilih user di browser ini tapi baru saja diambil orang lain di server
+                if (currentStatus === 'selected' && slot.status === 'booked') {
+                    card.setAttribute('data-status', 'booked');
+                    card.className = 'slot-card group relative rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-center items-center text-center gap-1.5 select-none bg-slate-50/80 border-slate-200/70 opacity-60 cursor-not-allowed';
+                    const timeEl = card.querySelector('p:first-child');
+                    if (timeEl) timeEl.className = 'text-xs sm:text-sm font-extrabold tracking-tight leading-snug text-slate-500';
+                    const priceEl = card.querySelector('p:nth-child(2)');
+                    if (priceEl) priceEl.className = 'text-sm sm:text-base font-black tabular-nums leading-tight text-slate-400';
+                    const statusLabel = card.querySelector('.slot-status-label');
+                    if (statusLabel) {
+                        statusLabel.textContent = 'Booked';
+                        statusLabel.className = 'slot-status-label inline-flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md';
+                    }
+                    const summaryItem = document.querySelector(`[data-summary-slot-id="${slot.id}"]`);
+                    if (summaryItem) summaryItem.remove();
+                    recalculateSummary();
+                    return;
+                }
+
+                if (currentStatus === 'selected') return;
+
+                // Jika holding waktu habis (lewat) dan server mengubah kembali ke Available
+                if (slot.status === 'available' && currentStatus !== 'available') {
+                    card.setAttribute('data-status', 'available');
+                    card.className = 'slot-card group relative rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-center items-center text-center gap-1.5 select-none bg-white border-slate-200/90 hover:border-emerald-500/60 hover:shadow-xs cursor-pointer';
+                    const timeEl = card.querySelector('p:first-child');
+                    if (timeEl) timeEl.className = 'text-xs sm:text-sm font-extrabold tracking-tight leading-snug text-slate-800';
+                    const priceEl = card.querySelector('p:nth-child(2)');
+                    if (priceEl) priceEl.className = 'text-sm sm:text-base font-black tabular-nums leading-tight text-slate-900';
+                    const statusLabel = card.querySelector('.slot-status-label');
+                    if (statusLabel) {
+                        statusLabel.textContent = 'Available';
+                        statusLabel.className = 'slot-status-label inline-flex items-center gap-1 text-xs font-bold text-[#10B981] bg-emerald-50 px-2 py-0.5 rounded-md';
+                    }
+                } else if (slot.status === 'booked' && currentStatus !== 'booked') {
+                    // Jika baru saja dibooking orang lain: ubah jadi Booked
+                    card.setAttribute('data-status', 'booked');
+                    card.className = 'slot-card group relative rounded-2xl border p-4 sm:p-5 transition-all duration-200 flex flex-col justify-center items-center text-center gap-1.5 select-none bg-slate-50/80 border-slate-200/70 opacity-60 cursor-not-allowed';
+                    const timeEl = card.querySelector('p:first-child');
+                    if (timeEl) timeEl.className = 'text-xs sm:text-sm font-extrabold tracking-tight leading-snug text-slate-500';
+                    const priceEl = card.querySelector('p:nth-child(2)');
+                    if (priceEl) priceEl.className = 'text-sm sm:text-base font-black tabular-nums leading-tight text-slate-400';
+                    const statusLabel = card.querySelector('.slot-status-label');
+                    if (statusLabel) {
+                        statusLabel.textContent = 'Booked';
+                        statusLabel.className = 'slot-status-label inline-flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md';
+                    }
+                }
+            });
+
+            lockPastSlots();
+        })
+        .catch(() => {});
+    }
+
+    // Pantau sinkronisasi status tiap 15 detik
+    setInterval(syncSlotStatuses, 15000);
 
     // Toggle Slot Card Selection
     document.querySelectorAll('[data-slot-card]').forEach(function (card) {
@@ -331,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const currentStatus = card.getAttribute('data-status');
             // Hanya slot dengan status 'available' atau 'selected' yang bisa diklik.
-            // Slot 'booked', 'pending' (ditahan), dan 'past' (lewat) tidak dapat dipilih.
+            // Slot 'booked' tidak dapat dipilih.
             if (currentStatus !== 'available' && currentStatus !== 'selected') return;
 
             const slotId = card.getAttribute('data-slot-id');
@@ -348,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 card.classList.add('border-2', 'border-[#0B7B69]', 'bg-emerald-50/50', 'shadow-xs', 'ring-2', 'ring-emerald-500/20');
 
                 if (statusLabel) {
-                    statusLabel.textContent = 'Dipilih Anda';
+                    statusLabel.textContent = 'Dipilih';
                     statusLabel.className = 'slot-status-label inline-flex items-center gap-1 text-xs font-bold text-[#0B7B69] bg-emerald-100/70 px-2 py-0.5 rounded-md';
                 }
 

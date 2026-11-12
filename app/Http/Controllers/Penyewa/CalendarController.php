@@ -16,7 +16,7 @@ class CalendarController extends Controller
      * Tampilkan halaman Jadwal & Kalender Pemesanan Lapangan per tanggal.
      * Pengguna memilih tanggal, lalu slot jam untuk hari tersebut ditampilkan dalam grid kartu.
      */
-    public function index(Request $request, ?int $id = null): View|RedirectResponse
+    public function index(Request $request, ?int $id = null): View|RedirectResponse|\Illuminate\Http\JsonResponse
     {
         // 1. Tentukan Lapangan yang dipilih
         $fieldId = $id ?? (int) $request->query('field', 0);
@@ -137,63 +137,58 @@ class CalendarController extends Controller
             $slotId = "slot_{$field->id}_{$selectedCarbon->format('Ymd')}_{$hour}";
 
             // 1. Cek apakah jam mulai slot sudah lewat dari waktu saat ini.
-            // Begitu waktu sekarang melewati jam_mulai ($startStr), slot LANGSUNG dikunci (lock / lewat), tidak menunggu jam_selesai.
+            // Begitu waktu sekarang melewati jam_mulai ($startStr), slot LANGSUNG dikunci (lock), tidak menunggu jam_selesai.
             $slotStartDateTime = Carbon::parse("{$selectedDateStr} {$startStr}", $tz);
             $isPast = $selectedCarbon->lt($today) || ($selectedCarbon->isSameDay($today) && $slotStartDateTime->lte($now));
 
-            // 2. Cek apakah ada booking yang overlapping pada jam slot ini
-            $matchingBooking = $dayBookings->first(function ($b) use ($selectedDateStr, $startStr) {
-                $bDate = Carbon::parse($b->tanggal_sewa)->format('Y-m-d');
+            // 2. Cek semua booking yang overlapping pada jam slot ini
+            $slotBookings = $dayBookings->filter(function ($b) use ($selectedDateStr, $startStr) {
+                $rawDate = $b->getRawOriginal('tanggal_sewa') ?? $b->tanggal_sewa;
+                $bDate = substr((string)$rawDate, 0, 10);
                 if ($bDate !== $selectedDateStr) {
                     return false;
                 }
-                $bStart = substr($b->jam_mulai, 0, 5);
-                $bEnd   = substr($b->jam_selesai, 0, 5);
+                $bStart = substr((string)$b->jam_mulai, 0, 5);
+                $bEnd   = substr((string)$b->jam_selesai, 0, 5);
                 return ($startStr >= $bStart && $startStr < $bEnd);
             });
 
-            // Tentukan status booking
-            $headerStatus = $matchingBooking ? strtolower(trim($matchingBooking->header?->status ?? '')) : null;
+            // Status konfirmasi: booking sudah terbayar / confirmed / completed
+            $isConfirmed = $slotBookings->contains(function ($b) {
+                $status = strtolower(trim($b->header?->status ?? ''));
+                return in_array($status, ['payment', 'completed', 'confirmed']) ||
+                    (!$status && in_array($b->status_item, ['ongoing', 'completed']));
+            });
 
-            // Prioritas penentuan status slot:
-            // 1) Booked: jika ada booking yang sudah terbayar / confirmed / completed
-            // 2) Lewat: jika jam slot sudah terlewati
-            // 3) Ditahan: jika ada booking yang statusnya pending (sedang proses pembayaran)
-            // 4) Available: slot bebas untuk dipesan
-            $isConfirmed = $matchingBooking && (
-                in_array($headerStatus, ['payment', 'completed', 'confirmed']) ||
-                (!$headerStatus && in_array($matchingBooking->status_item, ['ongoing', 'completed']))
-            );
-
-            // 3) Ditahan: jika ada booking pending yang BELUM melewati batas pembayaran
+            // Status pending: ada orang yang sedang checkout/bayar slot ini (< 15 menit)
             $isPending = false;
-            if ($matchingBooking && $headerStatus === 'pending') {
-                $rawExpires = $matchingBooking->header?->getRawOriginal('expires_at');
-                $rawCreated = $matchingBooking->header?->getRawOriginal('created_at');
-                $paymentWindowMinutes = (int) config('booking.payment_window_minutes', 15);
-                $bExpires = $rawExpires
-                    ? Carbon::parse($rawExpires, $tz)
-                    : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes($paymentWindowMinutes) : $now);
+            $paymentWindowMinutes = (int) config('booking.payment_window_minutes', 15);
+            foreach ($slotBookings as $b) {
+                $header = $b->header;
+                if ($header && strtolower(trim($header->status ?? '')) === 'pending') {
+                    $rawExpires = $header->getRawOriginal('expires_at');
+                    $rawCreated = $header->getRawOriginal('created_at');
+                    $bExpires = $rawExpires
+                        ? Carbon::parse($rawExpires, $tz)
+                        : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes($paymentWindowMinutes) : $now);
 
-                if ($bExpires->gt($now)) {
-                    $isPending = true; // Masih dalam batas waktu: kunci slot (Ditahan)
-                } else {
-                    // Batas bayar habis: otomatis lepas kunci dan perbarui status expired
-                    if ($matchingBooking->header && $matchingBooking->header->status === 'pending') {
-                        $matchingBooking->header->update(['status' => 'expired']);
+                    if ($bExpires->gt($now)) {
+                        $isPending = true; // Masih aktif dalam batas waktu 15 menit -> tampil sebagai Booked
+                    } else {
+                        // Batas bayar habis (lewat 15 menit): update status menjadi expired -> balik ke Available
+                        $header->update(['status' => 'expired']);
                     }
                 }
             }
 
-            if ($isConfirmed) {
+            // Indikator hanya 3 status: Available, Dipilih, dan Booked.
+            // - Jika sudah terbayar, atau sedang dibooking orang (pending < 15 menit), atau jam slot sudah lewat:
+            //   Maka status = 'booked', label = 'Booked'.
+            // - Jika masa tahan lewat (expired) dan belum lewat jam mulai:
+            //   Maka otomatis balik ke status = 'available', label = 'Available'.
+            if ($isConfirmed || $isPending || $isPast) {
                 $status = 'booked';
                 $label  = 'Booked';
-            } elseif ($isPast) {
-                $status = 'past';
-                $label  = 'Lewat';
-            } elseif ($isPending) {
-                $status = 'pending';
-                $label  = 'Ditahan';
             } else {
                 $status = 'available';
                 $label  = 'Available';
@@ -225,6 +220,14 @@ class CalendarController extends Controller
         }
 
         $serviceFee = 2500;
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status'     => 'success',
+                'timeSlots'  => $timeSlots,
+                'serviceFee' => $serviceFee,
+            ]);
+        }
 
         return view('penyewa.kalender', [
             'field'                 => $field,
