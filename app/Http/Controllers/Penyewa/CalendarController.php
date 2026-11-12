@@ -165,7 +165,22 @@ class CalendarController extends Controller
                 (!$headerStatus && in_array($matchingBooking->status_item, ['ongoing', 'completed']))
             );
 
-            $isPending = $matchingBooking && ($headerStatus === 'pending');
+            // 3) Ditahan: jika ada booking pending yang BELUM melewati batas 15 menit
+            $isPending = false;
+            if ($matchingBooking && $headerStatus === 'pending') {
+                $bExpires = $matchingBooking->header?->expires_at
+                    ? Carbon::parse($matchingBooking->header->expires_at, $tz)
+                    : Carbon::parse($matchingBooking->header->created_at, $tz)->addMinutes(15);
+
+                if ($bExpires->gt($now)) {
+                    $isPending = true; // Masih dalam batas 15 menit: kunci slot (Ditahan)
+                } else {
+                    // Batas 15 menit habis: otomatis lepas kunci dan perbarui status expired
+                    if ($matchingBooking->header && $matchingBooking->header->status === 'pending') {
+                        $matchingBooking->header->update(['status' => 'expired']);
+                    }
+                }
+            }
 
             if ($isConfirmed) {
                 $status = 'booked';

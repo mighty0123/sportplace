@@ -221,6 +221,19 @@ class PaymentController extends Controller
         $totalBayar = max(0, $subtotal + $serviceFee);
         $slotsPayload = json_encode($parsedSlots);
 
+        // Batas waktu pembayaran 15 menit (persisten dihitung dari timestamp pembuatan booking jika ada)
+        $tz = config('app.timezone', 'Asia/Makassar');
+        $now = Carbon::now($tz);
+        $expiresAt = null;
+        if ($booking && $booking->status === 'pending') {
+            $expiresAt = $booking->expires_at ? Carbon::parse($booking->expires_at, $tz) : Carbon::parse($booking->created_at, $tz)->addMinutes(15);
+        } elseif (session()->has('booking_expires_at')) {
+            $expiresAt = Carbon::createFromTimestamp(session('booking_expires_at'), $tz);
+        }
+
+        $expiresAtTimestamp = $expiresAt ? $expiresAt->timestamp : ($now->timestamp + 900);
+        $remainingSeconds = $expiresAt ? max(0, (int) $now->diffInSeconds($expiresAt, false)) : 900;
+
         return view('penyewa.review-pembayaran', [
             'booking'             => $booking,
             'customer'            => $customer,
@@ -241,6 +254,8 @@ class PaymentController extends Controller
             'promoDiscount'       => $promoDiscount,
             'totalBayar'          => $totalBayar,
             'slotsPayload'        => $slotsPayload,
+            'expiresAtTimestamp'  => $expiresAtTimestamp,
+            'remainingSeconds'    => $remainingSeconds,
         ]);
     }
 
@@ -321,15 +336,27 @@ class PaymentController extends Controller
                     ->with('warning', $errorMsg);
             }
 
-            // Cek apakah slot sudah dibooking atau sedang ditahan
+            // Cek apakah slot sudah dibooking lunas atau sedang ditahan oleh pending yang belum kedaluwarsa 15 menit
             $conflictBooking = BookingDetail::where('field_id', $field->id)
                 ->whereDate('tanggal_sewa', $tanggalSewa)
-                ->whereHas('header', function ($q) {
-                    $q->whereIn('status', ['payment', 'pending']);
-                })
                 ->where(function ($q) use ($jamMulai, $jamSelesai) {
                     $q->where('jam_mulai', '<', $jamSelesai)
                       ->where('jam_selesai', '>', $jamMulai);
+                })
+                ->whereHas('header', function ($q) use ($now) {
+                    $q->where(function ($sub) use ($now) {
+                        $sub->whereIn('status', ['payment', 'completed'])
+                            ->orWhere(function ($pendingQ) use ($now) {
+                                $pendingQ->where('status', 'pending')
+                                         ->where(function ($exp) use ($now) {
+                                             $exp->where('expires_at', '>', $now)
+                                                 ->orWhere(function ($coalesce) use ($now) {
+                                                     $coalesce->whereNull('expires_at')
+                                                              ->where('created_at', '>', $now->copy()->subMinutes(15));
+                                                 });
+                                         });
+                            });
+                    });
                 })
                 ->first();
 
@@ -343,12 +370,16 @@ class PaymentController extends Controller
             }
         }
 
-        // Buat record booking baru dengan status 'pending' (slot ditahan sementara hingga pembayaran selesai)
+        // Kunci slot selama tepat 15 menit sejak pengguna pertama kali menekan Bayar Sekarang
+        $expiresAt = $now->copy()->addMinutes(15);
+
+        // Buat record booking baru dengan status 'pending' (slot ditahan sementara hingga batas expires_at)
         $booking = BookingHeader::create([
             'penyewa_id'    => $user->id,
             'total_tagihan' => $totalBayar,
             'status'        => 'pending',
-            'created_at'    => now(),
+            'expires_at'    => $expiresAt,
+            'created_at'    => $now,
         ]);
 
         // Buat detail slot sesuai jadwal yang DIPILIH pengguna
@@ -364,7 +395,7 @@ class PaymentController extends Controller
                 'jam_selesai'  => $jamSelesai,
                 'harga_slot'   => (float) $slot['price'],
                 'status_item'  => 'ongoing',
-                'created_at'   => now(),
+                'created_at'   => $now,
             ]);
         }
 
@@ -404,6 +435,9 @@ class PaymentController extends Controller
                         'phone'      => $user->no_hp ?? '081234567890',
                     ],
                     'item_details' => $itemDetails,
+                    'callbacks'    => [
+                        'finish' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
+                    ],
                 ];
                 $snapToken = $midtransService->createSnapToken($midtransPayload);
             } catch (\Throwable $e) {
@@ -418,25 +452,29 @@ class PaymentController extends Controller
             'metode_pembayaran' => 'Midtrans',
             'nominal_bayar'     => $totalBayar,
             'status_pembayaran' => 'pending',
-            'created_at'        => now(),
+            'created_at'        => $now,
         ]);
 
         // Simpan field ID dan state ke session
         session([
-            'selected_field_id' => $field->id,
-            'last_field_id'     => $field->id,
-            'selected_date'     => $tanggalSewa,
-            'selected_slots'    => $parsedSlots,
-            'latest_snap_token' => $snapToken,
+            'selected_field_id'  => $field->id,
+            'last_field_id'      => $field->id,
+            'selected_date'      => $tanggalSewa,
+            'selected_slots'     => $parsedSlots,
+            'latest_snap_token'  => $snapToken,
+            'booking_expires_at' => $expiresAt->timestamp,
+            'pending_booking_id' => $booking->id,
         ]);
 
         // Jika request via AJAX / Fetch (dari Snap popup handler)
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
-                'success'      => true,
-                'snap_token'   => $snapToken,
-                'booking_id'   => $booking->id,
-                'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->id]),
+                'success'              => true,
+                'snap_token'           => $snapToken,
+                'booking_id'           => $booking->id,
+                'expires_at_timestamp' => $expiresAt->timestamp,
+                'remaining_seconds'    => 900,
+                'redirect_url'         => route('penyewa.booking.detail', ['id' => $booking->id]),
             ]);
         }
 
@@ -663,43 +701,149 @@ class PaymentController extends Controller
             }
         }
 
+        // Hitung batas waktu bayar 15 menit (persisten dihitung dari expires_at database)
+        $tz = config('app.timezone', 'Asia/Makassar');
+        $now = Carbon::now($tz);
+        $expiresAt = $booking->expires_at
+            ? Carbon::parse($booking->expires_at, $tz)
+            : Carbon::parse($booking->created_at, $tz)->addMinutes(15);
+        $remainingSeconds = max(0, (int) $now->diffInSeconds($expiresAt, false));
+        $expiresAtTimestamp = $expiresAt->timestamp;
+
+        // Jika booking masih pending dan batas waktu 15 menit sudah lewat, ubah status menjadi expired
+        if ($booking->status === 'pending' && $remainingSeconds <= 0) {
+            $booking->update(['status' => 'expired']);
+            $booking->refresh();
+        }
+
         // Payment Method & Status
         $paymentMethod = $booking->payment?->metode_pembayaran ?? 'Midtrans Payment Gateway';
         $isPaid = in_array(strtolower($booking->status), ['payment', 'complated', 'completed']);
-        $isCancelled = in_array(strtolower($booking->status), ['cancelled', 'canceled']);
+        $isCancelled = in_array(strtolower($booking->status), ['cancelled', 'canceled', 'expired']);
         $snapToken = session('latest_snap_token');
 
         $statusLabel = match(strtolower($booking->status)) {
             'payment', 'complated', 'completed' => 'Terkonfirmasi',
             'pending'               => 'Menunggu Pembayaran',
+            'expired'               => 'Kedaluwarsa (15 Menit Habis)',
             'cancelled', 'canceled' => 'Dibatalkan',
             default                 => 'Terkonfirmasi',
         };
 
         return view('penyewa.pembayaran', [
-            'booking'         => $booking,
-            'customer'        => $customer,
-            'field'           => $field,
-            'venue'           => $venue,
-            'sport'           => $sport,
-            'bookingCode'     => $bookingCode,
-            'ticketCode'      => $ticketCode,
-            'trxId'           => $trxId,
-            'dipesanPada'     => $dipesanPada,
-            'tanggalMain'     => $tanggalMain,
-            'sesiDurasi'      => $sesiDurasi,
-            'berlakuHingga'   => $berlakuHingga,
-            'courtPhoto'      => $courtPhoto,
-            'facilities'      => $facilities,
-            'lineItems'       => $lineItems,
-            'serviceFee'      => $serviceFee,
-            'promoDiscount'   => $promoDiscount,
-            'totalBayar'      => $totalBayar,
-            'paymentMethod'   => $paymentMethod,
-            'isPaid'          => $isPaid,
-            'isCancelled'     => $isCancelled,
-            'statusLabel'     => $statusLabel,
-            'snapToken'       => $snapToken,
+            'booking'             => $booking,
+            'customer'            => $customer,
+            'field'               => $field,
+            'venue'               => $venue,
+            'sport'               => $sport,
+            'bookingCode'         => $bookingCode,
+            'ticketCode'          => $ticketCode,
+            'trxId'               => $trxId,
+            'dipesanPada'         => $dipesanPada,
+            'tanggalMain'         => $tanggalMain,
+            'sesiDurasi'          => $sesiDurasi,
+            'berlakuHingga'       => $berlakuHingga,
+            'courtPhoto'          => $courtPhoto,
+            'facilities'          => $facilities,
+            'lineItems'           => $lineItems,
+            'serviceFee'          => $serviceFee,
+            'promoDiscount'       => $promoDiscount,
+            'totalBayar'          => $totalBayar,
+            'paymentMethod'       => $paymentMethod,
+            'isPaid'              => $isPaid,
+            'isCancelled'         => $isCancelled,
+            'statusLabel'         => $statusLabel,
+            'snapToken'           => $snapToken,
+            'remainingSeconds'    => $remainingSeconds,
+            'expiresAtTimestamp'  => $expiresAtTimestamp,
+        ]);
+    }
+
+    /**
+     * Endpoint API untuk mengecek status pembayaran booking secara realtime (auto-polling frontend).
+     */
+    public function checkPaymentStatus(int $id, Request $request): JsonResponse
+    {
+        $booking = BookingHeader::with('payment')->find($id);
+
+        if (!$booking) {
+            return response()->json(['success' => false, 'message' => 'Pesanan tidak ditemukan'], 404);
+        }
+
+        // 1. Cek jika sudah lunas
+        if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
+            return response()->json([
+                'success'  => true,
+                'status'   => 'payment',
+                'is_paid'  => true,
+                'redirect' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
+            ]);
+        }
+
+        // 2. Jika pending, tanyakan langsung status terbaru ke Midtrans API
+        if ($booking->payment && $booking->status === 'pending') {
+            $midtransService = app(MidtransService::class);
+            if ($midtransService->isConfigured()) {
+                $orderId = $booking->payment->pg_transaction_id;
+                $midtransStatus = $midtransService->getStatus($orderId);
+                if ($midtransStatus) {
+                    $trxStatus = $midtransStatus['transaction_status'] ?? '';
+                    $fraudStatus = $midtransStatus['fraud_status'] ?? '';
+                    $paymentType = $midtransStatus['payment_type'] ?? 'Midtrans';
+
+                    if ($trxStatus === 'settlement' || ($trxStatus === 'capture' && $fraudStatus === 'accept')) {
+                        $booking->payment->update([
+                            'status_pembayaran' => 'succes',
+                            'paid_at'           => now(),
+                            'metode_pembayaran' => "Midtrans ({$paymentType})",
+                        ]);
+                        $booking->update(['status' => 'payment']);
+                        $booking->refresh();
+
+                        return response()->json([
+                            'success'  => true,
+                            'status'   => 'payment',
+                            'is_paid'  => true,
+                            'redirect' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
+                        ]);
+                    } elseif (in_array($trxStatus, ['cancel', 'deny', 'expire'])) {
+                        $booking->payment->update(['status_pembayaran' => 'failed']);
+                        $booking->update(['status' => 'canceled']);
+                        return response()->json([
+                            'success' => true,
+                            'status'  => 'canceled',
+                            'is_paid' => false,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // 3. Cek batas waktu 15 menit
+        $tz = config('app.timezone', 'Asia/Makassar');
+        $now = Carbon::now($tz);
+        $expiresAt = $booking->expires_at
+            ? Carbon::parse($booking->expires_at, $tz)
+            : Carbon::parse($booking->created_at, $tz)->addMinutes(15);
+        $remainingSeconds = max(0, (int) $now->diffInSeconds($expiresAt, false));
+
+        if ($booking->status === 'pending' && $remainingSeconds <= 0) {
+            $booking->update(['status' => 'expired']);
+            return response()->json([
+                'success'           => true,
+                'status'            => 'expired',
+                'is_paid'           => false,
+                'is_expired'        => true,
+                'remaining_seconds' => 0,
+            ]);
+        }
+
+        return response()->json([
+            'success'              => true,
+            'status'               => $booking->status,
+            'is_paid'              => false,
+            'remaining_seconds'    => $remainingSeconds,
+            'expires_at_timestamp' => $expiresAt->timestamp,
         ]);
     }
 

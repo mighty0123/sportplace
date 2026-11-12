@@ -89,6 +89,7 @@ Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function
     Route::get('/checkout/{id?}', [PaymentController::class, 'review'])->name('checkout');
     Route::post('/bayar/{id?}', [PaymentController::class, 'processPayment'])->name('pembayaran.process');
     Route::get('/booking/{id}', [PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/booking/{id}/check-status', [PaymentController::class, 'checkPaymentStatus'])->name('booking.check-status');
     Route::get('/tiket/{id?}', [PaymentController::class, 'show'])->name('booking.ticket');
     Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
     Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');

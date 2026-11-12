@@ -10,13 +10,16 @@ class BookingHeader extends Model
 
     protected $fillable = [
         'penyewa_id',
+        'kode_booking',
         'total_tagihan',
         'status',
+        'expires_at',
         'created_at',
     ];
 
     protected $casts = [
         'total_tagihan' => 'double',
+        'expires_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 

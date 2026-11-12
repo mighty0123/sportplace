@@ -322,7 +322,27 @@
         {{-- =========================================================
              RIGHT COLUMN (5-4 Cols): Tiket Check-in Arena + Actions
         ========================================================= --}}
-        <div class="lg:col-span-5 xl:col-span-4 space-y-5 sticky top-24">
+        <div class="lg:col-span-5 xl:col-span-4 space-y-4 sticky top-24">
+
+            {{-- Countdown Timer Card (Batas Waktu Pembayaran 15 Menit) --}}
+            @if (!$isPaid && !$isCancelled)
+                <div class="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 text-amber-900 shadow-2xs">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke-width="2" stroke-dasharray="32" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="block text-[11px] font-bold uppercase tracking-wider text-amber-800">Selesaikan Pembayaran</span>
+                            <span class="block text-xs font-semibold text-amber-950 mt-0.5">Slot ditahan 15 menit</span>
+                        </div>
+                    </div>
+                    <span id="countdown-timer" class="text-sm font-mono font-black text-amber-900 bg-white/90 px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs tabular-nums">
+                        --:--
+                    </span>
+                </div>
+            @endif
 
             {{-- 1. KARTU TIKET CHECK-IN ARENA --}}
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-md overflow-hidden relative">
@@ -616,7 +636,7 @@ function copyTicketCode(code) {
 }
 </script>
 
-{{-- Midtrans Snap SDK & Resume Pay Handler --}}
+{{-- Midtrans Snap SDK, Resume Pay Handler & Real-Time Sync --}}
 <script src="{{ config('midtrans.snap_url') }}" data-client-key="{{ config('midtrans.client_key') }}"></script>
 <script>
 function openMidtransSnap(token) {
@@ -642,5 +662,68 @@ function openMidtransSnap(token) {
         alert('Token pembayaran Midtrans tidak valid atau telah kedaluwarsa.');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    @if (!$isPaid && !$isCancelled)
+    // 1. Countdown Timer (Persisten dihitung dari expires_at database, tidak reset saat refresh)
+    const targetTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
+    const timerElem = document.getElementById('countdown-timer');
+
+    function updateCountdown() {
+        if (!timerElem) return;
+        const now = Date.now();
+        const diffMs = targetTimestamp - now;
+        const remainingSecs = Math.max(0, Math.floor(diffMs / 1000));
+
+        const mins = Math.floor(remainingSecs / 60);
+        const secs = remainingSecs % 60;
+        timerElem.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+        if (remainingSecs <= 0) {
+            clearInterval(countdownInterval);
+            timerElem.textContent = '00:00';
+            const resumeBtn = document.getElementById('btn-resume-pay');
+            if (resumeBtn) {
+                resumeBtn.disabled = true;
+                resumeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                resumeBtn.innerHTML = '<span>Batas Waktu Bayar 15 Menit Habis</span>';
+            }
+        }
+    }
+
+    updateCountdown();
+    const countdownInterval = setInterval(updateCountdown, 1000);
+
+    // 2. Real-Time Polling: Otomatis mendeteksi saat pengguna menyelesaikan pembayaran di Midtrans Simulator / Bank
+    const checkStatusUrl = "{{ route('penyewa.booking.check-status', $booking->id) }}";
+    let pollCount = 0;
+    const pollInterval = setInterval(async function () {
+        pollCount++;
+        try {
+            const res = await fetch(checkStatusUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await res.json();
+            if (data.is_paid) {
+                clearInterval(pollInterval);
+                clearInterval(countdownInterval);
+                // Langsung arahkan ke halaman tiket terkonfirmasi begitu terdeteksi lunas
+                window.location.href = data.redirect || (window.location.pathname + '?paid=1');
+            } else if (data.is_expired) {
+                clearInterval(pollInterval);
+                window.location.reload();
+            }
+        } catch (err) {
+            console.log('Sync status check:', err);
+        }
+
+        // Hentikan polling setelah 16 menit
+        if (pollCount > 320) clearInterval(pollInterval);
+    }, 3000);
+    @endif
+});
 </script>
 </x-layouts.penyewa>

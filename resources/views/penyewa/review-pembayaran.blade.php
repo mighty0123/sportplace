@@ -448,23 +448,34 @@
 {{-- Interactive Midtrans Snap Payment & Countdown JS --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Countdown Timer (14:59 down to 00:00)
-    let totalSeconds = 14 * 60 + 59;
+    // 1. Countdown Timer (Persisten dihitung dari expires_at database, tidak akan reset saat direfresh)
+    let targetTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
     const timerElem = document.getElementById('countdown-timer');
 
-    if (timerElem) {
-        const interval = setInterval(function () {
-            if (totalSeconds <= 0) {
-                clearInterval(interval);
-                timerElem.textContent = '00:00';
-                return;
+    function updateCountdown() {
+        if (!timerElem) return;
+        const now = Date.now();
+        const diffMs = targetTimestamp - now;
+        const remainingSecs = Math.max(0, Math.floor(diffMs / 1000));
+
+        const mins = Math.floor(remainingSecs / 60);
+        const secs = remainingSecs % 60;
+        timerElem.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+        if (remainingSecs <= 0) {
+            clearInterval(countdownInterval);
+            timerElem.textContent = '00:00';
+            const payBtn = document.getElementById('btn-pay-now');
+            if (payBtn) {
+                payBtn.disabled = true;
+                payBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                payBtn.innerHTML = '<span>Batas Waktu Bayar 15 Menit Habis (Slot Dilepas)</span>';
             }
-            totalSeconds--;
-            const mins = Math.floor(totalSeconds / 60);
-            const secs = totalSeconds % 60;
-            timerElem.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
-        }, 1000);
+        }
     }
+
+    updateCountdown();
+    const countdownInterval = setInterval(updateCountdown, 1000);
 
     // 2. Intercept Form Submit & Trigger Midtrans Snap Popup
     const checkoutForm = document.getElementById('checkout-form');
@@ -511,6 +522,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     throw new Error(res.message || 'Gagal membuat tagihan pembayaran.');
                 }
 
+                // Perbarui anchor timer 15 menit dari respon backend
+                if (res.expires_at_timestamp) {
+                    targetTimestamp = res.expires_at_timestamp * 1000;
+                    updateCountdown();
+                }
+
                 // Jika token Snap diterima, panggil window.snap.pay
                 if (window.snap && res.snap_token) {
                     window.snap.pay(res.snap_token, {
@@ -529,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         onClose: function () {
                             console.log('Midtrans Snap popup ditutup oleh pengguna');
-                            // Arahkan ke halaman detail booking karena slot sudah di-hold (pending)
+                            // Arahkan ke halaman detail pembayaran karena slot sedang ditahan (pending)
                             window.location.href = res.redirect_url + '?waiting=1';
                         }
                     });
