@@ -32,6 +32,17 @@ class TransactionMonitor
         'amount_mismatch' => ['(' . self::PAID . ' AND ABS(' . self::PAID_SUM . ' - h.total_tagihan) > 0.5)', 'Nominal yang berhasil dibayar berbeda dari total tagihan.'],
         'no_items'        => ['(NOT ' . self::ITEMS . ')', 'Booking tidak memiliki rincian slot.'],
         'refund_over'     => ['(' . self::REFUND_ACTIVE . ' > ' . self::PAID_SUM . ' + 0.5)', 'Total refund melebihi nominal yang berhasil dibayar.'],
+        'refunded_not_canceled' => ["(h.status = 'payment' AND (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') > 0 AND (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') >= " . self::PAID_SUM . ' - 0.5)', 'Refund penuh sudah selesai, tetapi status booking masih dibayar. Seharusnya dibatalkan?'],
+    ];
+
+    private const FLAG_SHORT = [
+        'no_paid'         => 'Dibayar, tanpa pembayaran berhasil',
+        'paid_not_booked' => 'Uang masuk, status belum dibayar',
+        'amount_mismatch' => 'Nominal bayar tidak cocok',
+        'no_items'        => 'Tanpa rincian slot',
+        'refund_over'     => 'Refund melebihi pembayaran',
+        'overdue_pending' => 'Lewat batas bayar',
+        'refunded_not_canceled' => 'Sudah direfund penuh, status masih dibayar',
     ];
 
     // ---- filter
@@ -47,7 +58,6 @@ class TransactionMonitor
             'from'    => (string) ($in['from'] ?? ''),
             'to'      => (string) ($in['to'] ?? ''),
             'status'  => array_key_exists($in['status'] ?? '', self::BOOKING_STATUS) ? $in['status'] : '',
-            'payment' => array_key_exists($in['payment'] ?? '', self::PAYMENT_STATE) ? $in['payment'] : '',
             'method'  => in_array($method, $methods, true) ? $method : '',
             'flagged' => (bool) ($in['flagged'] ?? false),
             'search'  => mb_substr(trim((string) ($in['search'] ?? '')), 0, 100),
@@ -101,14 +111,6 @@ class TransactionMonitor
         if ($withStatus && $f['status'] !== '') {
             $q->where('h.status', $f['status']);
         }
-
-        match ($f['payment']) {
-            'lunas'    => $q->whereRaw(self::PAID),
-            'menunggu' => $q->whereRaw('NOT ' . self::PAID)->whereRaw(self::PEND),
-            'gagal'    => $q->whereRaw('NOT ' . self::PAID)->whereRaw('NOT ' . self::PEND)->whereRaw(self::FAIL),
-            'belum'    => $q->whereRaw('NOT ' . self::ANYPAY),
-            default    => null,
-        };
 
         if ($f['method'] !== '') {
             $q->whereExists(fn ($e) => $e->selectRaw('1')->from('payments as p')
@@ -246,6 +248,19 @@ class TransactionMonitor
             (int) $row->pay_failed > 0  => 'gagal',
             default                     => 'belum',
         };
+    }
+
+    /** @return string[] */
+    public function flagLabels(object $row): array
+    {
+        $out = [];
+        foreach (self::FLAG_SHORT as $key => $text) {
+            if (! empty($row->{"flag_{$key}"})) {
+                $out[] = $text;
+            }
+        }
+
+        return $out;
     }
 
     /** @return string[] pesan untuk setiap penanda yang menyala pada baris ini */

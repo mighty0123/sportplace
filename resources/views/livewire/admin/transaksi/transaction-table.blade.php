@@ -56,10 +56,9 @@
     </div>
 
     {{-- Filter --}}
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-3 sm:grid-cols-3">
         <x-ui.select compact name="period" wire:model.live="period" label="Periode" :options="TM::PERIODS" />
-        <x-ui.select compact name="payment" wire:model.live="payment" label="Pembayaran" :options="['' => 'Semua'] + TM::PAYMENT_STATE" />
-        <x-ui.select compact name="method" wire:model.live="method" label="Metode"
+        <x-ui.select compact name="method" wire:model.live="method" label="Metode pembayaran"
                     :options="['' => 'Semua'] + collect($this->methods)->mapWithKeys(fn ($m) => [$m => $methodLabel($m)])->all()" />
         <x-ui.select compact name="sort" wire:model.live="sort" label="Urutan" :options="TM::SORTS" />
     </div>
@@ -86,7 +85,7 @@
     </div>
 
     <div wire:loading.class="opacity-60"
-        wire:target="search,setStatus,period,from,to,payment,method,sort,flagged,clearFilters,clearSearch,nextPage,previousPage,gotoPage,perPage"
+        wire:target="search,setStatus,period,from,to,method,sort,flagged,clearFilters,clearSearch,nextPage,previousPage,gotoPage,perPage"
         class="space-y-4 transition-opacity motion-reduce:transition-none">
         <p class="sr-only" role="status">{{ $rows->total() }} booking ditemukan</p>
 
@@ -110,17 +109,16 @@
                 @endif
             </x-ui.card>
         @else
-            {{-- Tabel (xl ke atas) --}}
+            {{-- Tabel (xl ke atas): satu status per baris --}}
             <div class="hidden overflow-x-auto rounded-md border border-line bg-surface xl:block">
                 <table class="w-full text-left text-body-sm">
-                    <caption class="sr-only">Daftar booking dan pembayarannya</caption>
+                    <caption class="sr-only">Daftar booking</caption>
                     <thead class="bg-surface-muted text-label-sm text-ink-body">
                         <tr>
                             <th scope="col" class="px-3 py-3 font-medium">Booking</th>
                             <th scope="col" class="px-3 py-3 font-medium">Penyewa</th>
                             <th scope="col" class="px-3 py-3 font-medium">Lapangan</th>
                             <th scope="col" class="px-3 py-3 text-right font-medium">Total</th>
-                            <th scope="col" class="px-3 py-3 font-medium">Pembayaran</th>
                             <th scope="col" class="px-3 py-3 font-medium">Status</th>
                             <th scope="col" class="px-2 py-3"><span class="sr-only">Lihat</span></th>
                         </tr>
@@ -128,10 +126,10 @@
                     <tbody class="divide-y divide-line">
                         @foreach ($rows as $r)
                             @php
-                                $url   = route('admin.transaksi.show', $r->id);
-                                $state = $monitor->paymentState($r);
-                                $flags = $monitor->flagsFor($r);
-                                $made  = \Carbon\CarbonImmutable::parse($r->created_at)->locale('id');
+                                $url        = route('admin.transaksi.show', $r->id);
+                                $flags      = $monitor->flagsFor($r);
+                                $flagLabels = $monitor->flagLabels($r);
+                                $made       = \Carbon\CarbonImmutable::parse($r->created_at)->locale('id');
                             @endphp
                             <tr wire:key="row-{{ $r->id }}" class="align-top">
                                 <td class="px-3 py-3.5">
@@ -144,23 +142,22 @@
                                 <td class="px-3 py-3.5 text-ink-body">
                                     @if ($r->item_count > 0)
                                         <p class="max-w-32 truncate" title="{{ $r->nama_lapangan }}, {{ $r->nama_venue }}">{{ $r->nama_lapangan }}</p>
-                                        @if ($r->item_count > 1)<p class="text-caption text-ink-muted">{{ $r->item_count }} slot</p>@endif
+                                        @if ($r->item_count > 1)
+                                            <p class="text-caption text-ink-muted">{{ $r->item_count }} slot</p>
+                                        @endif
                                     @else
                                         <span class="text-ink-muted">Tanpa rincian</span>
                                     @endif
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-3.5 text-right tabular-nums text-ink">{{ $rp($r->total_tagihan) }}</td>
-                                <td class="px-3 py-3.5">
-                                    <x-admin.status-badge :status="$stateStatus[$state]" :label="TM::PAYMENT_STATE[$state]" />
-                                    @if ($methodLabel($r->method))
-                                        <p class="mt-1 text-caption text-ink-muted">{{ $methodLabel($r->method) }}</p>
-                                    @endif
-                                    @if ($r->refund_done > 0 || $r->refund_open > 0)
-                                        <p class="text-caption text-warning-800">Ada refund</p>
+                                <td class="whitespace-nowrap px-3 py-3.5 text-right">
+                                    <p class="tabular-nums text-ink">{{ $rp($r->total_tagihan) }}</p>
+                                    @if ($r->pay_succes > 0 && $methodLabel($r->method))
+                                        <p class="text-caption text-ink-muted">{{ $methodLabel($r->method) }}</p>
                                     @endif
                                 </td>
                                 <td class="px-3 py-3.5">
                                     <x-admin.status-badge :status="$r->status" :label="TM::BOOKING_STATUS[$r->status] ?? null" />
+
                                     @if ($r->status === 'pending')
                                         @php
                                             $deadline = $r->expires_at
@@ -169,13 +166,29 @@
                                         @endphp
                                         <p class="mt-1 text-caption tabular-nums text-ink-muted">Batas bayar {{ $deadline->format('H.i') }}</p>
                                     @endif
-                                    @if ($flags)
-                                        <x-ui.badge tone="warning" icon="alert-circle" class="mt-1" title="{{ implode(' ', $flags) }}">Perlu dicek</x-ui.badge>
+                                        
+                                    @if ($r->refund_open > 0)
+                                        <p class="mt-1 text-caption text-ink-muted">Refund diproses</p>
+                                    @elseif ($r->refund_done > 0)
+                                        <p class="mt-1 text-caption text-ink-muted">Refund selesai</p>
+                                    @endif
+                                        
+                                    @if ($flagLabels)
+                                        <p class="mt-1.5 flex max-w-52 items-start gap-1 text-caption text-warning-800 [&>svg]:mt-0.5 [&>svg]:size-3.5"
+                                        title="{{ implode(' ', $flags) }}">
+                                            <x-ui.icon name="alert-circle" />
+                                            <span>
+                                                {{ $flagLabels[0] }}
+                                                @if (count($flagLabels) > 1)
+                                                    <span class="text-ink-muted">(+{{ count($flagLabels) - 1 }})</span>
+                                                @endif
+                                            </span>
+                                        </p>
                                     @endif
                                 </td>
                                 <td class="px-2 py-3.5 text-right">
                                     <a href="{{ $url }}" aria-label="Lihat {{ TM::code($r->id, $r->kode_booking) }}"
-                                        class="inline-grid size-9 place-items-center rounded-md border border-line-strong text-ink-body hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+                                    class="inline-grid size-9 place-items-center rounded-md border border-line-strong text-ink-body hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
                                         <x-ui.icon name="chevron-right" />
                                     </a>
                                 </td>
@@ -185,13 +198,13 @@
                 </table>
             </div>
 
-            {{-- Daftar kartu (di bawah lg) --}}
-            <ul class="space-y-3 lg:hidden">
+            {{-- Daftar kartu (di bawah xl) --}}
+            <ul class="space-y-3 xl:hidden">
                 @foreach ($rows as $r)
                     @php
-                        $url   = route('admin.transaksi.show', $r->id);
-                        $state = $monitor->paymentState($r);
-                        $flags = $monitor->flagsFor($r);
+                        $url        = route('admin.transaksi.show', $r->id);
+                        $flags      = $monitor->flagsFor($r);
+                        $flagLabels = $monitor->flagLabels($r);
                     @endphp
                     <li wire:key="card-{{ $r->id }}"
                         @class([
@@ -206,19 +219,34 @@
                                 </a>
                                 <p class="text-caption text-ink-muted">{{ \Carbon\CarbonImmutable::parse($r->created_at)->locale('id')->translatedFormat('j M Y, H.i') }}</p>
                             </div>
-                            <p class="shrink-0 text-label-lg tabular-nums text-ink">{{ $rp($r->total_tagihan) }}</p>
+                            <div class="shrink-0 text-right">
+                                <p class="text-label-lg tabular-nums text-ink">{{ $rp($r->total_tagihan) }}</p>
+                                @if ($r->pay_succes > 0 && $methodLabel($r->method))
+                                    <p class="text-caption text-ink-muted">{{ $methodLabel($r->method) }}</p>
+                                @endif
+                            </div>
                         </div>
 
                         <p class="mt-2 truncate text-body-sm text-ink">{{ $r->customer_name }}</p>
                         <p class="truncate text-caption text-ink-muted">
-                            {{ $r->item_count > 0 ? $r->nama_lapangan . ', ' . $r->nama_venue . ($r->item_count > 1 ? ', ' . $r->item_count . ' slot' : '') : 'Belum ada rincian slot' }}
+                            {{ $r->item_count > 0 ? $r->nama_lapangan . ', ' . $r->nama_venue . ($r->item_count > 1 ? ', ' . $r->item_count . ' slot' : '') : 'Tanpa rincian slot' }}
                         </p>
 
                         <div class="mt-3 flex flex-wrap items-center gap-2">
-                            <x-admin.status-badge :status="$stateStatus[$state]" :label="TM::PAYMENT_STATE[$state]" />
                             <x-admin.status-badge :status="$r->status" :label="TM::BOOKING_STATUS[$r->status] ?? null" />
-                            @if ($flags)<x-ui.badge tone="warning" icon="alert-circle">Perlu dicek</x-ui.badge>@endif
+                            @if ($r->refund_open > 0)
+                                <span class="text-caption text-ink-muted">Refund diproses</span>
+                            @elseif ($r->refund_done > 0)
+                                <span class="text-caption text-ink-muted">Refund selesai</span>
+                            @endif
                         </div>
+
+                        @if ($flagLabels)
+                            <p class="mt-2 flex items-start gap-1 text-caption text-warning-800 [&>svg]:mt-0.5 [&>svg]:size-3.5">
+                                <x-ui.icon name="alert-circle" />
+                                <span>{{ implode(', ', $flagLabels) }}</span>
+                            </p>
+                        @endif
                     </li>
                 @endforeach
             </ul>
