@@ -29,8 +29,11 @@ return new class extends Migration
         });
 
         // Hanya yang masih menunggu pembayaran yang punya batas bayar (15 menit sejak dibuat)
+        $rawExpr = DB::getDriverName() === 'sqlite'
+            ? "datetime(created_at, '+15 minutes')"
+            : 'created_at + INTERVAL 15 MINUTE';
         DB::table('booking_headers')->where('status', 'pending')
-            ->update(['expires_at' => DB::raw('created_at + INTERVAL 15 MINUTE')]);
+            ->update(['expires_at' => DB::raw($rawExpr)]);
 
         Schema::table('booking_headers', function (Blueprint $t) {
             $t->unique('kode_booking', 'booking_headers_kode_booking_unique');
