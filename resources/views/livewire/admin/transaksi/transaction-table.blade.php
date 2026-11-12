@@ -10,7 +10,10 @@
     $methodLabel  = fn ($m) => $m ? ($methodLabels[$m] ?? \Illuminate\Support\Str::headline($m)) : null;
 
     $rp      = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
-    $compact = fn ($n) => 'Rp ' . ($n >= 1e9 ? number_format($n / 1e9, 1, ',', '.') . ' M' : ($n >= 1e6 ? number_format($n / 1e6, 1, ',', '.') . ' jt' : number_format($n, 0, ',', '.')));
+    $num = fn ($n) => number_format((float) $n, 0, ',', '.');
+    $refundNote = $s['paid'] > 0
+        ? number_format($s['refund'] / $s['paid'] * 100, 1, ',', '.') . '% dari nilai terbayar'
+        : 'Belum ada nilai terbayar';
     $initialsOf = fn ($name) => \Illuminate\Support\Str::of($name ?: '?')->explode(' ')->filter()->take(2)
         ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
 
@@ -22,10 +25,10 @@
 
 <div class="space-y-4">
     <x-admin.summary-strip :items="[
-        ['label' => 'Booking', 'value' => number_format($s['count'], 0, ',', '.'), 'note' => $periodNames[$f['period']] ?? ''],
-        ['label' => 'Nilai terbayar', 'value' => $compact($s['paid']), 'note' => $rp($s['paid'])],
-        ['label' => 'Refund selesai', 'value' => $compact($s['refund']), 'note' => $rp($s['refund'])],
-        ['label' => 'Perlu dicek', 'value' => number_format($s['flagged'], 0, ',', '.'), 'alert' => $s['flagged'] > 0, 'note' => 'Data yang saling bertentangan'],
+        ['label' => 'Booking', 'value' => $num($s['count']), 'note' => $periodNames[$f['period']] ?? ''],
+        ['label' => 'Nilai terbayar (Rp)', 'value' => $num($s['paid']), 'compact' => true, 'note' => 'dari ' . $num($s['paid_bookings']) . ' booking'],
+        ['label' => 'Refund selesai (Rp)', 'value' => $num($s['refund']), 'compact' => true, 'note' => $refundNote],
+        ['label' => 'Perlu dicek', 'value' => $num($s['flagged']), 'alert' => $s['flagged'] > 0, 'note' => 'Data yang saling bertentangan'],
     ]" />
 
     {{-- Tab status booking dan pencarian --}}
@@ -120,7 +123,7 @@
                             <th scope="col" class="px-3 py-3 font-medium">Lapangan</th>
                             <th scope="col" class="px-3 py-3 text-right font-medium">Total</th>
                             <th scope="col" class="px-3 py-3 font-medium">Status</th>
-                            <th scope="col" class="px-2 py-3"><span class="sr-only">Lihat</span></th>
+                            <th scope="col" class="px-3 py-3"><span class="sr-only">Aksi</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
@@ -186,11 +189,8 @@
                                         </p>
                                     @endif
                                 </td>
-                                <td class="px-2 py-3.5 text-right">
-                                    <a href="{{ $url }}" aria-label="Lihat {{ TM::code($r->id, $r->kode_booking) }}"
-                                    class="inline-grid size-9 place-items-center rounded-md border border-line-strong text-ink-body hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-                                        <x-ui.icon name="chevron-right" />
-                                    </a>
+                                <td class="px-3 py-3.5 text-right">
+                                    <x-ui.button variant="outline" size="sm" :href="$url" aria-label="Lihat {{ TM::code($r->id, $r->kode_booking) }}">Lihat</x-ui.button>
                                 </td>
                             </tr>
                         @endforeach

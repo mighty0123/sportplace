@@ -175,13 +175,13 @@ class TransactionMonitor
         return [
             'count'   => (clone $base)->count(),
             'paid'    => (float) DB::table('payments')->whereIn('header_id', $ids)->where('status_pembayaran', 'succes')->sum('nominal_bayar'),
+            'paid_bookings' => (int) DB::table('payments')->whereIn('header_id', $ids)->where('status_pembayaran', 'succes')->distinct()->count('header_id'),
             'refund'  => (float) DB::table('refunds')->whereIn('header_id', $ids)->where('status_refund', 'completed')->sum('nominal_refund'),
             'flagged' => (clone $base)->whereRaw($this->anyFlag())->count(),
         ];
     }
 
     // ---- detail
-
     public function find(int $id): ?object
     {
         return DB::table('booking_headers as h')->join('users as u', 'u.id', '=', 'h.penyewa_id')
