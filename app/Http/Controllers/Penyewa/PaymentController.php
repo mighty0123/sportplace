@@ -221,18 +221,65 @@ class PaymentController extends Controller
         $totalBayar = max(0, $subtotal + $serviceFee);
         $slotsPayload = json_encode($parsedSlots);
 
-        // Batas waktu pembayaran 15 menit (persisten dihitung dari timestamp pembuatan booking jika ada)
+        // Batas waktu pembayaran 15 menit (persisten dihitung dari timestamp booking / checkout session)
         $tz = config('app.timezone', 'Asia/Makassar');
         $now = Carbon::now($tz);
         $expiresAt = null;
-        if ($booking && $booking->status === 'pending') {
-            $expiresAt = $booking->expires_at ? Carbon::parse($booking->expires_at, $tz) : Carbon::parse($booking->created_at, $tz)->addMinutes(15);
-        } elseif (session()->has('booking_expires_at')) {
-            $expiresAt = Carbon::createFromTimestamp(session('booking_expires_at'), $tz);
+
+        // 1. Cek apakah ada booking pending aktif milik user untuk lapangan ini
+        if (!$booking && $user) {
+            $pendingCandidate = BookingHeader::where('penyewa_id', $user->id)
+                ->where('status', 'pending')
+                ->where(function ($q) use ($now) {
+                    $q->where('expires_at', '>', $now)
+                      ->orWhere(function ($sub) use ($now) {
+                          $sub->whereNull('expires_at')
+                              ->where('created_at', '>', $now->copy()->subMinutes(15));
+                      });
+                })
+                ->whereHas('details', function ($q) use ($field) {
+                    $q->where('field_id', $field->id);
+                })
+                ->latest('id')
+                ->first();
+
+            if ($pendingCandidate) {
+                $booking = $pendingCandidate;
+            }
         }
 
-        $expiresAtTimestamp = $expiresAt ? $expiresAt->timestamp : ($now->timestamp + 900);
-        $remainingSeconds = $expiresAt ? max(0, (int) $now->diffInSeconds($expiresAt, false)) : 900;
+        if ($booking && $booking->status === 'pending') {
+            $rawExpires = $booking->getRawOriginal('expires_at');
+            $rawCreated = $booking->getRawOriginal('created_at');
+            $expiresAt = $rawExpires
+                ? Carbon::parse($rawExpires, $tz)
+                : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes(15) : null);
+        }
+
+        // 2. Jika belum ada booking di database, gunakan anchor session checkout agar tidak berulang reset saat refresh
+        $sessionKey = 'checkout_expires_at_' . $field->id;
+        if (!$expiresAt) {
+            if (session()->has($sessionKey)) {
+                $storedExpires = (int) session($sessionKey);
+                if ($storedExpires > $now->timestamp) {
+                    $expiresAt = Carbon::createFromTimestamp($storedExpires, $tz);
+                }
+            } elseif (session()->has('booking_expires_at')) {
+                $storedExpires = (int) session('booking_expires_at');
+                if ($storedExpires > $now->timestamp) {
+                    $expiresAt = Carbon::createFromTimestamp($storedExpires, $tz);
+                }
+            }
+
+            // Jika belum ada atau sudah kedaluwarsa, tentukan anchor 15 menit baru
+            if (!$expiresAt) {
+                $expiresAt = $now->copy()->addMinutes(15);
+                session([$sessionKey => $expiresAt->timestamp, 'booking_expires_at' => $expiresAt->timestamp]);
+            }
+        }
+
+        $expiresAtTimestamp = $expiresAt->timestamp;
+        $remainingSeconds = max(0, (int) $expiresAtTimestamp - $now->timestamp);
 
         return view('penyewa.review-pembayaran', [
             'booking'             => $booking,
@@ -336,18 +383,19 @@ class PaymentController extends Controller
                     ->with('warning', $errorMsg);
             }
 
-            // Cek apakah slot sudah dibooking lunas atau sedang ditahan oleh pending yang belum kedaluwarsa 15 menit
+            // Cek apakah slot sudah dibooking lunas atau sedang ditahan oleh pending pengguna lain yang belum kedaluwarsa 15 menit
             $conflictBooking = BookingDetail::where('field_id', $field->id)
                 ->whereDate('tanggal_sewa', $tanggalSewa)
                 ->where(function ($q) use ($jamMulai, $jamSelesai) {
                     $q->where('jam_mulai', '<', $jamSelesai)
                       ->where('jam_selesai', '>', $jamMulai);
                 })
-                ->whereHas('header', function ($q) use ($now) {
-                    $q->where(function ($sub) use ($now) {
+                ->whereHas('header', function ($q) use ($now, $user) {
+                    $q->where(function ($sub) use ($now, $user) {
                         $sub->whereIn('status', ['payment', 'completed'])
-                            ->orWhere(function ($pendingQ) use ($now) {
+                            ->orWhere(function ($pendingQ) use ($now, $user) {
                                 $pendingQ->where('status', 'pending')
+                                         ->where('penyewa_id', '!=', $user->id)
                                          ->where(function ($exp) use ($now) {
                                              $exp->where('expires_at', '>', $now)
                                                  ->orWhere(function ($coalesce) use ($now) {
@@ -370,33 +418,64 @@ class PaymentController extends Controller
             }
         }
 
-        // Kunci slot selama tepat 15 menit sejak pengguna pertama kali menekan Bayar Sekarang
-        $expiresAt = $now->copy()->addMinutes(15);
+        // Cek apakah pengguna sudah memiliki booking pending aktif untuk slot yang sama (jangan reset 15 menit jika sudah ada)
+        $existingBooking = BookingHeader::where('penyewa_id', $user->id)
+            ->where('status', 'pending')
+            ->where(function ($q) use ($now) {
+                $q->where('expires_at', '>', $now)
+                  ->orWhere(function ($sub) use ($now) {
+                      $sub->whereNull('expires_at')
+                          ->where('created_at', '>', $now->copy()->subMinutes(15));
+                  });
+            })
+            ->whereHas('details', function ($q) use ($field, $tanggalSewa) {
+                $q->where('field_id', $field->id)
+                  ->whereDate('tanggal_sewa', $tanggalSewa);
+            })
+            ->latest('id')
+            ->first();
 
-        // Buat record booking baru dengan status 'pending' (slot ditahan sementara hingga batas expires_at)
-        $booking = BookingHeader::create([
-            'penyewa_id'    => $user->id,
-            'total_tagihan' => $totalBayar,
-            'status'        => 'pending',
-            'expires_at'    => $expiresAt,
-            'created_at'    => $now,
-        ]);
+        if ($existingBooking) {
+            $booking = $existingBooking;
+            $rawExpires = $booking->getRawOriginal('expires_at');
+            $rawCreated = $booking->getRawOriginal('created_at');
+            $expiresAt = $rawExpires
+                ? Carbon::parse($rawExpires, $tz)
+                : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes(15) : $now->copy()->addMinutes(15));
+        } else {
+            // Kunci slot selama tepat 15 menit sejak pertama kali menekan Bayar Sekarang
+            $sessionKey = 'checkout_expires_at_' . $field->id;
+            if (session()->has($sessionKey) && (int) session($sessionKey) > $now->timestamp) {
+                $expiresAt = Carbon::createFromTimestamp((int) session($sessionKey), $tz);
+            } else {
+                $expiresAt = $now->copy()->addMinutes(15);
+            }
 
-        // Buat detail slot sesuai jadwal yang DIPILIH pengguna
-        foreach ($parsedSlots as $slot) {
-            $jamMulai = strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'];
-            $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'];
-
-            BookingDetail::create([
-                'header_id'    => $booking->id,
-                'field_id'     => $field->id,
-                'tanggal_sewa' => $tanggalSewa,
-                'jam_mulai'    => $jamMulai,
-                'jam_selesai'  => $jamSelesai,
-                'harga_slot'   => (float) $slot['price'],
-                'status_item'  => 'ongoing',
-                'created_at'   => $now,
+            // Buat record booking baru dengan status 'pending' (slot ditahan sementara hingga batas expires_at)
+            $booking = BookingHeader::create([
+                'penyewa_id'    => $user->id,
+                'total_tagihan' => $totalBayar,
+                'status'        => 'pending',
+                'expires_at'    => $expiresAt,
+                'created_at'    => $now,
             ]);
+
+            // Buat detail slot sesuai jadwal yang DIPILIH pengguna
+            foreach ($parsedSlots as $slot) {
+                $jamMulai = strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'];
+                $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'];
+
+                BookingDetail::create([
+                    'header_id'    => $booking->id,
+                    'field_id'     => $field->id,
+                    'tanggal_sewa' => $tanggalSewa,
+                    'jam_mulai'    => $jamMulai,
+                    'jam_selesai'  => $jamSelesai,
+                    'harga_slot'   => (float) $slot['price'],
+                    'status_item'  => 'ongoing',
+                    'created_at'   => $now,
+                ]);
+            }
         }
 
         // Siapkan order_id unik untuk transaksi Midtrans
@@ -466,6 +545,8 @@ class PaymentController extends Controller
             'pending_booking_id' => $booking->id,
         ]);
 
+        $remainingSeconds = max(0, (int) $expiresAt->timestamp - $now->timestamp);
+
         // Jika request via AJAX / Fetch (dari Snap popup handler)
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
@@ -473,7 +554,7 @@ class PaymentController extends Controller
                 'snap_token'           => $snapToken,
                 'booking_id'           => $booking->id,
                 'expires_at_timestamp' => $expiresAt->timestamp,
-                'remaining_seconds'    => 900,
+                'remaining_seconds'    => $remainingSeconds,
                 'redirect_url'         => route('penyewa.booking.detail', ['id' => $booking->id]),
             ]);
         }
@@ -704,11 +785,19 @@ class PaymentController extends Controller
         // Hitung batas waktu bayar 15 menit (persisten dihitung dari expires_at database)
         $tz = config('app.timezone', 'Asia/Makassar');
         $now = Carbon::now($tz);
-        $expiresAt = $booking->expires_at
-            ? Carbon::parse($booking->expires_at, $tz)
-            : Carbon::parse($booking->created_at, $tz)->addMinutes(15);
-        $remainingSeconds = max(0, (int) $now->diffInSeconds($expiresAt, false));
+        $rawExpires = $booking->getRawOriginal('expires_at');
+        $rawCreated = $booking->getRawOriginal('created_at');
+
+        if ($rawExpires) {
+            $expiresAt = Carbon::parse($rawExpires, $tz);
+        } elseif ($rawCreated) {
+            $expiresAt = Carbon::parse($rawCreated, $tz)->addMinutes(15);
+        } else {
+            $expiresAt = $now->copy()->addMinutes(15);
+        }
+
         $expiresAtTimestamp = $expiresAt->timestamp;
+        $remainingSeconds = max(0, (int) $expiresAtTimestamp - $now->timestamp);
 
         // Jika booking masih pending dan batas waktu 15 menit sudah lewat, ubah status menjadi expired
         if ($booking->status === 'pending' && $remainingSeconds <= 0) {

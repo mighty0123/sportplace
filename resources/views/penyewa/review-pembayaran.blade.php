@@ -350,8 +350,13 @@
                             <span class="block text-xs font-semibold text-amber-950 mt-0.5">Slot ditahan sementara</span>
                         </div>
                     </div>
+                    @php
+                        $initMins = floor(($remainingSeconds ?? 900) / 60);
+                        $initSecs = ($remainingSeconds ?? 900) % 60;
+                        $timerFormatted = sprintf('%02d:%02d', max(0, $initMins), max(0, $initSecs));
+                    @endphp
                     <span id="countdown-timer" class="text-sm font-mono font-black text-amber-900 bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs tabular-nums">
-                        14:59
+                        {{ $timerFormatted }}
                     </span>
                 </div>
 
@@ -448,9 +453,25 @@
 {{-- Interactive Midtrans Snap Payment & Countdown JS --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Countdown Timer (Persisten dihitung dari expires_at database, tidak akan reset saat direfresh)
-    let targetTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
+    // 1. Countdown Timer (Persisten dihitung dari expires_at database / session / localStorage, tidak akan reset saat direfresh)
+    const serverTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
+    const storageKey = 'sp_review_expires_' + {{ $field->id }};
     const timerElem = document.getElementById('countdown-timer');
+
+    let storedTarget = localStorage.getItem(storageKey);
+    let targetTimestamp = serverTimestamp;
+
+    if (storedTarget) {
+        const storedMs = parseInt(storedTarget, 10);
+        // Pertahankan timestamp sebelumnya jika selisihnya wajar (< 10 menit) dan masih di masa depan
+        if (!isNaN(storedMs) && storedMs > Date.now() && Math.abs(storedMs - serverTimestamp) < 600000) {
+            targetTimestamp = Math.min(storedMs, serverTimestamp);
+        } else {
+            localStorage.setItem(storageKey, serverTimestamp);
+        }
+    } else {
+        localStorage.setItem(storageKey, serverTimestamp);
+    }
 
     function updateCountdown() {
         if (!timerElem) return;
@@ -465,6 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (remainingSecs <= 0) {
             clearInterval(countdownInterval);
             timerElem.textContent = '00:00';
+            localStorage.removeItem(storageKey);
             const payBtn = document.getElementById('btn-pay-now');
             if (payBtn) {
                 payBtn.disabled = true;
@@ -525,6 +547,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Perbarui anchor timer 15 menit dari respon backend
                 if (res.expires_at_timestamp) {
                     targetTimestamp = res.expires_at_timestamp * 1000;
+                    localStorage.setItem(storageKey, targetTimestamp);
                     updateCountdown();
                 }
 
@@ -533,6 +556,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.snap.pay(res.snap_token, {
                         onSuccess: function (result) {
                             console.log('Midtrans Payment Success:', result);
+                            localStorage.removeItem(storageKey);
                             window.location.href = res.redirect_url + '?paid=1';
                         },
                         onPending: function (result) {

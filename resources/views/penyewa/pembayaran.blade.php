@@ -326,6 +326,11 @@
 
             {{-- Countdown Timer Card (Batas Waktu Pembayaran 15 Menit) --}}
             @if (!$isPaid && !$isCancelled)
+                @php
+                    $initMins = floor(($remainingSeconds ?? 900) / 60);
+                    $initSecs = ($remainingSeconds ?? 900) % 60;
+                    $timerFormatted = sprintf('%02d:%02d', max(0, $initMins), max(0, $initSecs));
+                @endphp
                 <div class="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 text-amber-900 shadow-2xs">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
@@ -339,7 +344,7 @@
                         </div>
                     </div>
                     <span id="countdown-timer" class="text-sm font-mono font-black text-amber-900 bg-white/90 px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs tabular-nums">
-                        --:--
+                        {{ $timerFormatted }}
                     </span>
                 </div>
             @endif
@@ -666,8 +671,23 @@ function openMidtransSnap(token) {
 document.addEventListener('DOMContentLoaded', function () {
     @if (!$isPaid && !$isCancelled)
     // 1. Countdown Timer (Persisten dihitung dari expires_at database, tidak reset saat refresh)
-    const targetTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
+    const serverTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
+    const storageKey = 'sp_booking_expires_' + {{ $booking->id }};
     const timerElem = document.getElementById('countdown-timer');
+
+    let storedTarget = localStorage.getItem(storageKey);
+    let targetTimestamp = serverTimestamp;
+
+    if (storedTarget) {
+        const storedMs = parseInt(storedTarget, 10);
+        if (!isNaN(storedMs) && storedMs > Date.now() && Math.abs(storedMs - serverTimestamp) < 600000) {
+            targetTimestamp = Math.min(storedMs, serverTimestamp);
+        } else {
+            localStorage.setItem(storageKey, serverTimestamp);
+        }
+    } else {
+        localStorage.setItem(storageKey, serverTimestamp);
+    }
 
     function updateCountdown() {
         if (!timerElem) return;
@@ -682,6 +702,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (remainingSecs <= 0) {
             clearInterval(countdownInterval);
             timerElem.textContent = '00:00';
+            localStorage.removeItem(storageKey);
             const resumeBtn = document.getElementById('btn-resume-pay');
             if (resumeBtn) {
                 resumeBtn.disabled = true;
@@ -710,10 +731,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.is_paid) {
                 clearInterval(pollInterval);
                 clearInterval(countdownInterval);
+                localStorage.removeItem(storageKey);
                 // Langsung arahkan ke halaman tiket terkonfirmasi begitu terdeteksi lunas
                 window.location.href = data.redirect || (window.location.pathname + '?paid=1');
             } else if (data.is_expired) {
                 clearInterval(pollInterval);
+                localStorage.removeItem(storageKey);
                 window.location.reload();
             }
         } catch (err) {
