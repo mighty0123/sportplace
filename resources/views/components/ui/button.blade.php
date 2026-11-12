@@ -22,7 +22,7 @@
         'sm' => 'min-h-9 px-3',
     ];
 
-    $classes = 'group inline-flex items-center justify-center gap-2 rounded-md text-button '
+    $classes = 'group inline-flex items-center justify-center gap-2 rounded-full text-button '
         . 'transition-colors duration-150 active:scale-[.98] motion-reduce:transition-none '
         . 'disabled:pointer-events-none disabled:border-transparent disabled:bg-neutral-200 disabled:text-neutral-400 '
         . $variants[$variant] . ' ' . $sizes[$size];

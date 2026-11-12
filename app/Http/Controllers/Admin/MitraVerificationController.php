@@ -26,9 +26,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class MitraVerificationController extends Controller
 {
     private const DOCUMENT_LABELS = [
-        'ktp'  => ['KTP', true],
+        'ktp' => ['KTP', true],
         'npwp' => ['NPWP', false],
-        'nib'  => ['NIB', false],
+        'nib' => ['NIB', false],
         'sewa' => ['Sewa lahan', false],
     ];
 
@@ -46,7 +46,7 @@ class MitraVerificationController extends Controller
         $checks = $this->checks->run($mitra);
 
         return view('admin.verifikasi.show', [
-            'mitra'     => $mitra,
+            'mitra' => $mitra,
             'documents' => $this->documents($mitra),
             'history'   => $this->service->history($mitra),
             'checks'    => $checks,
@@ -107,7 +107,7 @@ class MitraVerificationController extends Controller
 
         return $disk->response($path, null, [
             'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control'          => 'private, no-store',
+            'Cache-Control' => 'private, no-store',
         ]);
     }
 
@@ -129,17 +129,17 @@ class MitraVerificationController extends Controller
         $disk = Storage::disk('local');
 
         return collect(self::DOCUMENT_LABELS)->map(function (array $meta, string $key) use ($mitra, $disk) {
-            $path      = $mitra->documentPath($key);
+            $path = $mitra->documentPath($key);
             $available = $path && $disk->exists($path);
 
             return [
-                'key'       => $key,
-                'label'     => $meta[0],
-                'required'  => $meta[1],
+                'key' => $key,
+                'label' => $meta[0],
+                'required' => $meta[1],
                 'available' => (bool) $available,
-                'url'       => $available ? route('admin.verifikasi.document', [$mitra, $key]) : null,
-                'type'      => $available && strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'pdf' ? 'pdf' : 'image',
-                'size'      => $available ? Number::fileSize($disk->size($path), 1) : null,
+                'url' => $available ? route('admin.verifikasi.document', [$mitra, $key]) : null,
+                'type' => $available && strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'pdf' ? 'pdf' : 'image',
+                'size' => $available ? Number::fileSize($disk->size($path), 1) : null,
             ];
         })->values();
     }

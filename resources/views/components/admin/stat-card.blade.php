@@ -2,7 +2,7 @@
 
 <div {{ $attributes->class(
     'flex items-start justify-between gap-3 py-3.5 '
-        . 'md:flex-col md:justify-start md:gap-0 md:rounded-md md:border md:border-line md:bg-surface md:p-4 lg:p-5'
+        . 'md:flex-col md:justify-start md:gap-0 md:rounded-2xl md:border md:border-line md:bg-surface md:p-5 lg:p-6'
 ) }}>
     <div class="min-w-0 md:contents">
         <p class="text-label-md text-ink-strong md:order-1">{{ $label }}</p>

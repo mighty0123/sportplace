@@ -30,9 +30,6 @@ class TransactionTable extends Component
     #[Url(history: true)]
     public string $status = '';
 
-    #[Url(as: 'bayar')]
-    public string $payment = '';
-
     #[Url(as: 'metode')]
     public string $method = '';
 
@@ -56,7 +53,7 @@ class TransactionTable extends Component
     /** Setiap perubahan filter kembali ke halaman pertama */
     public function updated(string $name): void
     {
-        if (in_array($name, ['period', 'from', 'to', 'payment', 'method', 'flagged', 'search', 'sort', 'perPage'], true)) {
+        if (in_array($name, ['period', 'from', 'to', 'method', 'flagged', 'search', 'sort', 'perPage'], true)) {
             $this->resetPage();
         }
     }
@@ -69,7 +66,7 @@ class TransactionTable extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('period', 'from', 'to', 'status', 'payment', 'method', 'flagged', 'search', 'sort');
+        $this->reset('period', 'from', 'to', 'status', 'method', 'flagged', 'search', 'sort');
         $this->resetPage();
     }
 
@@ -84,7 +81,7 @@ class TransactionTable extends Component
     {
         return app(Monitor::class)->filters([
             'period' => $this->period, 'from' => $this->from, 'to' => $this->to, 'status' => $this->status,
-            'payment' => $this->payment, 'method' => $this->method, 'flagged' => $this->flagged,
+            'method' => $this->method, 'flagged' => $this->flagged,
             'search' => $this->search, 'sort' => $this->sort,
         ]);
     }
@@ -117,7 +114,7 @@ class TransactionTable extends Component
     {
         $f = $this->f;
 
-        return $f['period'] !== '30' || $f['status'] !== '' || $f['payment'] !== '' || $f['method'] !== ''
+        return $f['period'] !== '30' || $f['status'] !== '' || $f['method'] !== ''
             || $f['flagged'] || $f['search'] !== '' || $f['sort'] !== 'terbaru';
     }
 

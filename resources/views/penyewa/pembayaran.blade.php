@@ -230,7 +230,7 @@
                             Rincian Biaya & Invoice
                         </h3>
                         <p class="text-xs text-slate-500 mt-0.5">
-                            Metode: <strong class="text-slate-700">{{ $paymentMethod }}</strong> • Lunas Otomatis
+                            Metode: <strong class="text-slate-700">{{ $paymentMethod }}</strong> • {{ $isPaid ? 'Lunas Otomatis' : 'Menunggu Pembayaran' }}
                         </p>
                     </div>
 
@@ -280,6 +280,10 @@
                             @if ($isPaid)
                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800">
                                     LUNAS
+                                </span>
+                            @else
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-amber-100 text-amber-800">
+                                    MENUNGGU PEMBAYARAN
                                 </span>
                             @endif
                         </div>
@@ -467,34 +471,36 @@
                 </div>
             </div>
 
-            {{-- 2. ACTION BUTTONS --}}
-            <div class="space-y-2.5">
-                <!-- Beri Ulasan Button -->
-                <button
-                    type="button"
-                    onclick="alert('Terima kasih! Fitur ulasan lapangan akan segera hadir.')"
-                    class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xs transition duration-150 cursor-pointer"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <span>Beri Ulasan Lapangan</span>
-                </button>
-
-                <!-- Batalkan Pemesanan Button -->
-                @if (!$isCancelled)
+            {{-- 2. ACTION BUTTONS (Hanya tampil jika pesanan sudah lunas / terkonfirmasi) --}}
+            @if ($isPaid)
+                <div class="space-y-2.5">
+                    <!-- Beri Ulasan Button -->
                     <button
                         type="button"
-                        onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
-                        class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100/90 text-rose-600 border border-rose-200/90 font-bold text-xs sm:text-sm transition duration-150 cursor-pointer"
+                        onclick="alert('Terima kasih! Fitur ulasan lapangan akan segera hadir.')"
+                        class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xs transition duration-150 cursor-pointer"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                         </svg>
-                        <span>Batalkan Pemesanan</span>
+                        <span>Beri Ulasan Lapangan</span>
                     </button>
-                @endif
-            </div>
+
+                    <!-- Batalkan Pemesanan Button -->
+                    @if (!$isCancelled)
+                        <button
+                            type="button"
+                            onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
+                            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100/90 text-rose-600 border border-rose-200/90 font-bold text-xs sm:text-sm transition duration-150 cursor-pointer"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Batalkan Pemesanan</span>
+                        </button>
+                    @endif
+                </div>
+            @endif
 
             {{-- 3. SUPPORT HELP BOX --}}
             <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex items-center justify-between gap-3">

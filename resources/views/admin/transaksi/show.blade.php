@@ -3,7 +3,7 @@
     use App\Services\Admin\TransactionMonitor as TM;
     use Carbon\CarbonImmutable;
 
-    $code    = TM::code($trx->id);
+    $code    = TM::code($trx->id, $trx->kode_booking);
     $rp      = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
     $dt      = fn ($d, $fmt = 'j F Y, H.i') => $d ? CarbonImmutable::parse($d)->locale('id')->translatedFormat($fmt) : null;
     $labels  = DashboardStats::PAYMENT_LABELS;
@@ -43,12 +43,10 @@
                     <p class="text-body-sm text-ink-muted"><span class="break-all">{{ $trx->customer_email }}</span>{{ $trx->customer_phone ? ', ' . $trx->customer_phone : '' }}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4 lg:text-right">
-                <div>
-                    <p class="text-caption text-ink-muted">Total tagihan</p>
-                    <p class="text-metric tabular-nums text-ink">{{ $rp($trx->total_tagihan) }}</p>
-                </div>
-                <x-admin.status-badge :status="$stateStatus[$state]" :label="TM::PAYMENT_STATE[$state]" />
+            <div class="lg:text-right">
+                <p class="text-caption text-ink-muted">Total tagihan</p>
+                <p class="text-metric tabular-nums text-ink">{{ $rp($trx->total_tagihan) }}</p>
+                <p class="text-caption tabular-nums text-ink-muted">Sudah dibayar {{ $rp($ledger['dibayar']) }}</p>
             </div>
         </div>
     </x-ui.card>
@@ -145,6 +143,12 @@
                                 <dl class="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-caption">
                                     <dt class="text-ink-muted">Metode</dt><dd class="text-ink-body">{{ $method($rf->metode_refund) }}</dd>
                                     <dt class="text-ink-muted">Rekening tujuan</dt><dd class="break-all text-ink-body">{{ TM::maskAccount($rf->rekening_tujuan) }}</dd>
+                                    @if ($rf->created_at)
+                                        <dt class="text-ink-muted">Diajukan</dt><dd class="text-ink-body">{{ $dt($rf->created_at) }}</dd>
+                                    @endif
+                                    @if ($rf->status_refund === 'rejected' && $rf->alasan_penolakan)
+                                        <dt class="text-ink-muted">Alasan ditolak</dt><dd class="wrap-break-word text-ink-body">{{ $rf->alasan_penolakan }}</dd>
+                                    @endif
                                     <dt class="text-ink-muted">Diproses oleh</dt><dd class="text-ink-body">{{ $rf->processor ?? 'Belum diproses' }}</dd>
                                     @if ($rf->complated_at)
                                         <dt class="text-ink-muted">Selesai</dt><dd class="text-ink-body">{{ $dt($rf->complated_at) }}</dd>
@@ -163,6 +167,12 @@
                 <h2 class="text-h6 text-ink">Rekonsiliasi uang</h2>
                 <dl class="mt-2 space-y-2 text-body-sm">
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Total tagihan</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan']) }}</dd></div>
+                    @if ($items->isNotEmpty() && abs($ledger['tagihan'] - $itemsTotal) > 0.5)
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-muted">Selisih dari harga slot</dt>
+                            <dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan'] - $itemsTotal) }}</dd>
+                        </div>
+                    @endif
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Berhasil dibayar</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['dibayar']) }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Refund selesai</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['refund_selesai']) }}</dd></div>
                     @if ($ledger['refund_berjalan'] > 0)
@@ -177,13 +187,21 @@
                 <h2 class="text-h6 text-ink">Data booking</h2>
                 <dl class="mt-1">
                     <x-admin.info-row label="Kode" :value="$code" />
+
                     <x-admin.info-row label="Status">
                         <x-admin.status-badge :status="$trx->status" :label="TM::BOOKING_STATUS[$trx->status] ?? null" />
                     </x-admin.info-row>
+
                     <x-admin.info-row label="Dibuat" :value="$dt($trx->created_at)" />
+
+                    @if ($trx->expires_at)
+                        <x-admin.info-row label="Batas bayar" :value="$dt($trx->expires_at)" />
+                    @endif
+                    @unless ($trx->kode_booking)
+                        <p class="mt-2 text-caption text-ink-muted">Booking ini dibuat sebelum kode acak ada, jadi kodenya diturunkan dari nomor booking.</p>
+                    @endunless
                     <x-admin.info-row label="Jumlah slot" :value="(string) $items->count()" />
                 </dl>
-                <p class="mt-2 text-caption text-ink-muted">Kode diturunkan dari nomor booking, belum ada kolom kode tersendiri di database.</p>
             </x-ui.card>
         </div>
     </div>
