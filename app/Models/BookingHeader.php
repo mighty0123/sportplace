@@ -39,6 +39,11 @@ class BookingHeader extends Model
         return $this->hasOne(Payment::class, 'header_id');
     }
 
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class, 'header_id');
+    }
+
     public function isPaid(): bool
     {
         return $this->status === 'payment'

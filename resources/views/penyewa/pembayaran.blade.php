@@ -513,16 +513,24 @@
 
                     <!-- Batalkan Pemesanan Button -->
                     @if (!$isCancelled)
-                        <button
-                            type="button"
-                            onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
-                            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100/90 text-rose-600 border border-rose-200/90 font-bold text-xs sm:text-sm transition duration-150 cursor-pointer"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Batalkan Pemesanan</span>
-                        </button>
+                        @if ($canCancel)
+                            <button
+                                type="button"
+                                onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
+                                class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100/90 text-rose-600 border border-rose-200/90 font-bold text-xs sm:text-sm transition duration-150 cursor-pointer"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Batalkan Pemesanan</span>
+                            </button>
+                        @else
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                                <span class="text-xs text-slate-500 font-medium">
+                                    Pembatalan hanya boleh dilakukan minimal {{ (int) $minCancellationHours }} jam sebelum jadwal main.
+                                </span>
+                            </div>
+                        @endif
                     @endif
                 </div>
             @endif
@@ -570,9 +578,14 @@
         <h3 class="text-base font-bold text-slate-900 mb-2">
             Batalkan Pemesanan Ini?
         </h3>
-        <p class="text-xs text-slate-500 leading-relaxed mb-6">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
             Apakah Anda yakin ingin membatalkan booking lapangan <strong>{{ $venue->nama_venue }}</strong>? Tindakan ini tidak dapat diurungkan.
         </p>
+        @if ($isPaid && $refundPercent > 0)
+            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
+                <span class="font-bold">Info Refund:</span> Pengembalian dana akan diproses sebesar <strong>{{ $refundPercent }}%</strong> (Rp {{ number_format(($booking->total_tagihan * $refundPercent) / 100, 0, ',', '.') }}).
+            </div>
+        @endif
 
         <form method="POST" action="{{ route('penyewa.booking.cancel', $booking->id) }}" class="flex items-center justify-end gap-2.5">
             @csrf

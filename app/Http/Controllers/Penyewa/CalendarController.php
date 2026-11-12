@@ -165,19 +165,20 @@ class CalendarController extends Controller
                 (!$headerStatus && in_array($matchingBooking->status_item, ['ongoing', 'completed']))
             );
 
-            // 3) Ditahan: jika ada booking pending yang BELUM melewati batas 15 menit
+            // 3) Ditahan: jika ada booking pending yang BELUM melewati batas pembayaran
             $isPending = false;
             if ($matchingBooking && $headerStatus === 'pending') {
                 $rawExpires = $matchingBooking->header?->getRawOriginal('expires_at');
                 $rawCreated = $matchingBooking->header?->getRawOriginal('created_at');
+                $paymentWindowMinutes = (int) config('booking.payment_window_minutes', 15);
                 $bExpires = $rawExpires
                     ? Carbon::parse($rawExpires, $tz)
-                    : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes(15) : $now);
+                    : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes($paymentWindowMinutes) : $now);
 
                 if ($bExpires->gt($now)) {
-                    $isPending = true; // Masih dalam batas 15 menit: kunci slot (Ditahan)
+                    $isPending = true; // Masih dalam batas waktu: kunci slot (Ditahan)
                 } else {
-                    // Batas 15 menit habis: otomatis lepas kunci dan perbarui status expired
+                    // Batas bayar habis: otomatis lepas kunci dan perbarui status expired
                     if ($matchingBooking->header && $matchingBooking->header->status === 'pending') {
                         $matchingBooking->header->update(['status' => 'expired']);
                     }
