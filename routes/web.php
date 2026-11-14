@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Models\MitraProfile;
 
 Route::get('/', WelcomeController::class)->name('home');
@@ -140,5 +141,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::prefix('transaksi')->name('transaksi.')->middleware('can:view-transactions')->group(function () {
         Route::get('/', [TransactionController::class, 'index'])->name('index');
         Route::get('/{id}', [TransactionController::class, 'show'])->whereNumber('id')->name('show');
+    });
+
+    Route::prefix('laporan')->name('laporan.')->middleware('can:view-reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
+        Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
     });
 });

@@ -54,9 +54,9 @@ return [
                 ],
                 [
                     'label' => 'Laporan',
-                    'icon' => 'file-text',
-                    'route' => null,
-                ],
+                    'icon' => 'file-text', 
+                    'route' => 'admin.laporan.index', 
+                    'active' => 'admin.laporan.*'],
                 [
                     'label' => 'Pengaturan Komisi',
                     'icon' => 'percent',
