@@ -20,7 +20,7 @@
     $stateStatus = ['lunas' => 'succes', 'menunggu' => 'pending', 'gagal' => 'failed', 'belum' => 'draft'];
     $statusTabs  = ['' => 'Semua'] + TM::BOOKING_STATUS;
     $totalCount  = array_sum($counts);
-    $periodNames = ['hari-ini' => 'Hari ini', '7' => '7 hari terakhir', '30' => '30 hari terakhir', '90' => '90 hari terakhir', 'semua' => 'Semua waktu', 'kustom' => 'Rentang pilihan'];
+    $periodNames = ['hari-ini' => 'Hari ini', '7' => '7 hari terakhir', '30' => '30 hari terakhir', '90' => '90 hari terakhir', 'bulan-ini' => 'Bulan ini', 'bulan-lalu' => 'Bulan lalu', 'semua' => 'Semua waktu', 'kustom' => 'Rentang pilihan'];
 @endphp
 
 <div class="space-y-4">
