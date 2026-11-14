@@ -17,7 +17,7 @@
     <title>{{ $d->title }}</title>
     <style>
         @page { margin: 36px 36px 48px 36px; }
-        body { font-family: 'DejaVu Sans', sans-serif; font-size: 8.5pt; color: #1b2724; }
+        body { font-family: Helvetica, sans-serif; font-size: 8.5pt; color: #1b2724; }
         h1 { font-size: 16pt; margin: 0; color: #0b604f; }
         h2 { font-size: 12pt; margin: 2px 0 8px; }
         .muted { color: #5a6c5b; }

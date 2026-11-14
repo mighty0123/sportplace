@@ -120,13 +120,13 @@ class ReportExporter
     public function pdf(ReportData $d, User $admin)
     {
         $pdf = Pdf::loadView('reports.pdf', ['d' => $d, 'admin' => $admin->name, 'printedAt' => $this->printedAt()])
-            ->setPaper('a4', 'landscape');
+            ->setPaper('a4', 'landscape')
+            ->setOption(['defaultFont' => 'Helvetica']);
 
-        // Render dulu supaya nomor halaman bisa ditambahkan pada setiap halaman.
         $pdf->output();
         $dompdf = $pdf->getDomPDF();
         $canvas = $dompdf->getCanvas();
-        $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+        $font = $dompdf->getFontMetrics()->getFont('Helvetica', 'normal');
         $canvas->page_text(36, 566, 'SportPlace, ' . $d->title, $font, 8, [0.35, 0.42, 0.36]);
         $canvas->page_text(720, 566, 'Halaman {PAGE_NUM} dari {PAGE_COUNT}', $font, 8, [0.35, 0.42, 0.36]);
 
