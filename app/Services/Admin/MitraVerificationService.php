@@ -61,7 +61,7 @@ class MitraVerificationService
             // Dua bentuk nama entitas ada di data: nama pendek (helper aplikasi) dan nama class lengkap.
             ->whereIn('entitas_type', ['MitraProfile', MitraProfile::class])
             ->where('entitas_id', $profile->id)
-            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data'])
+            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data', 'ekspor'])
             ->latest('created_at')
             ->latest('id')
             ->get();

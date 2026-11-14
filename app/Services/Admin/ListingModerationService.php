@@ -178,7 +178,7 @@ class ListingModerationService
         return AuditLog::query()->with('user:id,name')
             ->whereIn('entitas_type', [$entity, "App\\Models\\{$entity}"])
             ->where('entitas_id', $id)
-            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data'])
+            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data', 'ekspor'])
             ->latest('created_at')->latest('id')->get();
     }
 
