@@ -25,6 +25,7 @@ class DashboardStats
         'ubah'         => ['diubah',         'info',    'activity'],
         'nonaktifkan'  => ['dinonaktifkan',  'warning', 'ban'],
         'aktifkan'     => ['diaktifkan',     'success', 'check-circle'],
+        'banned'       => ['diblokir', 'danger', 'ban'],
     ];
 
     public const PAYMENT_LABELS = [

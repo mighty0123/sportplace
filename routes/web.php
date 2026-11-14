@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Models\MitraProfile;
 
 Route::get('/', WelcomeController::class)->name('home');
@@ -147,5 +148,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [ReportController::class, 'index'])->name('index');
         // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
         Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
+    });
+
+    Route::prefix('pengguna')->name('pengguna.')->middleware('can:manage-users')->where(['id' => '[0-9]+'])->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [UserManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
     });
 });
