@@ -20,6 +20,9 @@
         'completed'      => ['Selesai',     'success', 'check-circle'],
         'ongoing'        => ['Berjalan',    'info',    'clock'],
         'no_show'        => ['Tidak hadir', 'warning', 'alert-circle'],
+        // akun pengguna
+        'suspend' => ['Ditangguhkan', 'warning', 'ban'],
+        'banned'  => ['Diblokir',     'danger',  'ban'],
     ];
     [$text, $tone, $icon] = $map[$status] ?? [ucfirst((string) $status), 'neutral', null];
 @endphp
