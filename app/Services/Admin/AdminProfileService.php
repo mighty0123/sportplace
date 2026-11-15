@@ -67,9 +67,8 @@ class AdminProfileService
     public function changePassword(User $user, string $newPassword, string $currentSessionId): int
     {
         return DB::transaction(function () use ($user, $newPassword, $currentSessionId) {
-            // Langsung ke tabel: aman walau model sudah memakai cast "hashed" (tidak ada hash ganda).
             DB::table('users')->where('id', $user->id)->update([
-                'password' => Hash::make($newPassword), 'remember_token' => Str::random(60), 'updated_at' => now(),
+                'password' => Hash::make($newPassword), 'updated_at' => now(),
             ]);
 
             $out = $this->deleteOtherSessions($user->id, $currentSessionId);
