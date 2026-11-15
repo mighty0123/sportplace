@@ -134,7 +134,7 @@ class DashboardStats
     {
         $rows = DB::table('audit_logs')
             ->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')
-            ->whereNotIn('audit_logs.aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data', 'ekspor'])
+            ->whereNotIn('audit_logs.aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data', 'ekspor', 'ubah_profil', 'ganti_password', 'keluar_perangkat_lain'])
             ->orderByDesc('audit_logs.created_at')
             ->limit($limit)
             ->get(['users.name as actor', 'audit_logs.aksi', 'audit_logs.entitas_type',

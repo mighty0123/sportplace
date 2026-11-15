@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Models\MitraProfile;
 
 Route::get('/', WelcomeController::class)->name('home');
@@ -155,4 +156,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/{id}', [UserManagementController::class, 'show'])->name('show');
         Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
     });
+
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/profil/sesi/keluar', [ProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
 });
