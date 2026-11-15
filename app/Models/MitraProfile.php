@@ -30,20 +30,23 @@ class MitraProfile extends Model
         'file_nib',
         'file_sewa_lahan',
         'submitted_at',
+        'reviewed_by',
+        'reviewed_at',
+        'review_checklist',
     ];
 
     public const DOCUMENTS = [
-        'ktp'  => 'file_ktp',
+        'ktp' => 'file_ktp',
         'npwp' => 'file_npwp',
-        'nib'  => 'file_nib',
+        'nib' => 'file_nib',
         'sewa' => 'file_sewa_lahan',
     ];
 
     protected function casts(): array
     {
         return [
-            'submitted_at'     => 'datetime',
-            'reviewed_at'      => 'datetime',
+            'submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
             'review_checklist' => 'array',
         ];
     }

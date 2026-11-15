@@ -7,11 +7,11 @@
     };
 @endphp
 
-<div {{ $attributes->class('md:rounded-md md:border md:border-line md:bg-surface md:p-4 lg:p-5') }}>
+<div {{ $attributes->class('md:rounded-2xl md:border md:border-line md:bg-surface md:p-5 lg:p-6') }}>
 
     {{-- Mobile: satu baris ringkas --}}
     <div class="flex items-center gap-3 px-3.5 py-3 md:hidden">
-        <span class="grid size-9 shrink-0 place-items-center rounded-md bg-brand-soft text-primary-700">
+        <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-primary-700">
             <x-ui.icon :name="$icon" />
         </span>
         <div class="min-w-0 flex-1">
@@ -27,7 +27,7 @@
     <div class="hidden md:block">
         <div class="flex items-start justify-between gap-3">
             <p class="text-label-md text-ink-strong">{{ $label }}</p>
-            <span class="grid size-9 shrink-0 place-items-center rounded-md bg-brand-soft text-primary-700">
+            <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-primary-700">
                 <x-ui.icon :name="$icon" />
             </span>
         </div>

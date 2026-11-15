@@ -48,6 +48,11 @@ class User extends Authenticatable
         return $this->hasMany(OtpCode::class);
     }
 
+    public function bookings()
+    {
+        return $this->hasMany(BookingHeader::class, 'penyewa_id');
+    }
+
     public function isMitraApproved(): bool
     {
         return $this->mitraProfile?->status === 'approved';

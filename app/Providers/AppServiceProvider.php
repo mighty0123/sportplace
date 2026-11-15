@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use App\Support\PendingCounts;
 use App\Contracts\OtpSender;
 use App\Models\User;
 use App\Services\Auth\MailOtpSender;
+use App\Support\PendingCounts;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;

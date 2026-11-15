@@ -27,7 +27,7 @@ class Venue extends Model
     {
         return [
             'submitted_at' => 'datetime',
-            'reviewed_at'  => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -35,7 +35,7 @@ class Venue extends Model
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
-    
+
     /**
      * Alias status_venue agar konsisten dengan standar PRD/kode
      */

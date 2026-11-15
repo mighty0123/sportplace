@@ -8,8 +8,8 @@
 
 @if ($disabled)
     <span aria-disabled="true" title="Segera hadir"
-        class="flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 text-label-md text-neutral-400
-            md:w-12 md:justify-center md:px-0 lg:w-auto lg:justify-start lg:px-2.5">
+        class="flex min-h-11 items-center gap-2.5 rounded-full px-3 text-label-md text-neutral-400
+            md:w-12 md:justify-center md:px-0 lg:w-auto lg:justify-start lg:px-3">
         <x-ui.icon :name="$item['icon']" />
         <span class="leading-tight md:sr-only lg:not-sr-only">
             {{ $item['label'] }}
@@ -20,8 +20,8 @@
     <a href="{{ $exists ? route($route) : '#' }}"
         @if ($active) aria-current="page" @endif
         @class([
-            'relative flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 text-label-md transition-colors',
-            'md:w-12 md:justify-center md:px-0 lg:w-auto lg:justify-start lg:px-2.5',
+            'relative flex min-h-11 items-center gap-2.5 rounded-full px-3 text-label-md transition-colors',
+            'md:w-12 md:justify-center md:px-0 lg:w-auto lg:justify-start lg:px-3',
             'bg-primary-500 text-white' => $active,
             'text-neutral-200 hover:bg-primary-800' => ! $active,
         ])>

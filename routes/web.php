@@ -1,12 +1,28 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ListingModerationController;
+use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\Mitra\DashboardController;
+use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
+use App\Http\Controllers\Mitra\FieldController;
 use App\Http\Controllers\Mitra\OnboardingController;
+use App\Http\Controllers\Mitra\OrderController;
+use App\Http\Controllers\Mitra\PricingController;
+use App\Http\Controllers\Mitra\ReportController;
+use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\Penyewa\BookingHistoryController;
+use App\Http\Controllers\Penyewa\CalendarController;
+use App\Http\Controllers\Penyewa\CourtListingController;
+use App\Http\Controllers\Penyewa\PaymentController;
+use App\Http\Controllers\Penyewa\ProfileController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +34,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Models\MitraProfile;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class)->name('home');
 
@@ -26,6 +43,8 @@ Route::get('/tentang-kami', function () {
     return view('user-public.tentang-kami');
 })->name('tentang-kami');
 Route::redirect('/about', '/tentang-kami');
+Route::get('/bantuan', [HelpController::class, 'index'])->name('bantuan');
+Route::redirect('/faq', '/bantuan');
 
 // FR-AUTH-001..005 (PUB-04/05/06). Dipakai bersama 3 peran — lihat CLAUDE.md §1.
 Route::middleware('guest')->group(function () {
@@ -56,24 +75,31 @@ Route::middleware('auth')->group(function () {
     Route::match(['get', 'post'], '/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
-// Area Penyewa — Dashboard & fitur penyewa lapangan.
+// Area Publik Penyewa — Eksplorasi katalog, detail lapangan, dan cek kalender real-time tanpa login (PRD §8.1 / PUB-01..03, FR-CAT-002..003, FR-BOOK-001)
+Route::prefix('penyewa')->name('penyewa.')->group(function () {
+    Route::get('/lapangan', [CourtListingController::class, 'index'])->name('lapangan');
+    Route::get('/lapangan/{id}', [CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::get('/booking/baru', [CourtListingController::class, 'index'])->name('booking.baru');
+    Route::get('/kalender/{id?}', [CalendarController::class, 'index'])->name('kalender');
+});
+
+// Shortcut URL publik
+Route::redirect('/lapangan', '/penyewa/lapangan');
+
+// Area Terproteksi Penyewa — Wajib login untuk booking, checkout, pembayaran, riwayat, dan profil (PRD FR-BOOK-002, FR-PAY-001)
 Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/lapangan', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('lapangan');
-    Route::get('/lapangan/{id}', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'show'])->name('lapangan.detail');
-    Route::get('/booking/baru', [\App\Http\Controllers\Penyewa\CourtListingController::class, 'index'])->name('booking.baru');
-    Route::get('/kalender/{id?}', [\App\Http\Controllers\Penyewa\CalendarController::class, 'index'])->name('kalender');
-    Route::get('/pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran');
-    Route::get('/review-pembayaran/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('pembayaran.review');
-    Route::get('/checkout/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'review'])->name('checkout');
-    Route::post('/bayar/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'processPayment'])->name('pembayaran.process');
-    Route::get('/booking/{id}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.detail');
-    Route::get('/tiket/{id?}', [\App\Http\Controllers\Penyewa\PaymentController::class, 'show'])->name('booking.ticket');
-    Route::post('/booking/{id}/cancel', [\App\Http\Controllers\Penyewa\PaymentController::class, 'cancel'])->name('booking.cancel');
-    Route::get('/booking/{id}/invoice', [\App\Http\Controllers\Penyewa\PaymentController::class, 'invoice'])->name('booking.invoice');
-    Route::get('/riwayat', [\App\Http\Controllers\Penyewa\BookingHistoryController::class, 'index'])->name('riwayat');
-    Route::get('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'index'])->name('profil');
-    Route::put('/profil', [\App\Http\Controllers\Penyewa\ProfileController::class, 'update'])->name('profil.update');
+    Route::get('/dashboard', [App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/pembayaran/{id?}', [PaymentController::class, 'review'])->name('pembayaran');
+    Route::get('/review-pembayaran/{id?}', [PaymentController::class, 'review'])->name('pembayaran.review');
+    Route::get('/checkout/{id?}', [PaymentController::class, 'review'])->name('checkout');
+    Route::post('/bayar/{id?}', [PaymentController::class, 'processPayment'])->name('pembayaran.process');
+    Route::get('/booking/{id}', [PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/tiket/{id?}', [PaymentController::class, 'show'])->name('booking.ticket');
+    Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
+    Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');
+    Route::get('/riwayat', [BookingHistoryController::class, 'index'])->name('riwayat');
+    Route::get('/profil', [ProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profil.update');
 });
 
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.
@@ -94,7 +120,7 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
     Route::middleware('mitra.approved')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
 
         // MTR-04 & MTR-05b: Manajemen Venue (FR-VENUE-001..004)
         Route::get('/venues', [VenueController::class, 'index'])->name('venues.index');
@@ -106,6 +132,42 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         Route::post('/venues/{venue}/submit', [VenueController::class, 'submitForReview'])->name('venues.submit');
         Route::post('/venues/{venue}/deactivate', [VenueController::class, 'deactivate'])->name('venues.deactivate');
         Route::post('/venues/{venue}/activate', [VenueController::class, 'activate'])->name('venues.activate');
+
+        // MTR-04 & MTR-05: Manajemen Lapangan (FR-FIELD-001..004)
+        Route::get('/venues/{venue}/fields', [FieldController::class, 'index'])->name('venues.fields.index');
+        Route::get('/venues/{venue}/fields/create', [FieldController::class, 'create'])->name('venues.fields.create');
+        Route::post('/venues/{venue}/fields', [FieldController::class, 'store'])->name('venues.fields.store');
+        Route::get('/fields', [FieldController::class, 'allFields'])->name('fields.all');
+        Route::get('/fields/{field}/edit', [FieldController::class, 'edit'])->name('fields.edit');
+        Route::put('/fields/{field}', [FieldController::class, 'update'])->name('fields.update');
+        Route::delete('/fields/{field}', [FieldController::class, 'destroy'])->name('fields.destroy');
+        Route::post('/fields/{field}/submit', [FieldController::class, 'submitForReview'])->name('fields.submit');
+        Route::post('/fields/{field}/toggle-status', [FieldController::class, 'toggleStatus'])->name('fields.toggle-status');
+        Route::delete('/fields/{field}/photos/{photo}', [FieldController::class, 'deletePhoto'])->name('fields.photos.destroy');
+        Route::post('/fields/{field}/photos/{photo}/set-primary', [FieldController::class, 'setPrimaryPhoto'])->name('fields.photos.set-primary');
+
+        // MTR-06: Jadwal Operasional & Blokir Lapangan (FR-SCHED-001..002)
+        Route::get('/jadwal', [ScheduleController::class, 'index'])->name('schedules.index');
+        Route::put('/fields/{field}/schedule', [ScheduleController::class, 'update'])->name('fields.schedule.update');
+        Route::post('/fields/{field}/blocks', [ScheduleController::class, 'storeBlock'])->name('fields.blocks.store');
+        Route::delete('/fields/{field}/blocks/{block}', [ScheduleController::class, 'destroyBlock'])->name('fields.blocks.destroy');
+        Route::get('/fields/{field}/slots-json', [ScheduleController::class, 'slotsJson'])->name('fields.slots.json');
+
+        // MTR-07: Pengaturan Harga Peak / Off-Peak (FR-FIELD-006)
+        Route::get('/harga', [PricingController::class, 'index'])->name('pricing.index');
+        Route::put('/fields/{field}/pricing', [PricingController::class, 'update'])->name('fields.pricing.update');
+
+        // MTR-08, MTR-09, MTR-10: Pesanan Mitra (FR-ORDER-001..003)
+        Route::get('/pesanan', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('/pesanan/{order}/confirm-attendance', [OrderController::class, 'confirmAttendance'])->name('orders.confirm-attendance');
+        Route::post('/pesanan/{order}/no-show', [OrderController::class, 'markNoShow'])->name('orders.no-show');
+        Route::post('/pesanan/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
+        Route::post('/pesanan-bulk-complete', [OrderController::class, 'bulkComplete'])->name('orders.bulk-complete');
+
+        // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
+        Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
     });
 });
 
@@ -125,7 +187,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
                 ->middleware('throttle:30,1')->name('reveal');
             Route::get('/{mitra}/dokumen/{type}', [MitraVerificationController::class, 'document'])
                 ->whereIn('type', array_keys(MitraProfile::DOCUMENTS))->name('document');
-    });
+        });
 
     Route::prefix('moderasi')->name('moderasi.')
         ->middleware('can:moderate-listings')
@@ -135,7 +197,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/{jenis}/{id}', [ListingModerationController::class, 'show'])->name('show');
             Route::post('/{jenis}/{id}/setujui', [ListingModerationController::class, 'approve'])->name('approve');
             Route::post('/{jenis}/{id}/tolak', [ListingModerationController::class, 'reject'])->name('reject');
-    });
+        });
 
     Route::view('/master-data', 'admin.master.index')
         ->middleware('can:manage-master-data')->name('master.index');
