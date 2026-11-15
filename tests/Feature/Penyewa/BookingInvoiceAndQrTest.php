@@ -141,4 +141,33 @@ class BookingInvoiceAndQrTest extends TestCase
         $this->assertNotEmpty($content);
         $this->assertStringStartsWith('%PDF-', $content);
     }
+
+    public function test_public_can_verify_ticket_via_scanned_qr_url_without_login(): void
+    {
+        // Siapapun yang scan QR di HP (termasuk resepsionis venue) bisa buka halaman verifikasi tiket tanpa login
+        $response = $this->get("/tiket/{$this->booking->kode_booking}");
+
+        $response->assertStatus(200);
+        $response->assertSee('SP999XYZ');
+        $response->assertSee('TIKET VALID');
+        $response->assertSee('Viva Arena Futsal');
+        $response->assertSee('Konfirmasi Check-In Sekarang');
+    }
+
+    public function test_ticket_can_be_checked_in_successfully(): void
+    {
+        $this->assertNull($this->booking->fresh()->checked_in_at);
+
+        // Petugas melakukan check-in
+        $response = $this->post("/tiket/{$this->booking->kode_booking}/checkin");
+
+        $response->assertStatus(302);
+        $this->assertNotNull($this->booking->fresh()->checked_in_at);
+
+        // Akses ulang halaman tiket: harus menampilkan status sudah check-in
+        $responseVerify = $this->get("/tiket/{$this->booking->kode_booking}");
+        $responseVerify->assertStatus(200);
+        $responseVerify->assertSee('SUDAH CHECK-IN');
+        $responseVerify->assertSee('Tiket Sudah Di-Check-In');
+    }
 }

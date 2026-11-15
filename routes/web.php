@@ -77,6 +77,10 @@ Route::prefix('penyewa')->name('penyewa.')->group(function () {
 // Shortcut URL publik
 Route::redirect('/lapangan', '/penyewa/lapangan');
 
+// Verifikasi Tiket QR Code (Publik, dapat discan langsung dari kamera smartphone atau petugas arena)
+Route::get('/tiket/{code}', [PaymentController::class, 'verifyTicket'])->name('booking.verify');
+Route::post('/tiket/{code}/checkin', [PaymentController::class, 'checkInTicket'])->name('booking.checkin');
+
 // Webhook HTTP Notification Midtrans Gateway (Publik, tanpa CSRF / Auth)
 Route::post('/api/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification');
 Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification.alt');

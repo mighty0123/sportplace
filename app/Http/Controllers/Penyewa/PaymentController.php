@@ -873,8 +873,8 @@ class PaymentController extends Controller
             default                 => 'Terkonfirmasi',
         };
 
-        // Buat QR Code asli untuk tiket yang langsung membuka URL detail booking saat discan
-        $qrTargetUrl = route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]);
+        // Buat QR Code asli untuk tiket yang langsung membuka URL verifikasi tiket saat discan
+        $qrTargetUrl = route('booking.verify', ['code' => $booking->kode_booking ?? $booking->id]);
         $qrCodeDataUri = null;
         try {
             $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrTargetUrl);
@@ -1124,7 +1124,7 @@ class PaymentController extends Controller
         // Generate QR Code untuk disematkan di nota
         $qrCodeDataUri = null;
         try {
-            $qrUrl = route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]);
+            $qrUrl = route('booking.verify', ['code' => $booking->kode_booking ?? $booking->id]);
             $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrUrl);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Gagal render QR invoice: ' . $e->getMessage());
@@ -1148,6 +1148,96 @@ class PaymentController extends Controller
         }
 
         return redirect()->route('penyewa.booking.detail', ['id' => $booking->id]);
+    }
+
+    /**
+     * Halaman Verifikasi Tiket Publik (hasil scan QR Code).
+     * Dapat dibuka langsung oleh siapapun yang memindai QR Code di kamera HP.
+     */
+    public function verifyTicket($code)
+    {
+        Carbon::setLocale('id');
+
+        $booking = BookingHeader::with([
+            'details.field.venue.city',
+            'details.field.sport',
+            'details.field.facilities',
+            'payment',
+            'user'
+        ])->where('kode_booking', $code)
+          ->orWhere('id', $code)
+          ->firstOrFail();
+
+        $qrCodeDataUri = null;
+        try {
+            $qrUrl = route('booking.verify', ['code' => $booking->kode_booking ?? $booking->id]);
+            $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrUrl);
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        $detailFirst = $booking->details->first();
+        $field = $detailFirst?->field;
+        $venue = $field?->venue;
+
+        $isPaid = in_array(strtolower($booking->status), ['payment', 'completed', 'complated']);
+        $isCheckedIn = !empty($booking->checked_in_at);
+
+        return view('penyewa.tiket-verifikasi', [
+            'booking'        => $booking,
+            'field'          => $field,
+            'venue'          => $venue,
+            'isPaid'         => $isPaid,
+            'isCheckedIn'    => $isCheckedIn,
+            'qrCodeDataUri'  => $qrCodeDataUri,
+        ]);
+    }
+
+    /**
+     * Aksi Konfirmasi Check-in Tiket oleh Resepsionis / Petugas Venue.
+     */
+    public function checkInTicket(Request $request, $code)
+    {
+        Carbon::setLocale('id');
+
+        $booking = BookingHeader::where('kode_booking', $code)
+            ->orWhere('id', $code)
+            ->firstOrFail();
+
+        $isPaid = in_array(strtolower($booking->status), ['payment', 'completed', 'complated']);
+        if (!$isPaid) {
+            $msg = 'Gagal: Tiket belum dibayar / belum lunas.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
+        if ($booking->checked_in_at) {
+            $timeFormatted = Carbon::parse($booking->checked_in_at)->translatedFormat('d M Y, H:i');
+            $msg = "Perhatian: Tiket ini sudah pernah di-check-in sebelumnya pada {$timeFormatted} WIB.";
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 409);
+            }
+            return back()->with('warning', $msg);
+        }
+
+        $booking->update([
+            'checked_in_at' => now(),
+        ]);
+
+        $timeNow = now()->translatedFormat('d M Y, H:i');
+        $successMsg = "Berhasil! Check-in diverifikasi pada {$timeNow} WIB. Selamat bermain!";
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'       => true,
+                'message'       => $successMsg,
+                'checked_in_at' => $booking->checked_in_at,
+            ]);
+        }
+
+        return back()->with('success', $successMsg);
     }
 
     /**

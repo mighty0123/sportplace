@@ -14,12 +14,14 @@ class BookingHeader extends Model
         'total_tagihan',
         'status',
         'expires_at',
+        'checked_in_at',
         'created_at',
     ];
 
     protected $casts = [
         'total_tagihan' => 'double',
         'expires_at' => 'datetime',
+        'checked_in_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 
