@@ -297,16 +297,16 @@
 
                 <!-- Footer Actions -->
                 <div class="border-t border-slate-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
-                    <button
-                        type="button"
-                        onclick="window.print()"
+                    <a
+                        href="{{ route('penyewa.booking.invoice', ['id' => $booking->kode_booking ?? $booking->id]) }}"
+                        target="_blank"
                         class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer shadow-2xs self-start"
                     >
                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                         </svg>
                         <span>Unduh Invoice (PDF)</span>
-                    </button>
+                    </a>
 
                     <p class="flex items-center gap-1.5 text-slate-500 text-[11px]">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,53 +374,30 @@
                             Tunjukkan QR code ini kepada petugas resepsionis arena saat tiba di lokasi
                         </p>
 
-                        <!-- QR Code Canvas / Vector -->
-                        <div class="relative w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-center">
-                            {{-- SVG QR Code Representation with SportPlace emblem center --}}
-                            <svg class="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                                <!-- Top Left Finder Pattern -->
-                                <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                                <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                        <!-- QR Code Canvas / Real Scannable QR Ticket -->
+                        <div class="relative w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col items-center justify-center">
+                            @if (!empty($qrCodeDataUri))
+                                <img src="{{ $qrCodeDataUri }}" alt="QR Code Tiket {{ $bookingCode }}" class="w-40 h-40 object-contain mx-auto">
+                            @else
+                                {{-- SVG QR Code Representation with SportPlace emblem center --}}
+                                <svg class="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
+                                    <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                                    <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                                    <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor"/>
+                                    <circle cx="50" cy="50" r="14" fill="#06231D"/>
+                                    <path d="M51 41l-6 10h5l-2 8 8-11h-5l2-7z" fill="#10B981"/>
+                                </svg>
+                            @endif
+                        </div>
 
-                                <!-- Top Right Finder Pattern -->
-                                <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                                <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor"/>
-
-                                <!-- Bottom Left Finder Pattern -->
-                                <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                                <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor"/>
-
-                                <!-- QR Data Grid Blocks -->
-                                <rect x="36" y="8" width="5" height="5"/>
-                                <rect x="46" y="8" width="5" height="5"/>
-                                <rect x="56" y="8" width="5" height="5"/>
-                                <rect x="36" y="18" width="5" height="5"/>
-                                <rect x="46" y="24" width="5" height="5"/>
-                                <rect x="56" y="18" width="5" height="5"/>
-
-                                <rect x="8" y="36" width="5" height="5"/>
-                                <rect x="18" y="42" width="5" height="5"/>
-                                <rect x="24" y="36" width="5" height="5"/>
-                                <rect x="8" y="52" width="5" height="5"/>
-                                <rect x="24" y="52" width="5" height="5"/>
-
-                                <rect x="69" y="36" width="5" height="5"/>
-                                <rect x="79" y="42" width="5" height="5"/>
-                                <rect x="89" y="36" width="5" height="5"/>
-                                <rect x="74" y="52" width="5" height="5"/>
-                                <rect x="84" y="58" width="5" height="5"/>
-
-                                <rect x="36" y="69" width="5" height="5"/>
-                                <rect x="46" y="76" width="5" height="5"/>
-                                <rect x="56" y="69" width="5" height="5"/>
-                                <rect x="36" y="86" width="5" height="5"/>
-                                <rect x="46" y="86" width="5" height="5"/>
-                                <rect x="56" y="86" width="5" height="5"/>
-
-                                <!-- Center SportPlace Lightning Emblem -->
-                                <circle cx="50" cy="50" r="14" fill="#06231D"/>
-                                <path d="M51 41l-6 10h5l-2 8 8-11h-5l2-7z" fill="#10B981"/>
-                            </svg>
+                        <div class="text-center pt-0.5">
+                            <span class="inline-block text-xs font-mono font-black text-[#0A7660] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                {{ $bookingCode }}
+                            </span>
+                            <p class="text-[10px] text-slate-400 mt-1">Scan QR di atas dengan ponsel untuk diarahkan langsung ke kode booking ini</p>
                         </div>
                     @else
                         <!-- Pending / Unpaid State -->

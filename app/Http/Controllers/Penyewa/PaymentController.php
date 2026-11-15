@@ -593,14 +593,14 @@ class PaymentController extends Controller
     /**
      * Tampilkan halaman Detail Booking, Invoice Pembayaran, dan Tiket Check-in Arena (Setelah Bayar).
      */
-    public function show(?int $id = null, ?Request $request = null): View
+    public function show($id = null, ?Request $request = null): View
     {
         Carbon::setLocale('id');
         $request = $request ?? request();
 
         $user = auth()->user() ?? User::where('role', 'customer')->first();
 
-        // 1. Ambil data BookingHeader berdasarkan ID, atau fallback ke booking terbaru milik user
+        // 1. Ambil data BookingHeader berdasarkan ID atau kode_booking, atau fallback ke booking terbaru milik user
         $booking = null;
 
         if ($id) {
@@ -611,7 +611,9 @@ class PaymentController extends Controller
                 'details.field.photos',
                 'payment',
                 'user'
-            ])->find($id);
+            ])->where('id', $id)
+              ->orWhere('kode_booking', $id)
+              ->first();
 
             // Jika ID yang dimasukkan adalah ID BookingDetail, cari BookingHeader induknya
             if (!$booking) {
@@ -871,6 +873,15 @@ class PaymentController extends Controller
             default                 => 'Terkonfirmasi',
         };
 
+        // Buat QR Code asli untuk tiket yang langsung membuka URL detail booking saat discan
+        $qrTargetUrl = route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]);
+        $qrCodeDataUri = null;
+        try {
+            $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrTargetUrl);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal render QR tiket: ' . $e->getMessage());
+        }
+
         return view('penyewa.pembayaran', [
             'booking'              => $booking,
             'customer'             => $customer,
@@ -896,6 +907,8 @@ class PaymentController extends Controller
             'statusLabel'          => $statusLabel,
             'snapToken'            => $snapToken,
             'remainingSeconds'     => $remainingSeconds,
+            'qrCodeDataUri'        => $qrCodeDataUri,
+            'qrTargetUrl'          => $qrTargetUrl,
             'expiresAtTimestamp'   => $expiresAtTimestamp,
             'canCancel'            => $canCancel,
             'minCancellationHours' => $minCancellationHours,
@@ -1093,24 +1106,48 @@ class PaymentController extends Controller
     }
 
     /**
-     * Unduh atau cetak invoice PDF pemesanan.
+     * Unduh atau cetak invoice PDF pemesanan (Nota 1 Halaman Landscape).
      */
-    public function invoice(int $id)
+    public function invoice($id)
     {
+        Carbon::setLocale('id');
+
         $booking = BookingHeader::with([
             'details.field.venue.city',
             'details.field.sport',
             'payment',
             'user'
-        ])->findOrFail($id);
+        ])->where('id', $id)
+          ->orWhere('kode_booking', $id)
+          ->firstOrFail();
 
-        // Jika package DomPDF terpasang, render PDF
-        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penyewa.invoice-pdf', ['booking' => $booking]);
-            return $pdf->download("Invoice-Booking-{$booking->id}.pdf");
+        // Generate QR Code untuk disematkan di nota
+        $qrCodeDataUri = null;
+        try {
+            $qrUrl = route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]);
+            $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrUrl);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal render QR invoice: ' . $e->getMessage());
         }
 
-        return redirect()->route('penyewa.booking.detail', ['id' => $id]);
+        // Render PDF satu halaman landscape A5
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penyewa.invoice-pdf', [
+                'booking'       => $booking,
+                'qrCodeDataUri' => $qrCodeDataUri,
+            ])->setPaper('a5', 'landscape');
+
+            $filename = 'Nota-Booking-' . ($booking->kode_booking ?? $booking->id) . '.pdf';
+
+            // Jika ada query ?download=1 maka download, default: stream di tab browser
+            if (request()->query('download') == '1') {
+                return $pdf->download($filename);
+            }
+
+            return $pdf->stream($filename);
+        }
+
+        return redirect()->route('penyewa.booking.detail', ['id' => $booking->id]);
     }
 
     /**
