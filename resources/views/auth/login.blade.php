@@ -23,7 +23,7 @@
 
             <!-- Global Status / Notification Message -->
             @if (session('status'))
-                <div class="mb-6 p-4 rounded-xl bg-[#E8F7EE] border border-[#BBEDE3] text-xs font-medium text-[#0A7660] flex items-start gap-2.5">
+                <div class="mb-6 p-4 rounded-2xl bg-[#E8F7EE] border border-[#BBEDE3] text-xs font-medium text-[#0A7660] flex items-start gap-2.5">
                     <svg class="w-4 h-4 shrink-0 mt-0.5 text-[#0A7660]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -54,7 +54,7 @@
                             placeholder="Masukkan email atau nomor HP" 
                             required 
                             autofocus
-                            class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#F2F7F4] border {{ $errors->has('email') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
+                            class="w-full pl-10 pr-4 py-3 rounded-2xl bg-[#F2F7F4] border {{ $errors->has('email') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
                         />
                     </div>
                     @error('email')
@@ -79,7 +79,7 @@
                             id="password" 
                             placeholder="Masukkan kata sandi akun" 
                             required 
-                            class="w-full pl-10 pr-10 py-3 rounded-xl bg-[#F2F7F4] border {{ $errors->has('password') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
+                            class="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#F2F7F4] border {{ $errors->has('password') ? 'border-red-400' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-sm text-[#1B2724] placeholder-[#7D8C78] transition outline-none"
                         />
                         <button 
                             type="button" 
@@ -119,7 +119,7 @@
                 <div class="pt-2">
                     <button 
                         type="submit" 
-                        class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm"
+                        class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm cursor-pointer"
                     >
                         <span>Masuk</span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

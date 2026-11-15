@@ -16,7 +16,7 @@
                     </div>
 
                     <!-- Heading -->
-                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#1B2724] leading-[1.15]">
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#1B2724] leading-[1.15]">
                         Temukan Lapangan.<br>
                         Mulai Permainanmu.
                     </h1>
@@ -68,7 +68,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <div class="text-lg sm:text-xl font-extrabold text-[#1B2724] leading-tight">450+</div>
+                                <div class="text-lg sm:text-xl font-bold text-[#1B2724] leading-tight">450+</div>
                                 <div class="text-xs text-[#5A6C5B] font-medium">Arena Terdaftar</div>
                             </div>
                         </div>
@@ -81,7 +81,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <div class="text-lg sm:text-xl font-extrabold text-[#1B2724] leading-tight">99.8%</div>
+                                <div class="text-lg sm:text-xl font-bold text-[#1B2724] leading-tight">99.8%</div>
                                 <div class="text-xs text-[#5A6C5B] font-medium">Akurasi Jadwal Real-Time</div>
                             </div>
                         </div>
@@ -127,7 +127,7 @@
                     Solusi Olahraga Modern
                 </div>
 
-                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1B2724] leading-tight">
+                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#1B2724] leading-tight">
                     Menghubungkan Pemain &<br class="hidden sm:inline"> Arena Tanpa Friksi
                 </h2>
 
@@ -244,7 +244,7 @@
                     <div class="inline-block text-xs font-bold uppercase tracking-wider text-[#0A7660] bg-[#DEF1E7] border border-[#BBE3D0] px-3.5 py-1.5 rounded-full mb-3">
                         Keunggulan Layanan
                     </div>
-                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1B2724]">
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#1B2724]">
                         Kenapa Memilih SportPlace?
                     </h2>
                 </div>
@@ -378,7 +378,7 @@
                     Kenyamanan Maksimal
                 </span>
                 
-                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
                     Fasilitas Lengkap untuk Setiap Laga
                 </h2>
 
@@ -409,7 +409,7 @@
                         Komunitas & Pemain
                     </span>
 
-                    <h3 class="text-2xl sm:text-3xl font-extrabold text-[#1B2724] mb-3">
+                    <h3 class="text-2xl sm:text-3xl font-bold text-[#1B2724] mb-3">
                         Untuk Penyewa Lapangan
                     </h3>
 
@@ -479,7 +479,7 @@
                         Pengelola Arena
                     </span>
 
-                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white mb-3">
+                    <h3 class="text-2xl sm:text-3xl font-bold text-white mb-3">
                         Untuk Mitra Pemilik Venue
                     </h3>
 
@@ -548,7 +548,7 @@
                 <span class="inline-block text-2xs font-bold uppercase tracking-wider text-[#0A7660] bg-[#DEF1E7] border border-[#BBE3D0] px-3.5 py-1.5 rounded-full mb-3">
                     Komitmen Standar Pelayanan
                 </span>
-                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1B2724] mb-3">
+                <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#1B2724] mb-3">
                     Dibangun untuk Pengalaman Booking yang Jelas
                 </h2>
                 <p class="text-sm text-[#5A6C5B]">
@@ -648,7 +648,7 @@
             <div class="absolute -right-12 -top-12 w-64 h-64 bg-[#DEEF25]/15 blur-3xl rounded-full pointer-events-none"></div>
 
             <div class="relative space-y-2.5 max-w-xl">
-                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                     Siap Mengatur Jadwal Main Berikutnya?
                 </h2>
                 <p class="text-sm sm:text-base text-emerald-100/90 leading-relaxed">
