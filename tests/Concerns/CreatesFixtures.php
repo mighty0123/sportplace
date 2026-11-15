@@ -104,7 +104,7 @@ trait CreatesFixtures
     /** Booking lengkap: satu slot dan satu pembayaran berhasil, dengan nominal yang konsisten */
     protected function paidBooking(User $customer, int $fieldId, int $amount = 100000, array $o = []): int
     {
-        $id = $this->booking($customer, ['total_tagihan' => $amount, 'status' => 'payment'] + $o);
+        $id = $this->booking($customer, array_merge(['total_tagihan' => $amount, 'status' => 'payment'], $o));
         $this->bookingDetail($id, $fieldId, ['harga_slot' => $amount]);
         $this->payment($id, ['nominal_bayar' => $amount]);
 
