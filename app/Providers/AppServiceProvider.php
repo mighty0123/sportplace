@@ -34,5 +34,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('moderate-listings', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
         Gate::define('manage-master-data', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
         Gate::define('view-transactions', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('view-reports', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('manage-users', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
     }
 }

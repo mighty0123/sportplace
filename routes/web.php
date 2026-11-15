@@ -24,6 +24,15 @@ use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
 use App\Http\Controllers\Penyewa\ProfileController;
 use App\Http\Controllers\WelcomeController;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ListingModerationController;
+use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Models\MitraProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -197,4 +206,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [TransactionController::class, 'index'])->name('index');
         Route::get('/{id}', [TransactionController::class, 'show'])->whereNumber('id')->name('show');
     });
+
+    Route::prefix('laporan')->name('laporan.')->middleware('can:view-reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
+        Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
+    });
+
+    Route::prefix('pengguna')->name('pengguna.')->middleware('can:manage-users')->where(['id' => '[0-9]+'])->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [UserManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
+    });
+
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/profil/sesi/keluar', [ProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
 });
