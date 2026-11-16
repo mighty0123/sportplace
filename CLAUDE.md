@@ -505,7 +505,7 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-5: Pengaturan Harga Peak / Off-Peak (MTR-07) — High Value
 *Tujuan: Menjadikan simulator harga dan aturan jam sibuk bekerja secara real-time.*
-- **LW-5.1 Komponen `PricingManager`:**
+- [x] **LW-5.1 Komponen `PricingManager`:**
   - Dual dropdown venue & lapangan yang sinkron dengan komponen jadwal.
   - Radio button skema: Flat vs Peak/Off-Peak.
   - **Dynamic Peak Rules Repeater:** Tombol "+ Tambah Aturan Peak" menambah baris aturan (hari & jam) secara dinamis tanpa JavaScript kustom.
