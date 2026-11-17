@@ -515,12 +515,12 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-6: Pesanan, Kalender Booking & Bulk Completion (MTR-08, MTR-09, MTR-10) — High Value
 *Tujuan: Manajemen operasional pesanan harian tanpa jeda muat.*
-- **LW-6.1 Komponen `OrderManager` & `BookingCalendar`:**
+- [x] **LW-6.1 Komponen `OrderManager` & `BookingCalendar`:**
   - Filter pencarian nama/ID, filter status sesi, filter status pembayaran, dan filter tanggal menggunakan query string browser (`#[Url]`).
   - Tampilan Kalender Sesi & Tabel Pesanan dengan pagination Livewire.
-- **LW-6.2 Slide-over / Modal Detail Pesanan (MTR-09):**
+- [x] **LW-6.2 Slide-over / Modal Detail Pesanan (MTR-09):**
   - Mengklik pesanan langsung membuka drawer/modal detail data penyewa, jam slot, dan bukti pembayaran tanpa meninggalkan tabel.
-- **LW-6.3 Aksi Status Pesanan & Bulk Completion (MTR-10):**
+- [x] **LW-6.3 Aksi Status Pesanan & Bulk Completion (MTR-10):**
   - Tombol aksi instan: "Konfirmasi Kehadiran", "Tandai No-Show", dan "Selesaikan Booking".
   - **Bulk Selection:** Checkbox "Pilih Semua" atau pilih per item, bar melayang (floating action bar) dengan penghitung jumlah terpilih, serta tombol modal konfirmasi "Selesaikan Semua Terpilih" dengan eksekusi background yang aman.
 

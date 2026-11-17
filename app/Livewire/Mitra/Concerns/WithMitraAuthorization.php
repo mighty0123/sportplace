@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Mitra\Concerns;
 
+use App\Models\BookingDetail;
 use App\Models\Field;
 use App\Models\MitraProfile;
 use App\Models\User;
@@ -47,7 +48,7 @@ trait WithMitraAuthorization
         }
 
         if ($profile->status !== 'approved') {
-            abort(403, 'Akun mitra Anda belum disetujui (status: ' . $profile->status . ').');
+            abort(403, 'Akun mitra Anda belum disetujui (status: '.$profile->status.').');
         }
 
         return $profile;
@@ -75,6 +76,18 @@ trait WithMitraAuthorization
         $venue = $field->venue;
         if (! $venue || $venue->mitra_id !== $profile->id) {
             abort(403, 'Anda tidak memiliki hak akses terhadap lapangan ini.');
+        }
+    }
+
+    /**
+     * Pastikan detail booking adalah milik mitra yang sedang login (BR-023).
+     */
+    protected function ensureOwnsBookingDetail(BookingDetail $detail): void
+    {
+        $profile = $this->authorizeMitraApproved();
+
+        if ($detail->field?->venue?->mitra_id !== $profile->id) {
+            abort(403, 'Anda tidak memiliki hak akses terhadap pesanan ini.');
         }
     }
 

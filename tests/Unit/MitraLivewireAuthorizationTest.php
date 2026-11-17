@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Livewire\Mitra\Concerns\WithMitraAuthorization;
+use App\Models\BookingDetail;
 use App\Models\Field;
 use App\Models\MitraProfile;
 use App\Models\User;
@@ -57,6 +58,11 @@ class MitraLivewireAuthorizationTest extends TestCase
             public function testEnsureOwnsField(Field $field): void
             {
                 $this->ensureOwnsField($field);
+            }
+
+            public function testEnsureOwnsBookingDetail(BookingDetail $detail): void
+            {
+                $this->ensureOwnsBookingDetail($detail);
             }
 
             public function testNotify(string $message, string $type = 'success'): void
@@ -188,6 +194,51 @@ class MitraLivewireAuthorizationTest extends TestCase
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Anda tidak memiliki hak akses terhadap lapangan ini.');
         $component->testEnsureOwnsField($foreignField);
+    }
+
+    public function test_booking_detail_ownership_check(): void
+    {
+        $profile = new MitraProfile;
+        $profile->id = 5;
+        $profile->status = 'approved';
+
+        $user = new User;
+        $user->role = 'mitra';
+        $user->setRelation('mitraProfile', $profile);
+
+        $component = $this->createDummyComponent($user);
+
+        $ownVenue = new Venue;
+        $ownVenue->id = 1;
+        $ownVenue->mitra_id = 5;
+
+        $ownField = new Field;
+        $ownField->id = 10;
+        $ownField->setRelation('venue', $ownVenue);
+
+        $ownDetail = new BookingDetail;
+        $ownDetail->id = 100;
+        $ownDetail->setRelation('field', $ownField);
+
+        // Own booking detail succeeds
+        $component->testEnsureOwnsBookingDetail($ownDetail);
+        $this->assertTrue(true);
+
+        $foreignVenue = new Venue;
+        $foreignVenue->id = 2;
+        $foreignVenue->mitra_id = 99;
+
+        $foreignField = new Field;
+        $foreignField->id = 11;
+        $foreignField->setRelation('venue', $foreignVenue);
+
+        $foreignDetail = new BookingDetail;
+        $foreignDetail->id = 101;
+        $foreignDetail->setRelation('field', $foreignField);
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Anda tidak memiliki hak akses terhadap pesanan ini.');
+        $component->testEnsureOwnsBookingDetail($foreignDetail);
     }
 
     public function test_notify_dispatches_event(): void
