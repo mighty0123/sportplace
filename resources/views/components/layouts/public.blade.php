@@ -6,7 +6,7 @@
     <meta name="description" content="SportPlace - Platform reservasi dan booking lapangan olahraga multi-cabang terpercaya di Indonesia. Futsal, badminton, basket, tenis, dan lainnya dengan konfirmasi instan.">
     <meta name="theme-color" content="#06231D">
 
-    <title>{{ $title ?? 'SportPlace — Cari Lapangan Olahraga. Main Tanpa Ribet.' }}</title>
+    <title>{{ $title ?? 'SportPlace — Cari Lapangan Olahraga Main Tanpa Ribet.' }}</title>
 
     <!-- Google Fonts Poppins (DS II §1) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

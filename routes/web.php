@@ -78,6 +78,14 @@ Route::prefix('penyewa')->name('penyewa.')->group(function () {
 // Shortcut URL publik
 Route::redirect('/lapangan', '/penyewa/lapangan');
 
+// Verifikasi Tiket QR Code (Publik, dapat discan langsung dari kamera smartphone atau petugas arena)
+Route::get('/tiket/{code}', [PaymentController::class, 'verifyTicket'])->name('booking.verify');
+Route::post('/tiket/{code}/checkin', [PaymentController::class, 'checkInTicket'])->name('booking.checkin');
+
+// Webhook HTTP Notification Midtrans Gateway (Publik, tanpa CSRF / Auth)
+Route::post('/api/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification');
+Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification.alt');
+
 // Area Terproteksi Penyewa — Wajib login untuk booking, checkout, pembayaran, riwayat, dan profil (PRD FR-BOOK-002, FR-PAY-001)
 Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Penyewa\DashboardController::class, 'index'])->name('dashboard');
@@ -86,6 +94,7 @@ Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function
     Route::get('/checkout/{id?}', [PaymentController::class, 'review'])->name('checkout');
     Route::post('/bayar/{id?}', [PaymentController::class, 'processPayment'])->name('pembayaran.process');
     Route::get('/booking/{id}', [PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/booking/{id}/check-status', [PaymentController::class, 'checkPaymentStatus'])->name('booking.check-status');
     Route::get('/tiket/{id?}', [PaymentController::class, 'show'])->name('booking.ticket');
     Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
     Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');

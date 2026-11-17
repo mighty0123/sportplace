@@ -9,6 +9,8 @@
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --font-weight-black: 900;
 
     /* Pakai skala dasar Tailwind */
     --text-2xs: 0.6875rem;
