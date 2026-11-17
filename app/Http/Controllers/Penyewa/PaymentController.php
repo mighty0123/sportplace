@@ -12,6 +12,8 @@ use App\Models\Refund;
 use App\Models\User;
 use App\Services\MidtransService;
 use App\Support\BookingCode;
+use App\Services\Payment\PaymentSettlementService;
+use App\Services\Payment\SettlementResult;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -795,84 +797,25 @@ class PaymentController extends Controller
     /**
      * Endpoint API untuk mengecek status pembayaran booking secara realtime (auto-polling frontend).
      */
-    public function checkPaymentStatus(int $id, Request $request): JsonResponse
+    public function checkPaymentStatus(int $id, PaymentSettlementService $settlement): JsonResponse
     {
-        $booking = $this->ownedBooking($id, ['payment']);
+        $booking = $this->ownedBooking($id); // 404 bila bukan milik pengguna
 
-        // 1. Cek jika sudah lunas
-        if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
-            return response()->json([
-                'success'  => true,
-                'status'   => 'payment',
-                'is_paid'  => true,
-                'redirect' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
-            ]);
+        // Cadangan bila webhook terlambat; dibatasi sekali per interval per pesanan dan bisa dimatikan lewat konfigurasi.
+        if ($booking->status === 'pending') {
+            $settlement->reconcileHeader($booking->id);
         }
 
-        // 2. Jika pending, tanyakan langsung status terbaru ke Midtrans API
-        if ($booking->payment && $booking->status === 'pending') {
-            $midtransService = app(MidtransService::class);
-            if ($midtransService->isConfigured()) {
-                $orderId = $booking->payment->pg_transaction_id;
-                $midtransStatus = $midtransService->getStatus($orderId);
-                if ($midtransStatus) {
-                    $trxStatus = $midtransStatus['transaction_status'] ?? '';
-                    $fraudStatus = $midtransStatus['fraud_status'] ?? '';
-                    $paymentType = $midtransStatus['payment_type'] ?? 'Midtrans';
-
-                    if ($trxStatus === 'settlement' || ($trxStatus === 'capture' && $fraudStatus === 'accept')) {
-                        $booking->payment->update([
-                            'status_pembayaran' => 'succes',
-                            'paid_at'           => now(),
-                            'metode_pembayaran' => "Midtrans ({$paymentType})",
-                        ]);
-                        $booking->update(['status' => 'payment']);
-                        $booking->refresh();
-
-                        return response()->json([
-                            'success'  => true,
-                            'status'   => 'payment',
-                            'is_paid'  => true,
-                            'redirect' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
-                        ]);
-                    } elseif (in_array($trxStatus, ['cancel', 'deny', 'expire'])) {
-                        $booking->payment->update(['status_pembayaran' => 'failed']);
-                        $booking->update(['status' => 'canceled']);
-                        return response()->json([
-                            'success' => true,
-                            'status'  => 'canceled',
-                            'is_paid' => false,
-                        ]);
-                    }
-                }
-            }
-        }
-
-        // 3. Cek batas waktu 15 menit
-        $tz = config('app.timezone', 'Asia/Makassar');
-        $now = Carbon::now($tz);
-        $expiresAt = $booking->expires_at
-            ? Carbon::parse($booking->expires_at, $tz)
-            : Carbon::parse($booking->created_at, $tz)->addMinutes(15);
-        $remainingSeconds = max(0, (int) $now->diffInSeconds($expiresAt, false));
-
-        if ($booking->status === 'pending' && $remainingSeconds <= 0) {
-            $booking->update(['status' => 'expired']);
-            return response()->json([
-                'success'           => true,
-                'status'            => 'expired',
-                'is_paid'           => false,
-                'is_expired'        => true,
-                'remaining_seconds' => 0,
-            ]);
-        }
+        $snap = $settlement->snapshot($booking->id);
 
         return response()->json([
             'success'              => true,
-            'status'               => $booking->status,
-            'is_paid'              => false,
-            'remaining_seconds'    => $remainingSeconds,
-            'expires_at_timestamp' => $expiresAt->timestamp,
+            'status'               => $snap['status'],
+            'is_paid'              => $snap['is_paid'],
+            'is_expired'           => $snap['is_expired'],
+            'remaining_seconds'    => $snap['remaining_seconds'],
+            'expires_at_timestamp' => $snap['expires_at_timestamp'],
+            'redirect'             => $snap['is_paid'] ? route('penyewa.booking.detail', ['id' => $booking->id]) : null,
         ]);
     }
 
@@ -1198,234 +1141,62 @@ class PaymentController extends Controller
      *    - Jika slot masih kosong: booking dihidupkan kembali (status: payment).
      *    - Jika slot sudah dipesan orang lain: buat refund penuh (100%).
      */
-    public function handleNotification(Request $request): JsonResponse
+    public function handleNotification(Request $request, PaymentSettlementService $settlement, MidtransService $midtrans): JsonResponse
     {
-        $payload = $request->all();
-        $provider = 'midtrans';
+        $payload   = $request->all();
+        $orderId   = (string) ($payload['order_id'] ?? '');
+        $trxStatus = (string) ($payload['transaction_status'] ?? '');
 
-        // 1. Tentukan event_id unik dari payload / gateway
-        $eventId = (string) (
-            $request->input('event_id') ??
-            $request->input('id') ??
-            $request->header('X-Event-Id') ??
-            ($request->input('transaction_id') ? ($request->input('transaction_id') . ':' . ($request->input('transaction_status') ?? 'event')) : '')
+        $eventId = (string) ($request->input('event_id') ?? $request->input('id') ?? $request->header('X-Event-Id') ?? '');
+        if ($eventId === '') {
+            $transactionId = (string) ($payload['transaction_id'] ?? '');
+            $eventId = $transactionId !== '' ? "{$transactionId}:{$trxStatus}" : "{$orderId}:{$trxStatus}";
+        }
+
+        // Kiriman yang sudah selesai diproses diabaikan. Yang gagal diproses sebelumnya boleh dicoba lagi.
+        $event = PaymentWebhookEvent::where('provider', 'midtrans')->where('event_id', $eventId)->first();
+        if ($event && $event->process_status === 'processed') {
+            return response()->json(['status' => 'ignored', 'message' => 'Duplicate webhook event ignored without effect']);
+        }
+        if (! $event) {
+            try {
+                $event = PaymentWebhookEvent::create([
+                    'provider' => 'midtrans', 'event_id' => $eventId, 'pg_transaction_id' => $orderId ?: null,
+                    'event_type' => $trxStatus ?: null, 'signature_valid' => false, 'payload' => $payload,
+                    'process_status' => 'received', 'received_at' => now(),
+                ]);
+            } catch (UniqueConstraintViolationException|QueryException) {
+                return response()->json(['status' => 'ignored', 'message' => 'Duplicate webhook event ignored without effect']);
+            }
+        }
+
+        $valid = $midtrans->verifySignature(
+            $orderId, (string) ($payload['status_code'] ?? ''), (string) ($payload['gross_amount'] ?? ''), (string) ($payload['signature_key'] ?? '')
         );
+        if (! $valid) {
+            Log::warning("Midtrans Notification: tanda tangan tidak valid untuk event {$eventId}");
+            $event->update(['signature_valid' => false, 'process_status' => 'failed', 'error' => 'Invalid signature']);
 
-        $orderId = (string) ($payload['order_id'] ?? '');
-        $transactionStatus = (string) ($payload['transaction_status'] ?? '');
-        if (empty($eventId)) {
-            $eventId = "{$orderId}:{$transactionStatus}";
-        }
-
-        // Cek kiriman ganda sebelum simpan (idempotency check)
-        $existingEvent = PaymentWebhookEvent::where('provider', $provider)
-            ->where('event_id', $eventId)
-            ->first();
-
-        if ($existingEvent && $existingEvent->process_status === 'processed') {
-            Log::info("Midtrans Webhook: Kiriman ganda diabaikan tanpa efek ({$provider} - {$eventId})");
-            return response()->json([
-                'status'  => 'ignored',
-                'message' => 'Duplicate webhook event ignored without effect',
-            ], 200);
-        }
-
-        $payment = !empty($orderId) ? Payment::where('pg_transaction_id', $orderId)->first() : null;
-
-        // Simpan kiriman mentah ke payment_webhook_events terlebih dahulu
-        try {
-            $webhookEvent = $existingEvent ?? PaymentWebhookEvent::create([
-                'provider'          => $provider,
-                'event_id'          => $eventId,
-                'pg_transaction_id' => $orderId ?: null,
-                'event_type'        => $transactionStatus ?: null,
-                'payment_id'        => $payment?->id,
-                'signature_valid'   => false,
-                'payload'           => $payload,
-                'process_status'    => 'received',
-                'received_at'       => now(),
-            ]);
-        } catch (UniqueConstraintViolationException|QueryException $e) {
-            Log::info("Midtrans Webhook: Constraint unik kiriman ganda tertangkap ({$provider} - {$eventId})");
-            return response()->json([
-                'status'  => 'ignored',
-                'message' => 'Duplicate webhook event ignored without effect',
-            ], 200);
-        }
-
-        // 2. Verifikasi tanda tangan
-        $statusCode = (string) ($payload['status_code'] ?? '');
-        $grossAmount = (string) ($payload['gross_amount'] ?? '');
-        $signatureKey = (string) ($payload['signature_key'] ?? '');
-
-        $midtransService = app(MidtransService::class);
-        $signatureValid = $midtransService->verifySignature($orderId, $statusCode, $grossAmount, $signatureKey);
-
-        if (!$signatureValid) {
-            Log::warning("Midtrans Notification: Signature tidak valid untuk event {$eventId}", $payload);
-            $webhookEvent->update([
-                'signature_valid' => false,
-                'process_status'  => 'failed',
-                'error'           => 'Invalid signature',
-            ]);
             return response()->json(['message' => 'Invalid signature'], 403);
         }
+        $event->update(['signature_valid' => true]);
 
-        $webhookEvent->update(['signature_valid' => true]);
+        // Status TIDAK dibaca dari isi kiriman: tanda tangan tidak mencakupnya. Layanan menanyakan ulang ke API Midtrans.
+        $result = $settlement->settleFromGateway($orderId, 'webhook');
 
-        // 3. Ambil ulang status dari API gateway Midtrans
-        $gatewayStatus = $midtransService->getStatus($orderId);
-        if ($gatewayStatus && is_array($gatewayStatus)) {
-            $transactionStatus = $gatewayStatus['transaction_status'] ?? $transactionStatus;
-            $fraudStatus = $gatewayStatus['fraud_status'] ?? ($payload['fraud_status'] ?? '');
-            $paymentType = $gatewayStatus['payment_type'] ?? ($payload['payment_type'] ?? 'Midtrans');
-        } else {
-            $fraudStatus = (string) ($payload['fraud_status'] ?? '');
-            $paymentType = (string) ($payload['payment_type'] ?? 'Midtrans');
-        }
-
-        if (!$payment) {
-            $payment = Payment::where('pg_transaction_id', $orderId)->first();
-        }
-
-        if (!$payment) {
-            Log::warning("Midtrans Notification: Transaksi {$orderId} tidak ditemukan");
-            $webhookEvent->update([
-                'process_status' => 'failed',
-                'error'          => "Transaksi {$orderId} tidak ditemukan",
-            ]);
-            return response()->json(['message' => 'Transaction not found'], 404);
-        }
-
-        if (!$webhookEvent->payment_id) {
-            $webhookEvent->update(['payment_id' => $payment->id]);
-        }
-
-        $booking = $payment->header ?? BookingHeader::with(['details', 'user'])->find($payment->header_id);
-
-        $tz = config('app.timezone', 'Asia/Makassar');
-        $now = Carbon::now($tz);
-
-        // 4. Ubah payments dan booking_headers
-        $isSuccess = ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept'));
-
-        if ($isSuccess) {
-            // Cek apakah pembayaran tiba setelah booking kedaluwarsa
-            $rawExpires = $booking?->getRawOriginal('expires_at');
-            $expiresAt = $rawExpires ? Carbon::parse($rawExpires, $tz) : null;
-            $isExpired = ($booking?->status === 'expired') || ($expiresAt && $now->gt($expiresAt));
-
-            if ($isExpired) {
-                // Periksa apakah slot masih kosong atau sudah dipesan orang lain
-                $slotTaken = false;
-                if ($booking && $booking->details->isNotEmpty()) {
-                    foreach ($booking->details as $detail) {
-                        $tgl = substr($detail->getRawOriginal('tanggal_sewa') ?? (string) $detail->tanggal_sewa, 0, 10);
-                        $mulai = substr($detail->getRawOriginal('jam_mulai') ?? (string) $detail->jam_mulai, 0, 8);
-                        $selesai = substr($detail->getRawOriginal('jam_selesai') ?? (string) $detail->jam_selesai, 0, 8);
-
-                        $conflict = BookingDetail::where('field_id', $detail->field_id)
-                            ->where('header_id', '!=', $booking->id)
-                            ->whereDate('tanggal_sewa', $tgl)
-                            ->where(function ($q) use ($mulai, $selesai) {
-                                $q->where('jam_mulai', '<', $selesai)
-                                  ->where('jam_selesai', '>', $mulai);
-                            })
-                            ->whereHas('header', function ($q) use ($now) {
-                                $q->where(function ($sub) use ($now) {
-                                    $sub->whereIn('status', ['payment', 'completed', 'confirmed'])
-                                        ->orWhere(function ($pendingQ) use ($now) {
-                                            $pendingQ->where('status', 'pending')
-                                                     ->where(function ($exp) use ($now) {
-                                                         $exp->where('expires_at', '>', $now)
-                                                             ->orWhere(function ($coalesce) use ($now) {
-                                                                 $coalesce->whereNull('expires_at')
-                                                                          ->where('created_at', '>', $now->copy()->subMinutes(15));
-                                                             });
-                                                     });
-                                        });
-                                });
-                            })
-                            ->exists();
-
-                        if ($conflict) {
-                            $slotTaken = true;
-                            break;
-                        }
-                    }
-                }
-
-                if ($slotTaken) {
-                    // Bila sudah dipesan orang lain: buat refund penuh (100%)
-                    $payment->update([
-                        'status_pembayaran' => 'succes',
-                        'paid_at'           => now(),
-                        'metode_pembayaran' => "Midtrans ({$paymentType})",
-                    ]);
-                    $booking?->update(['status' => 'expired']);
-
-                    $firstDetail = $booking?->details->first();
-                    Refund::create([
-                        'header_id'        => $booking->id,
-                        'detail_id'        => $firstDetail?->id,
-                        'payment_id'       => $payment->id,
-                        'alasan_refund'    => 'Pembayaran tiba setelah booking kedaluwarsa dan slot sudah dipesan pengguna lain (Full Refund)',
-                        'nominal_refund'   => (float) $payment->nominal_bayar,
-                        'metode_refund'    => "Midtrans ({$paymentType})",
-                        'rekening_tujuan'  => $booking?->user?->email ?? $booking?->user?->no_hp ?? 'Midtrans Refund',
-                        'status_refund'    => 'pending',
-                        'created_at'       => now(),
-                        'updated_at'       => now(),
-                    ]);
-
-                    Log::info("Midtrans Webhook: Booking {$booking->id} sudah kedaluwarsa & slot terisi orang lain. Dibuatkan refund penuh.");
-                } else {
-                    // Bila slot masih kosong: booking dihidupkan kembali!
-                    $payment->update([
-                        'status_pembayaran' => 'succes',
-                        'paid_at'           => now(),
-                        'metode_pembayaran' => "Midtrans ({$paymentType})",
-                    ]);
-                    $booking?->update(['status' => 'payment']);
-                    BookingDetail::where('header_id', $booking->id)->update(['status_item' => 'ongoing']);
-
-                    Log::info("Midtrans Webhook: Booking {$booking->id} kedaluwarsa tapi slot masih kosong. Booking dihidupkan kembali (status: payment).");
-                }
-            } else {
-                // Pembayaran normal sebelum kedaluwarsa
-                $payment->update([
-                    'status_pembayaran' => 'succes',
-                    'paid_at'           => now(),
-                    'metode_pembayaran' => "Midtrans ({$paymentType})",
-                ]);
-                $booking?->update(['status' => 'payment']);
-                BookingDetail::where('header_id', $booking->id)->update(['status_item' => 'ongoing']);
-            }
-        } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
-            $payment->update(['status_pembayaran' => 'failed']);
-
-            // Hanya membatalkan bila booking masih menunggu dan tidak ada pembayaran lain yang berhasil.
-            $paidElsewhere = Payment::where('header_id', $payment->header_id)
-                ->where('id', '!=', $payment->id)->where('status_pembayaran', 'succes')->exists();
-            if ($booking && $booking->status === 'pending' && ! $paidElsewhere) {
-                $booking->update(['status' => $transactionStatus === 'expire' ? 'expired' : 'canceled']);
-            }
-        } elseif ($transactionStatus === 'pending') {
-            $payment->update(['status_pembayaran' => 'pending']);
-            if ($booking && $booking->status !== 'payment') {
-                $booking->update(['status' => 'pending']);
-            }
-        }
-
-        $webhookEvent->update([
-            'process_status' => 'processed',
+        $event->update([
+            'payment_id'     => DB::table('payments')->where('pg_transaction_id', $orderId)->value('id'),
+            'process_status' => match ($result->outcome) {
+                SettlementResult::UNKNOWN, SettlementResult::IGNORED => 'ignored',
+                SettlementResult::DEFERRED, SettlementResult::MISMATCH, SettlementResult::REVIEW => 'failed',
+                default => 'processed',
+            },
+            'error'          => $result->needsAttention() ? $result->message : null,
             'processed_at'   => now(),
         ]);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Notification processed successfully',
-        ]);
+        // Midtrans mengulang kiriman bila balasan bukan 2xx. Hanya "belum bisa diverifikasi" yang pantas diulang.
+        return response()->json(['status' => $result->outcome, 'message' => $result->message], $result->shouldRetry() ? 503 : 200);
     }
 
     // ---- helpers
