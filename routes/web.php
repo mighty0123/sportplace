@@ -1,30 +1,22 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\ListingModerationController;
-use App\Http\Controllers\Admin\MitraVerificationController;
-use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HelpController;
-use App\Http\Controllers\Mitra\DashboardController;
 use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
 use App\Http\Controllers\Mitra\FieldController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\OrderController;
 use App\Http\Controllers\Mitra\PricingController;
-use App\Http\Controllers\Mitra\ReportController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
 use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
-use App\Http\Controllers\Penyewa\ProfileController;
 use App\Http\Controllers\WelcomeController;
-use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
