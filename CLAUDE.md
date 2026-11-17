@@ -528,7 +528,7 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-7: Laporan Pendapatan & Ekspor (MTR-11)
 *Tujuan: Pelaporan finansial yang responsif dan fleksibel.*
-- **LW-7.1 Komponen `ReportManager`:**
+- [x] **LW-7.1 Komponen `ReportManager`:**
   - Date Range Picker & filter lapangan reaktif.
   - Kartu Ringkasan Finansial (Pendapatan Kotor, Potongan Komisi, Pendapatan Bersih) otomatis terhitung ulang saat filter berubah.
   - Tabel transaksi pendapatan dengan pagination reaktif.

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Mitra;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mitra\ReportFilterRequest;
 use App\Models\BookingDetail;
-use App\Models\Venue;
 use App\Services\Mitra\CommissionResolver;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -17,96 +16,9 @@ class ReportController extends Controller
     /**
      * MTR-11 / T9.1: Laporan Pendapatan dan Riwayat Transaksi Mitra (FR-REPORT-002).
      */
-    public function index(ReportFilterRequest $request, CommissionResolver $commissionResolver): View
+    public function index(): View
     {
-        $user = Auth::user();
-        $mitra = $user->mitraProfile;
-
-        // Ambil venue dan lapangan milik mitra untuk dropdown filter
-        $venues = Venue::with(['fields' => fn ($q) => $q->orderBy('nama_lapangan')])
-            ->where('mitra_id', $mitra->id)
-            ->get();
-
-        $allFields = $venues->flatMap->fields;
-
-        // Resolusi Periode Tanggal
-        $periodMode = $request->query('period_mode', 'month');
-        $selectedMonth = $request->query('month', Carbon::now()->format('Y-m'));
-        $fieldId = $request->query('field_id');
-        $statusFilter = $request->query('status_filter', 'completed'); // 'completed' (default) or 'all_paid'
-
-        if ($periodMode === 'range' && $request->filled('start_date') && $request->filled('end_date')) {
-            $startDate = Carbon::parse($request->query('start_date'))->startOfDay();
-            $endDate = Carbon::parse($request->query('end_date'))->endOfDay();
-        } else {
-            $periodMode = 'month';
-            $monthDate = Carbon::createFromFormat('Y-m', $selectedMonth) ?: Carbon::now();
-            $startDate = $monthDate->copy()->startOfMonth()->startOfDay();
-            $endDate = $monthDate->copy()->endOfMonth()->endOfDay();
-        }
-
-        // Query Dasar: Terisolasi hanya untuk lapangan mitra login (BR-023, FR-REPORT-002)
-        $baseQuery = BookingDetail::forMitra($mitra->id)
-            ->whereBetween('tanggal_sewa', [$startDate->toDateString(), $endDate->toDateString()])
-            ->whereHas('header', function ($q) {
-                $q->where('status', 'payment')
-                    ->orWhereHas('payment', fn ($p) => $p->where('status_pembayaran', 'succes'));
-            });
-
-        // Filter status pesanan (default: hanya sesi yang telah selesai / completed)
-        if ($statusFilter === 'completed') {
-            $baseQuery->where('status_item', 'completed');
-        }
-
-        // Filter per Lapangan
-        if ($fieldId && $allFields->contains('id', (int) $fieldId)) {
-            $baseQuery->where('field_id', (int) $fieldId);
-        }
-
-        // Kalkulasi Ringkasan Finansial (T9.3 & AC: REPORT-002-01)
-        $totalBookings = (clone $baseQuery)->count();
-        $grossRevenue = (float) (clone $baseQuery)->sum('harga_slot');
-
-        $commissionData = $commissionResolver->calculate($grossRevenue);
-        $ratePercent = $commissionData['rate_percent'];
-        $commissionAmount = $commissionData['commission'];
-        $netRevenue = $commissionData['net']; // Bersih = Kotor - Komisi
-        $isCommissionConfigured = $commissionData['is_configured'];
-
-        $averagePerBooking = $totalBookings > 0 ? round($grossRevenue / $totalBookings, 2) : 0;
-
-        // Informasi Wallet (T3.3 / FR-FIN-002)
-        $wallet = $user->wallet;
-        $saldoAktif = $wallet ? (float) $wallet->saldo_aktif : 0;
-
-        // Ambil Daftar Transaksi dengan Paginasi
-        $transactions = (clone $baseQuery)
-            ->with(['header.user', 'header.payment', 'field.venue', 'field.sport'])
-            ->orderBy('tanggal_sewa', 'desc')
-            ->orderBy('jam_mulai', 'desc')
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('mitra.reports.index', [
-            'periodMode' => $periodMode,
-            'selectedMonth' => $selectedMonth,
-            'startDate' => $startDate->toDateString(),
-            'endDate' => $endDate->toDateString(),
-            'selectedFieldId' => $fieldId,
-            'statusFilter' => $statusFilter,
-            'venues' => $venues,
-            'allFields' => $allFields,
-            'totalBookings' => $totalBookings,
-            'grossRevenue' => $grossRevenue,
-            'ratePercent' => $ratePercent,
-            'commissionAmount' => $commissionAmount,
-            'netRevenue' => $netRevenue,
-            'isCommissionConfigured' => $isCommissionConfigured,
-            'averagePerBooking' => $averagePerBooking,
-            'saldoAktif' => $saldoAktif,
-            'transactions' => $transactions,
-            'commissionResolver' => $commissionResolver,
-        ]);
+        return view('mitra.reports.index');
     }
 
     /**
@@ -168,7 +80,7 @@ class ReportController extends Controller
             $handle = fopen('php://output', 'w');
 
             // Tambahkan UTF-8 BOM untuk kompatibilitas sempurna di Microsoft Excel
-            fputs($handle, "\xEF\xBB\xBF");
+            fwrite($handle, "\xEF\xBB\xBF");
 
             // Header Kolom CSV
             fputcsv($handle, [
