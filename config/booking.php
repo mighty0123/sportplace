@@ -9,4 +9,7 @@ return [
 
     // persentase refund untuk pembatalan yang memenuhi syarat
     'refund_percent' => 100,
+
+    'poll_reconcile' => (bool) env('BOOKING_POLL_RECONCILE', true),
+    'reconcile_interval_seconds' => 10,
 ];
