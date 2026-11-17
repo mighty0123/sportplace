@@ -70,6 +70,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('penyewa')->name('penyewa.')->group(function () {
     Route::get('/lapangan', [CourtListingController::class, 'index'])->name('lapangan');
     Route::get('/lapangan/{id}', [CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::post('/lapangan/{id}/review', [CourtListingController::class, 'storeReview'])->name('lapangan.review');
     Route::get('/booking/baru', [CourtListingController::class, 'index'])->name('booking.baru');
     Route::get('/kalender/{id?}', [CalendarController::class, 'index'])->name('kalender');
 });
