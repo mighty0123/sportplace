@@ -37,6 +37,9 @@ class TransactionMonitor
         'no_items'        => ['(NOT ' . self::ITEMS . ')', 'Booking tidak memiliki rincian slot.'],
         'refund_over'     => ['(' . self::REFUND_ACTIVE . ' > ' . self::PAID_SUM . ' + 0.5)', 'Total refund melebihi nominal yang berhasil dibayar.'],
         'refunded_not_canceled' => ["(h.status = 'payment' AND (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') > 0 AND (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') >= " . self::PAID_SUM . ' - 0.5)', 'Refund penuh sudah selesai, tetapi status booking masih dibayar. Seharusnya dibatalkan?'],
+        'subtotal_mismatch' => ['(h.subtotal_slot IS NOT NULL AND ' . self::ITEMS . ' AND ABS(h.subtotal_slot - ' . self::ITEMS_SUM . ') > 0.5)', 'Subtotal tidak cocok dengan jumlah harga slot.'],
+        'total_mismatch' => ['(h.subtotal_slot IS NOT NULL AND h.biaya_layanan IS NOT NULL AND ABS(h.subtotal_slot + h.biaya_layanan - h.total_tagihan) > 0.5)', 'Total tagihan tidak cocok dengan subtotal ditambah biaya layanan.'],
+        'total_below_subtotal' => ['(h.subtotal_slot IS NOT NULL AND h.total_tagihan < h.subtotal_slot - 0.5)', 'Total tagihan lebih kecil dari jumlah harga slot, padahal tidak ada diskon. Periksa harga yang dibayar.'],
     ];
 
     private const FLAG_SHORT = [
@@ -47,6 +50,9 @@ class TransactionMonitor
         'refund_over'     => 'Refund melebihi pembayaran',
         'overdue_pending' => 'Lewat batas bayar',
         'refunded_not_canceled' => 'Sudah direfund penuh, status masih dibayar',
+        'subtotal_mismatch' => 'Subtotal tidak cocok dengan slot',
+        'total_mismatch'    => 'Total tidak cocok dengan rincian',
+        'total_below_subtotal' => 'Total di bawah harga slot',
     ];
 
     // ---- filter
@@ -210,7 +216,7 @@ class TransactionMonitor
     {
         return DB::table('booking_headers as h')->join('users as u', 'u.id', '=', 'h.penyewa_id')
             ->where('h.id', $id)
-            ->selectRaw($this->core() . ', u.no_hp as customer_phone')
+            ->selectRaw($this->core() . ', u.no_hp as customer_phone, u.email as customer_email')
             ->first();
     }
 
@@ -316,7 +322,7 @@ class TransactionMonitor
         $defs  = $this->flagDefs();
         $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys($defs), $defs));
 
-        return "h.id, h.kode_booking, h.total_tagihan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name, u.email as customer_email,
+        return "h.id, h.kode_booking, h.total_tagihan, h.subtotal_slot, h.biaya_layanan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name,
             (SELECT COUNT(*) FROM booking_details d WHERE d.header_id = h.id) as item_count,
             " . self::PAID_SUM . " as paid_total,
             {$count('succes')} as pay_succes, {$count('pending')} as pay_pending, {$count('failed')} as pay_failed,

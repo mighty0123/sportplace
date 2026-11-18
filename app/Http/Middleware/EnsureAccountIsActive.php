@@ -17,19 +17,23 @@ class EnsureAccountIsActive
     {
         $user = $request->user();
 
-        if ($user && $user->status_akun !== 'aktif') {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        if ($user) {
+            $status = $user->status_akun ?? $user->newQuery()->whereKey($user->getKey())->value('status_akun');
 
-            // Permintaan Livewire atau JSON tidak bisa menampilkan halaman login; beri tahu dengan kode status
-            if ($request->expectsJson() || $request->header('X-Livewire')) {
-                abort(401, 'Akun tidak aktif.');
+            if ($status !== 'aktif') {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                // Permintaan Livewire atau JSON tidak bisa menampilkan halaman login
+                if ($request->expectsJson() || $request->header('X-Livewire')) {
+                    abort(401, 'Akun tidak aktif.');
+                }
+
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Akun ini sedang ditangguhkan atau diblokir. Hubungi dukungan SportPlace bila ada pertanyaan.',
+                ]);
             }
-
-            return redirect()->route('login')->withErrors([
-                'email' => 'Akun ini sedang ditangguhkan atau diblokir. Hubungi dukungan SportPlace bila ada pertanyaan.',
-            ]);
         }
 
         return $next($request);

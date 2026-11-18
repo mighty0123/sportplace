@@ -141,7 +141,10 @@
     
                         <h2 class="text-h5 text-ink">Aktivitas terbaru</h2>
     
-                        <div x-ref="region" class="relative mt-3 overflow-hidden lg:min-h-0 lg:flex-1">
+                        <div x-ref="region" @class([
+                            'relative mt-3 overflow-hidden lg:min-h-0 lg:flex-1',
+                            'flex items-center justify-center py-8' => blank($activity),
+                        ])>
                             <ol x-ref="list">
                                 @forelse ($activity as $row)
                                     <li class="flex gap-3 border-t border-line py-3 first:border-t-0 first:pt-0">
@@ -163,7 +166,16 @@
                                         </div>
                                     </li>
                                 @empty
-                                    <li class="text-body-sm text-ink-muted">Belum ada aktivitas. Tindakan verifikasi dan moderasi akan muncul di sini.</li>
+                                    <li class="mx-auto flex max-w-60 flex-col items-center text-center">
+                                        <span class="grid size-12 place-items-center rounded-full bg-surface-muted text-ink-muted">
+                                            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                                                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                                            </svg>
+                                        </span>
+                                        <p class="mt-3 text-body-sm font-semibold text-ink">Belum ada aktivitas</p>
+                                        <p class="mt-1 text-caption text-ink-muted">Verifikasi mitra dan moderasi listing yang kamu proses akan tercatat di sini.</p>
+                                    </li>
                                 @endforelse
                             </ol>
                         </div>

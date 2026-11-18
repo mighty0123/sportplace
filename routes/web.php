@@ -1,36 +1,29 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\ListingModerationController;
-use App\Http\Controllers\Admin\MitraVerificationController;
-use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HelpController;
-use App\Http\Controllers\Mitra\DashboardController;
 use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
 use App\Http\Controllers\Mitra\FieldController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\OrderController;
 use App\Http\Controllers\Mitra\PricingController;
-use App\Http\Controllers\Mitra\ReportController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
 use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
-use App\Http\Controllers\Penyewa\ProfileController;
 use App\Http\Controllers\WelcomeController;
-use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Models\MitraProfile;
@@ -79,12 +72,21 @@ Route::middleware('auth')->group(function () {
 Route::prefix('penyewa')->name('penyewa.')->group(function () {
     Route::get('/lapangan', [CourtListingController::class, 'index'])->name('lapangan');
     Route::get('/lapangan/{id}', [CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::post('/lapangan/{id}/review', [CourtListingController::class, 'storeReview'])->name('lapangan.review');
     Route::get('/booking/baru', [CourtListingController::class, 'index'])->name('booking.baru');
     Route::get('/kalender/{id?}', [CalendarController::class, 'index'])->name('kalender');
 });
 
 // Shortcut URL publik
 Route::redirect('/lapangan', '/penyewa/lapangan');
+
+// Verifikasi Tiket QR Code (Publik, dapat discan langsung dari kamera smartphone atau petugas arena)
+Route::get('/tiket/{code}', [PaymentController::class, 'verifyTicket'])->name('booking.verify');
+Route::post('/tiket/{code}/checkin', [PaymentController::class, 'checkInTicket'])->name('booking.checkin');
+
+// Webhook HTTP Notification Midtrans Gateway (Publik, tanpa CSRF / Auth)
+Route::post('/api/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification');
+Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification.alt');
 
 // Area Terproteksi Penyewa — Wajib login untuk booking, checkout, pembayaran, riwayat, dan profil (PRD FR-BOOK-002, FR-PAY-001)
 Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
@@ -94,6 +96,7 @@ Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function
     Route::get('/checkout/{id?}', [PaymentController::class, 'review'])->name('checkout');
     Route::post('/bayar/{id?}', [PaymentController::class, 'processPayment'])->name('pembayaran.process');
     Route::get('/booking/{id}', [PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/booking/{id}/check-status', [PaymentController::class, 'checkPaymentStatus'])->name('booking.check-status');
     Route::get('/tiket/{id?}', [PaymentController::class, 'show'])->name('booking.ticket');
     Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
     Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');
@@ -211,6 +214,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [ReportController::class, 'index'])->name('index');
         // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
         Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
+    });
+
+    Route::prefix('komisi')->name('komisi.')->middleware('can:manage-commission')->group(function () {
+        Route::get('/', [CommissionController::class, 'index'])->name('index');
+        Route::post('/tarif', [CommissionController::class, 'store'])->middleware('throttle:20,1')->name('store');
     });
 
     Route::prefix('pengguna')->name('pengguna.')->middleware('can:manage-users')->where(['id' => '[0-9]+'])->group(function () {

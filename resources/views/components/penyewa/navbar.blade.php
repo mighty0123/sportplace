@@ -27,7 +27,7 @@
 @endphp
 
 <!-- ========== UNIFIED SPORTPLACE NAVBAR ========== -->
-<header id="main-navbar" class="sticky top-0 z-40 bg-[#06231D] border-b border-[#0B322A] shadow-md transition-all duration-200">
+<header id="main-navbar" class="sticky top-0 z-50 bg-[#06231D] border-b border-[#0B322A] shadow-md transition-all duration-200">
     <div class="max-w-screen-2xl w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-18 gap-3 sm:gap-4 lg:gap-6">
 

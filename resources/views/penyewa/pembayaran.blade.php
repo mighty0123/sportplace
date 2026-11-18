@@ -230,7 +230,7 @@
                             Rincian Biaya & Invoice
                         </h3>
                         <p class="text-xs text-slate-500 mt-0.5">
-                            Metode: <strong class="text-slate-700">{{ $paymentMethod }}</strong> • Lunas Otomatis
+                            Metode: <strong class="text-slate-700">{{ $paymentMethod }}</strong> • {{ $isPaid ? 'Lunas Otomatis' : 'Menunggu Pembayaran' }}
                         </p>
                     </div>
 
@@ -255,16 +255,6 @@
                         <span>• Biaya Layanan Platform</span>
                         <span class="font-bold text-slate-800 tabular-nums shrink-0">Rp {{ number_format($serviceFee, 0, ',', '.') }}</span>
                     </div>
-
-                    <div class="flex items-center justify-between text-emerald-700 font-semibold">
-                        <span class="flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                            </svg>
-                            <span>Promo Diskon (SPORTSPACEBARU)</span>
-                        </span>
-                        <span class="tabular-nums shrink-0">-Rp {{ number_format($promoDiscount, 0, ',', '.') }}</span>
-                    </div>
                 </div>
 
                 <!-- Divider & Total -->
@@ -279,6 +269,10 @@
                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-100 text-emerald-800">
                                     LUNAS
                                 </span>
+                            @else
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-amber-100 text-amber-800">
+                                    MENUNGGU PEMBAYARAN
+                                </span>
                             @endif
                         </div>
                     </div>
@@ -291,16 +285,16 @@
 
                 <!-- Footer Actions -->
                 <div class="border-t border-slate-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
-                    <button
-                        type="button"
-                        onclick="window.print()"
+                    <a
+                        href="{{ route('penyewa.booking.invoice', ['id' => $booking->kode_booking ?? $booking->id]) }}"
+                        target="_blank"
                         class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer shadow-2xs self-start"
                     >
                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                         </svg>
                         <span>Unduh Invoice (PDF)</span>
-                    </button>
+                    </a>
 
                     <p class="flex items-center gap-1.5 text-slate-500 text-[11px]">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -316,7 +310,32 @@
         {{-- =========================================================
              RIGHT COLUMN (5-4 Cols): Tiket Check-in Arena + Actions
         ========================================================= --}}
-        <div class="lg:col-span-5 xl:col-span-4 space-y-5 sticky top-24">
+        <div class="lg:col-span-5 xl:col-span-4 space-y-4 sticky top-24">
+
+            {{-- Countdown Timer Card (Batas Waktu Pembayaran 15 Menit) --}}
+            @if (!$isPaid && !$isCancelled)
+                @php
+                    $initMins = floor(($remainingSeconds ?? 900) / 60);
+                    $initSecs = ($remainingSeconds ?? 900) % 60;
+                    $timerFormatted = sprintf('%02d:%02d', max(0, $initMins), max(0, $initSecs));
+                @endphp
+                <div class="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 text-amber-900 shadow-2xs">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke-width="2" stroke-dasharray="32" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="block text-[11px] font-bold uppercase tracking-wider text-amber-800">Selesaikan Pembayaran</span>
+                            <span class="block text-xs font-semibold text-amber-950 mt-0.5">Slot ditahan 15 menit</span>
+                        </div>
+                    </div>
+                    <span id="countdown-timer" class="text-sm font-mono font-black text-amber-900 bg-white/90 px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs tabular-nums">
+                        {{ $timerFormatted }}
+                    </span>
+                </div>
+            @endif
 
             {{-- 1. KARTU TIKET CHECK-IN ARENA --}}
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-md overflow-hidden relative">
@@ -338,58 +357,64 @@
 
                 <!-- Ticket Body -->
                 <div class="p-6 text-center space-y-4">
-                    <p class="text-xs text-slate-500 leading-relaxed px-2">
-                        Tunjukkan QR code ini kepada petugas resepsionis arena saat tiba di lokasi
-                    </p>
+                    @if ($isPaid)
+                        <p class="text-xs text-slate-500 leading-relaxed px-2">
+                            Tunjukkan QR code ini kepada petugas resepsionis arena saat tiba di lokasi
+                        </p>
 
-                    <!-- QR Code Canvas / Vector -->
-                    <div class="relative w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-center">
-                        {{-- SVG QR Code Representation with SportPlace emblem center --}}
-                        <svg class="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                            <!-- Top Left Finder Pattern -->
-                            <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                            <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                        <!-- QR Code Canvas / Real Scannable QR Ticket -->
+                        <div class="relative w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col items-center justify-center">
+                            @if (!empty($qrCodeDataUri))
+                                <img src="{{ $qrCodeDataUri }}" alt="QR Code Tiket {{ $bookingCode }}" class="w-40 h-40 object-contain mx-auto">
+                            @else
+                                {{-- SVG QR Code Representation with SportPlace emblem center --}}
+                                <svg class="w-full h-full text-slate-900" viewBox="0 0 100 100" fill="currentColor">
+                                    <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                                    <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                                    <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor"/>
+                                    <circle cx="50" cy="50" r="14" fill="#06231D"/>
+                                    <path d="M51 41l-6 10h5l-2 8 8-11h-5l2-7z" fill="#10B981"/>
+                                </svg>
+                            @endif
+                        </div>
 
-                            <!-- Top Right Finder Pattern -->
-                            <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                            <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor"/>
+                        <div class="text-center pt-0.5">
+                            <span class="inline-block text-xs font-mono font-black text-[#0A7660] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                {{ $bookingCode }}
+                            </span>
+                            <p class="text-[10px] text-slate-400 mt-1">Scan QR di atas dengan ponsel untuk diarahkan langsung ke kode booking ini</p>
+                        </div>
+                    @else
+                        <!-- Pending / Unpaid State -->
+                        <div class="relative w-48 h-48 mx-auto bg-amber-50/60 p-4 rounded-2xl border-2 border-dashed border-amber-300 flex flex-col items-center justify-center text-center space-y-2">
+                            <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+                                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold text-amber-900">Tiket Belum Aktif</span>
+                            <span class="text-[11px] text-amber-700 leading-tight">QR Code akan terbit otomatis begitu pembayaran selesai terkonfirmasi</span>
+                        </div>
 
-                            <!-- Bottom Left Finder Pattern -->
-                            <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="5"/>
-                            <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor"/>
-
-                            <!-- QR Data Grid Blocks -->
-                            <rect x="36" y="8" width="5" height="5"/>
-                            <rect x="46" y="8" width="5" height="5"/>
-                            <rect x="56" y="8" width="5" height="5"/>
-                            <rect x="36" y="18" width="5" height="5"/>
-                            <rect x="46" y="24" width="5" height="5"/>
-                            <rect x="56" y="18" width="5" height="5"/>
-
-                            <rect x="8" y="36" width="5" height="5"/>
-                            <rect x="18" y="42" width="5" height="5"/>
-                            <rect x="24" y="36" width="5" height="5"/>
-                            <rect x="8" y="52" width="5" height="5"/>
-                            <rect x="24" y="52" width="5" height="5"/>
-
-                            <rect x="69" y="36" width="5" height="5"/>
-                            <rect x="79" y="42" width="5" height="5"/>
-                            <rect x="89" y="36" width="5" height="5"/>
-                            <rect x="74" y="52" width="5" height="5"/>
-                            <rect x="84" y="58" width="5" height="5"/>
-
-                            <rect x="36" y="69" width="5" height="5"/>
-                            <rect x="46" y="76" width="5" height="5"/>
-                            <rect x="56" y="69" width="5" height="5"/>
-                            <rect x="36" y="86" width="5" height="5"/>
-                            <rect x="46" y="86" width="5" height="5"/>
-                            <rect x="56" y="86" width="5" height="5"/>
-
-                            <!-- Center SportPlace Lightning Emblem -->
-                            <circle cx="50" cy="50" r="14" fill="#06231D"/>
-                            <path d="M51 41l-6 10h5l-2 8 8-11h-5l2-7z" fill="#10B981"/>
-                        </svg>
-                    </div>
+                        @if (!empty($snapToken))
+                            <div class="pt-2">
+                                <button
+                                    type="button"
+                                    id="btn-resume-pay"
+                                    onclick="openMidtransSnap('{{ $snapToken }}')"
+                                    class="w-full py-3 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white font-extrabold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span>Lanjutkan Bayar via Midtrans</span>
+                                </button>
+                            </div>
+                        @endif
+                    @endif
 
                     <!-- Kode Booking Box -->
                     <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex items-center justify-between">
@@ -436,34 +461,44 @@
                 </div>
             </div>
 
-            {{-- 2. ACTION BUTTONS --}}
-            <div class="space-y-2.5">
-                <!-- Beri Ulasan Button -->
-                <button
-                    type="button"
-                    onclick="alert('Terima kasih! Fitur ulasan lapangan akan segera hadir.')"
-                    class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xs transition duration-150 cursor-pointer"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <span>Beri Ulasan Lapangan</span>
-                </button>
-
-                <!-- Batalkan Pemesanan Button -->
-                @if (!$isCancelled)
+            {{-- 2. ACTION BUTTONS (Hanya tampil jika pesanan sudah lunas / terkonfirmasi) --}}
+            @if ($isPaid)
+                <div class="space-y-2.5">
+                    <!-- Beri Ulasan Button -->
                     <button
                         type="button"
-                        onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
-                        class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100/90 text-rose-600 border border-rose-200/90 font-bold text-xs sm:text-sm transition duration-150 cursor-pointer"
+                        onclick="alert('Terima kasih! Fitur ulasan lapangan akan segera hadir.')"
+                        class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xs transition duration-150 cursor-pointer"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                         </svg>
-                        <span>Batalkan Pemesanan</span>
+                        <span>Beri Ulasan Lapangan</span>
                     </button>
-                @endif
-            </div>
+
+                    <!-- Batalkan Pemesanan Button -->
+                    @if (!$isCancelled)
+                        @if ($canCancel)
+                            <button
+                                type="button"
+                                onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
+                                class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100/90 text-rose-600 border border-rose-200/90 font-bold text-xs sm:text-sm transition duration-150 cursor-pointer"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Batalkan Pemesanan</span>
+                            </button>
+                        @else
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                                <span class="text-xs text-slate-500 font-medium">
+                                    Pembatalan hanya boleh dilakukan minimal {{ (int) $minCancellationHours }} jam sebelum jadwal main.
+                                </span>
+                            </div>
+                        @endif
+                    @endif
+                </div>
+            @endif
 
             {{-- 3. SUPPORT HELP BOX --}}
             <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex items-center justify-between gap-3">
@@ -508,9 +543,14 @@
         <h3 class="text-base font-bold text-slate-900 mb-2">
             Batalkan Pemesanan Ini?
         </h3>
-        <p class="text-xs text-slate-500 leading-relaxed mb-6">
+        <p class="text-xs text-slate-500 leading-relaxed mb-4">
             Apakah Anda yakin ingin membatalkan booking lapangan <strong>{{ $venue->nama_venue }}</strong>? Tindakan ini tidak dapat diurungkan.
         </p>
+        @if ($isPaid && $refundPercent > 0)
+            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
+                <span class="font-bold">Info Refund:</span> Pengembalian dana akan diproses sebesar <strong>{{ $refundPercent }}%</strong> (Rp {{ number_format(($booking->total_tagihan * $refundPercent) / 100, 0, ',', '.') }}).
+            </div>
+        @endif
 
         <form method="POST" action="{{ route('penyewa.booking.cancel', $booking->id) }}" class="flex items-center justify-end gap-2.5">
             @csrf
@@ -577,5 +617,114 @@ function copyTicketCode(code) {
         }
     }
 }
+</script>
+
+{{-- Midtrans Snap SDK, Resume Pay Handler & Real-Time Sync --}}
+<script src="{{ config('midtrans.snap_url') }}" data-client-key="{{ config('midtrans.client_key') }}"></script>
+<script>
+function openMidtransSnap(token) {
+    if (window.snap && token) {
+        window.snap.pay(token, {
+            onSuccess: function (result) {
+                console.log('Payment success:', result);
+                window.location.href = window.location.pathname + '?paid=1';
+            },
+            onPending: function (result) {
+                console.log('Payment pending:', result);
+                window.location.reload();
+            },
+            onError: function (result) {
+                console.error('Payment error:', result);
+                alert('Terjadi kesalahan saat memproses pembayaran Midtrans.');
+            },
+            onClose: function () {
+                console.log('Snap modal closed');
+            }
+        });
+    } else {
+        alert('Token pembayaran Midtrans tidak valid atau telah kedaluwarsa.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    @if (!$isPaid && !$isCancelled)
+    // 1. Countdown Timer (Persisten dihitung dari expires_at database, tidak reset saat refresh)
+    const serverTimestamp = {{ $expiresAtTimestamp ?? (time() + 900) }} * 1000;
+    const storageKey = 'sp_booking_expires_' + {{ $booking->id }};
+    const timerElem = document.getElementById('countdown-timer');
+
+    let storedTarget = localStorage.getItem(storageKey);
+    let targetTimestamp = serverTimestamp;
+
+    if (storedTarget) {
+        const storedMs = parseInt(storedTarget, 10);
+        if (!isNaN(storedMs) && storedMs > Date.now() && Math.abs(storedMs - serverTimestamp) < 600000) {
+            targetTimestamp = Math.min(storedMs, serverTimestamp);
+        } else {
+            localStorage.setItem(storageKey, serverTimestamp);
+        }
+    } else {
+        localStorage.setItem(storageKey, serverTimestamp);
+    }
+
+    function updateCountdown() {
+        if (!timerElem) return;
+        const now = Date.now();
+        const diffMs = targetTimestamp - now;
+        const remainingSecs = Math.max(0, Math.floor(diffMs / 1000));
+
+        const mins = Math.floor(remainingSecs / 60);
+        const secs = remainingSecs % 60;
+        timerElem.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+        if (remainingSecs <= 0) {
+            clearInterval(countdownInterval);
+            timerElem.textContent = '00:00';
+            localStorage.removeItem(storageKey);
+            const resumeBtn = document.getElementById('btn-resume-pay');
+            if (resumeBtn) {
+                resumeBtn.disabled = true;
+                resumeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                resumeBtn.innerHTML = '<span>Batas Waktu Bayar 15 Menit Habis</span>';
+            }
+        }
+    }
+
+    updateCountdown();
+    const countdownInterval = setInterval(updateCountdown, 1000);
+
+    // 2. Real-Time Polling: Otomatis mendeteksi saat pengguna menyelesaikan pembayaran di Midtrans Simulator / Bank
+    const checkStatusUrl = "{{ route('penyewa.booking.check-status', $booking->id) }}";
+    let pollCount = 0;
+    const pollInterval = setInterval(async function () {
+        pollCount++;
+        try {
+            const res = await fetch(checkStatusUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await res.json();
+            if (data.is_paid) {
+                clearInterval(pollInterval);
+                clearInterval(countdownInterval);
+                localStorage.removeItem(storageKey);
+                // Langsung arahkan ke halaman tiket terkonfirmasi begitu terdeteksi lunas
+                window.location.href = data.redirect || (window.location.pathname + '?paid=1');
+            } else if (data.is_expired) {
+                clearInterval(pollInterval);
+                localStorage.removeItem(storageKey);
+                window.location.reload();
+            }
+        } catch (err) {
+            console.log('Sync status check:', err);
+        }
+
+        // Hentikan polling setelah 16 menit
+        if (pollCount > 320) clearInterval(pollInterval);
+    }, 3000);
+    @endif
+});
 </script>
 </x-layouts.penyewa>

@@ -167,11 +167,13 @@
                 <h2 class="text-h6 text-ink">Rekonsiliasi uang</h2>
                 <dl class="mt-2 space-y-2 text-body-sm">
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Total tagihan</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan']) }}</dd></div>
-                    @if ($items->isNotEmpty() && abs($ledger['tagihan'] - $itemsTotal) > 0.5)
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-muted">Selisih dari harga slot</dt>
-                            <dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan'] - $itemsTotal) }}</dd>
-                        </div>
+                    @if ($trx->subtotal_slot !== null)
+                        <div class="flex justify-between gap-3"><dt class="text-ink-muted">Subtotal slot</dt><dd class="tabular-nums text-ink">{{ $rp($trx->subtotal_slot) }}</dd></div>
+                        @if ($trx->biaya_layanan !== null)
+                            <div class="flex justify-between gap-3"><dt class="text-ink-muted">Biaya layanan</dt><dd class="tabular-nums text-ink">{{ $rp($trx->biaya_layanan) }}</dd></div>
+                        @endif
+                    @elseif ($items->isNotEmpty() && abs($ledger['tagihan'] - $itemsTotal) > 0.5)
+                        <div class="flex justify-between gap-3"><dt class="text-ink-muted">Selisih dari harga slot</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['tagihan'] - $itemsTotal) }}</dd></div>
                     @endif
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Berhasil dibayar</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['dibayar']) }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-ink-muted">Refund selesai</dt><dd class="tabular-nums text-ink">{{ $rp($ledger['refund_selesai']) }}</dd></div>
