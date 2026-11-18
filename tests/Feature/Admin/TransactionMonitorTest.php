@@ -145,4 +145,29 @@ class TransactionMonitorTest extends TestCase
         $this->assertSame($this->monitor->rows($f, 50)->total(), $summary['count']);
         $this->assertEqualsWithDelta(150000, $summary['paid'], 0.01);
     }
+
+    public function test_breakdown_flags_fire_only_when_the_columns_disagree(): void
+    {
+        $consistent = $this->paidBooking($this->makeUser(), $this->fieldId, 102500);
+        DB::table('booking_headers')->where('id', $consistent)->update(['subtotal_slot' => 100000, 'biaya_layanan' => 2500]);
+        DB::table('booking_details')->where('header_id', $consistent)->update(['harga_slot' => 100000]);
+        $this->assertSame([], $this->monitor->flagsFor($this->rowFor($consistent)));
+
+        $wrongTotal = $this->paidBooking($this->makeUser(), $this->fieldId, 100000);
+        DB::table('booking_headers')->where('id', $wrongTotal)->update(['subtotal_slot' => 100000, 'biaya_layanan' => 2500]);
+        $this->assertStringContainsString('tidak cocok dengan subtotal', $this->flagsOf($wrongTotal));
+
+        $wrongSubtotal = $this->paidBooking($this->makeUser(), $this->fieldId, 100000);
+        DB::table('booking_headers')->where('id', $wrongSubtotal)->update(['subtotal_slot' => 90000, 'biaya_layanan' => 10000]);
+        $this->assertStringContainsString('Subtotal tidak cocok', $this->flagsOf($wrongSubtotal));
+    }
+
+    public function test_a_total_below_the_slot_price_is_flagged_because_there_is_no_discount(): void
+    {
+        $id = $this->paidBooking($this->makeUser(), $this->fieldId, 132500);
+        DB::table('booking_headers')->where('id', $id)->update(['subtotal_slot' => 150000]);
+        DB::table('booking_details')->where('header_id', $id)->update(['harga_slot' => 150000]);
+
+        $this->assertStringContainsString('lebih kecil dari jumlah harga slot', $this->flagsOf($id));
+    }
 }

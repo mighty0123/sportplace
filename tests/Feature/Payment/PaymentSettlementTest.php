@@ -2,13 +2,14 @@
 
 namespace Tests\Feature\Payment;
 
-use App\Services\MidtransService; // sesuaikan namespace
+use App\Services\MidtransService;
 use App\Services\Payment\PaymentSettlementService;
 use App\Services\Payment\SettlementResult as R;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreatesFixtures;
 use Tests\TestCase;
+use App\Services\Booking\SlotReservationService;
 
 class PaymentSettlementTest extends TestCase
 {
@@ -59,11 +60,46 @@ class PaymentSettlementTest extends TestCase
         return [$id, $order];
     }
 
-    /** Booking lain yang menempati slot yang sama. */
-    private function occupySlot(string $status = 'payment'): void
+    /** Booking lain yang memegang slot yang sama (lewat reservasi, bukan hanya baris rincian). */
+    private function occupySlot(string $status = 'payment'): int
     {
         $other = $this->booking($this->makeUser(), ['status' => $status, 'expires_at' => now()->addMinutes(10)]);
         $this->bookingDetail($other, $this->fieldId, ['tanggal_sewa' => $this->slotDate() . ' 00:00:00', 'jam_mulai' => '19:00:00', 'jam_selesai' => '20:00:00']);
+        app(SlotReservationService::class)->reserve($other);
+
+        return $other;
+    }
+
+    public function test_a_successful_payment_makes_the_booking_hold_its_slot(): void
+    {
+        [$id, $order] = $this->pendingBooking();
+
+        $this->service()->apply($order, $this->gw(), 'webhook');
+
+        $this->assertSame(2, DB::table('slot_reservations')->where('header_id', $id)->where('holds', 1)->count());
+    }
+
+    public function test_payment_on_a_still_pending_booking_whose_slot_is_held_by_another_is_refunded_and_closed(): void
+    {
+        [$id, $order] = $this->pendingBooking();
+        $this->occupySlot('payment');
+
+        $r = $this->service()->apply($order, $this->gw(), 'webhook');
+
+        $this->assertSame(R::REFUNDED, $r->outcome);
+        $this->assertDatabaseHas('booking_headers', ['id' => $id, 'status' => 'canceled']);
+        $this->assertDatabaseCount('refunds', 1);
+        $this->assertDatabaseMissing('audit_logs', ['entitas_id' => $id, 'aksi' => 'dibayar']);
+    }
+
+    public function test_a_failed_payment_releases_the_slot(): void
+    {
+        [$id, $order] = $this->pendingBooking();
+        app(SlotReservationService::class)->reserve($id);
+
+        $this->service()->apply($order, $this->gw('expire'), 'webhook');
+
+        $this->assertSame(0, DB::table('slot_reservations')->where('header_id', $id)->where('holds', 1)->count());
     }
 
     public function test_successful_payment_marks_payment_booking_and_slots_and_is_audited(): void
