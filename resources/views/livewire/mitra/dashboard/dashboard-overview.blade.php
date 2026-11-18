@@ -140,7 +140,9 @@
                 <div class="flex items-center justify-between mt-2 text-xs text-slate-500">
                     <span>Hari Ini: Rp {{ number_format($metrics['today_revenue'], 0, ',', '.') }}</span>
                     @if ($metrics['saldo_aktif'] > 0)
-                        <span class="font-semibold text-emerald-700">Wallet: Rp {{ number_format($metrics['saldo_aktif'], 0, ',', '.') }}</span>
+                        <a href="{{ url('/mitra/penarikan') }}" wire:navigate class="font-semibold text-[#0B7B69] hover:underline" title="Tarik Saldo Aktif">
+                            Tarik Rp {{ number_format($metrics['saldo_aktif'], 0, ',', '.') }} &rarr;
+                        </a>
                     @endif
                 </div>
             </div>

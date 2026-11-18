@@ -15,6 +15,7 @@ use App\Http\Controllers\Mitra\PricingController;
 use App\Http\Controllers\Mitra\ReportController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\Mitra\WithdrawalController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ListingModerationController;
@@ -149,6 +150,9 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+
+        // MTR-13 / FR-FIN-003: Penarikan Dana Mitra (Wallet & Withdrawal)
+        Route::get('/penarikan', [WithdrawalController::class, 'index'])->name('withdrawals.index');
     });
 });
 

@@ -42,6 +42,12 @@ class User extends Authenticatable
         return $this->hasOne(Wallet::class);
     }
 
+    // Relasi User ke Penarikan Dana / Withdrawals (1 to many)
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
     // Relasi User ke kode OTP (1 to many; satu aktif per tujuan — GAP-09)
     public function otpCodes()
     {

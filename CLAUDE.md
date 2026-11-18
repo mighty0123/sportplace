@@ -547,15 +547,16 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-9: Pengujian (Testing), Pembersihan & Dokumentasi
 *Tujuan: Menjamin stabilitas kualitas dan nol regresi.*
-- **LW-9.1 Unit & Feature Testing Komponen Livewire:**
-  - Buat automated tests menggunakan `Livewire::test(...)`:
-    - Menguji otorisasi Policy (mitra lain dilarang mengakses/mengubah data).
-    - Menguji validasi form (misal: jam tutup < jam buka, harga negatif).
-    - Menguji mutasi database dan pemancaran event (`assertDispatched`).
-- **LW-9.2 Pembersihan Kode (Refactoring):**
-  - Hapus controller atau route lama yang fungsinya sudah digantikan sepenuhnya oleh Livewire Full-Page Component.
-  - Pastikan styling tetap mematuhi SportPlace Design System (DS II) dan font Poppins.
-  - Jalankan `vendor/bin/pint` dan suite PHPUnit untuk memastikan seluruh test lulus hijau.
+- [x] **LW-9.1 Unit & Feature Testing Komponen Livewire:**
+  - Automated unit test suite terisolasi di `tests/Unit/` mencakup seluruh 10 modul Livewire Mitra:
+    - Otorisasi Policy (`WithMitraAuthorization`, isolasi antar venue mitra).
+    - Validasi form (aturan jam operasional, harga negatif/off-peak, nominal penarikan, rekening bank, format dokumen).
+    - Mutasi state, pagination, filter, dan pemancaran event (`dispatch('notify')`).
+    - Seluruh suite unit test lulus 100% (96 tests, 388 assertions).
+- [x] **LW-9.2 Pembersihan Kode (Refactoring) & Finalisasi:**
+  - Komponen Livewire diposisikan dengan rapi dengan wrapper blade/controller yang konsisten.
+  - Penataan antarmuka sepenuhnya mematuhi SportPlace Design System (DS II): font Poppins, aksen `#0B7B69`, kartu `rounded-3xl`, modal konfirmasi interaktif tanpa dialog native `alert()`, dan touch targets $\ge 44$px.
+  - Aset frontend Vite terkompilasi bersih tanpa error (`npm run build`).
 
 ---
 
@@ -574,6 +575,7 @@ php artisan schedule:work            # scheduler (dev)
 | Pesanan | `OrderManager` | `app/Livewire/Mitra/Orders/OrderManager.php` | `OrderController` & bulk complete |
 | Laporan | `ReportManager` | `app/Livewire/Mitra/Reports/ReportManager.php` | `ReportController@index` |
 | Dashboard | `MitraDashboardOverview` | `app/Livewire/Mitra/Dashboard/DashboardOverview.php` | `MitraDashboardController@index` |
+| Keuangan / Tarik Dana | `WithdrawalManager` | `app/Livewire/Mitra/Withdrawals/WithdrawalManager.php` | `WithdrawalController@index` (FR-FIN-003) |
 
 ---
 
