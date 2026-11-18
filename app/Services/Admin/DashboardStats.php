@@ -30,6 +30,7 @@ class DashboardStats
         'refund_otomatis'       => ['direfund otomatis',      'warning', 'alert-circle'],
         'refund_perlu_ditinjau' => ['perlu refund manual',    'danger',  'alert-circle'],
         'dibayar_terlambat'     => ['dibayar terlambat',      'warning', 'clock'],
+        'slot_bentrok' => ['bentrok slot', 'danger', 'alert-circle'],
     ];
 
     public const PAYMENT_LABELS = [
