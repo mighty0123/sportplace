@@ -67,7 +67,9 @@ class RejectMitra extends Command
         }
         $profile->save();
 
-        $this->info("Mitra [{$email}] berhasil ditolak (status: rejected) dengan alasan: \"{$alasan}\".");
+        $user->notify(new \App\Notifications\MitraVerificationStatusUpdated('rejected', $alasan));
+
+        $this->info("Mitra [{$email}] berhasil ditolak (status: rejected) dengan alasan: \"{$alasan}\" dan notifikasi telah dikirim.");
 
         return Command::SUCCESS;
     }

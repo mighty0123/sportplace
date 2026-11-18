@@ -19,7 +19,14 @@ class SlotGeneratorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Carbon::setTestNow(Carbon::parse('2026-11-09 07:00:00'));
         $this->generator = new SlotGenerator;
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     /**
