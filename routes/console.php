@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('bookings:expire')->everyMinute()->withoutOverlapping();
+Schedule::command('slots:sync --prune=90')->hourly()->withoutOverlapping();

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use App\Services\Booking\SlotReservationService;
 
 class ExpirePendingBookings extends Command
 {
@@ -36,7 +37,7 @@ class ExpirePendingBookings extends Command
 
                 if ($n === 1) {
                     AuditLog::record(null, 'BookingHeader', $id, 'kedaluwarsa', 'pending', 'expired', 'Melewati batas waktu bayar.');
-                    // TODO K-01: lepaskan reservasi slot di sini setelah tabel reservasi slot dibuat.
+                    app(SlotReservationService::class)->release($id);
                     $expired++;
                 }
             });
@@ -45,5 +46,18 @@ class ExpirePendingBookings extends Command
         $this->info("{$expired} booking dikedaluwarsakan.");
 
         return self::SUCCESS;
+    }
+
+    public function test_expiring_a_booking_releases_its_slot(): void
+    {
+        $id = $this->booking($this->makeUser(), ['created_at' => now()->subHour(), 'expires_at' => now()->subMinutes(45)]);
+        [$city, $sport] = $this->cityAndSport();
+        $field = $this->field($this->venue($this->mitraProfile($this->makeUser('mitra'), ['status' => 'approved']), $city, ['status_vanue' => 'aktif']), $sport);
+        $this->bookingDetail($id, $field, ['tanggal_sewa' => now()->addDays(3)->format('Y-m-d') . ' 00:00:00', 'jam_mulai' => '19:00:00', 'jam_selesai' => '20:00:00']);
+        app(\App\Services\Booking\SlotReservationService::class)->reserve($id);
+
+        $this->artisan('bookings:expire')->assertSuccessful();
+
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('slot_reservations')->where('header_id', $id)->where('holds', 1)->count());
     }
 }
