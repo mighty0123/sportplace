@@ -538,7 +538,7 @@ php artisan schedule:work            # scheduler (dev)
 
 #### TAHAP LW-8: Dashboard Utama Mitra (MTR-03)
 *Tujuan: Pusat kendali operasional harian yang cepat dan informatif.*
-- **LW-8.1 Komponen `MitraDashboardOverview`:**
+- [x] **LW-8.1 Komponen `MitraDashboardOverview`:**
   - Kartu Metrik Ringkas: "Booking Hari Ini", "Pendapatan Hari Ini", "Status Lapangan Aktif".
   - Widget Tindakan Cepat (Pesanan Butuh Verifikasi, Booking Siap Selesai).
   - Tautan cepat dengan `wire:navigate` untuk transisi halaman secepat aplikasi desktop/SPA.

@@ -141,10 +141,39 @@ class Field extends Model
     {
         return $this->hasMany(BookingDetail::class, 'field_id');
     }
-    
+
     // Relasi Many-to-Many ke MasterFacilities melalui field_facilities
     public function facilities()
     {
         return $this->belongsToMany(MasterFacility::class, 'field_facilities', 'field_id', 'facilities_id');
+    }
+
+    /**
+     * Rating rata-rata lapangan dari database atau relasi ulasan.
+     * Mengembalikan null jika belum ada ulasan/rating di database.
+     */
+    public function getAverageRatingAttribute(): ?float
+    {
+        if (isset($this->attributes['rating']) && $this->attributes['rating'] !== null) {
+            return (float) $this->attributes['rating'];
+        }
+
+        if ($this->relationLoaded('reviews') && method_exists($this, 'reviews')) {
+            $avg = $this->reviews->avg('rating');
+
+            return $avg ? round((float) $avg, 1) : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Label rating untuk antarmuka pengguna
+     */
+    public function getFormattedRatingAttribute(): string
+    {
+        $rating = $this->average_rating;
+
+        return $rating !== null ? number_format($rating, 1) : 'Belum ada ulasan';
     }
 }

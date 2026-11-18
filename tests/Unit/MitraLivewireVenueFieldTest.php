@@ -128,4 +128,28 @@ class MitraLivewireVenueFieldTest extends TestCase
         $this->assertEquals('semua', $fieldManager->status);
         $this->assertEquals('semua', $fieldManager->sportId);
     }
+
+    public function test_venue_and_field_rating_accessors_without_database_rating(): void
+    {
+        $venue = new \App\Models\Venue();
+        $this->assertNull($venue->average_rating);
+        $this->assertEquals('Belum ada ulasan', $venue->formatted_rating);
+
+        $field = new \App\Models\Field();
+        $this->assertNull($field->average_rating);
+        $this->assertEquals('Belum ada ulasan', $field->formatted_rating);
+    }
+
+    public function test_venue_and_field_rating_accessors_with_database_rating(): void
+    {
+        $venue = new \App\Models\Venue(['nama_venue' => 'Arena Kita']);
+        $venue->rating = 4.7;
+        $this->assertEquals(4.7, $venue->average_rating);
+        $this->assertEquals('4.7', $venue->formatted_rating);
+
+        $field = new \App\Models\Field(['nama_lapangan' => 'Lapangan A']);
+        $field->rating = 4.9;
+        $this->assertEquals(4.9, $field->average_rating);
+        $this->assertEquals('4.9', $field->formatted_rating);
+    }
 }

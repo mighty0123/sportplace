@@ -1,4 +1,4 @@
-<div class="space-y-6 max-w-full min-w-0" x-data="{}" @keydown.window.escape="$wire.showDetailModal ? $wire.closeDetail() : ($wire.showBulkConfirmModal ? $wire.closeBulkModal() : null)">
+<div class="space-y-6 max-w-full min-w-0" x-data="{}" @keydown.window.escape="$wire.showCompleteConfirmModal ? $wire.cancelCompleteOrder() : ($wire.showDetailModal ? $wire.closeDetail() : ($wire.showBulkConfirmModal ? $wire.closeBulkModal() : null))">
 
     <!-- Top Header & Breadcrumb -->
     <div class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
@@ -292,8 +292,7 @@
                                 @if ($slot->status_item === 'ongoing' && $slot->isReadyToComplete())
                                     <button
                                         type="button"
-                                        wire:click="completeOrder({{ $slot->id }})"
-                                        wire:confirm="Selesaikan sesi bermain ini? Hak ulasan penyewa akan aktif."
+                                        wire:click="confirmCompleteOrder({{ $slot->id }})"
                                         class="px-4 py-2 rounded-full bg-[#0B7B69] hover:bg-[#086354] text-white text-xs font-semibold shadow-xs transition cursor-pointer min-h-[44px]"
                                     >
                                         Selesaikan
@@ -486,8 +485,7 @@
                                                 @if ($order->status_item === 'ongoing' && $order->isReadyToComplete())
                                                     <button
                                                         type="button"
-                                                        wire:click="completeOrder({{ $order->id }})"
-                                                        wire:confirm="Selesaikan sesi bermain ini? Hak ulasan penyewa akan aktif."
+                                                        wire:click="confirmCompleteOrder({{ $order->id }})"
                                                         class="px-3 py-1.5 rounded-full bg-[#0B7B69] hover:bg-[#086354] text-white text-[11px] font-semibold shadow-xs transition cursor-pointer min-h-[44px]"
                                                         title="Selesaikan Sesi"
                                                     >
@@ -755,8 +753,7 @@
                                         <div>
                                             <button
                                                 type="button"
-                                                wire:click="completeOrder({{ $viewingOrder->id }})"
-                                                wire:confirm="Selesaikan sesi bermain ini? Hak ulasan penyewa akan aktif."
+                                                wire:click="confirmCompleteOrder({{ $viewingOrder->id }})"
                                                 {{ ! $viewingOrder->isReadyToComplete() ? 'disabled' : '' }}
                                                 class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full text-xs font-semibold transition min-h-[44px] {{ $viewingOrder->isReadyToComplete() ? 'bg-[#0B7B69] hover:bg-[#086354] text-white shadow-xs cursor-pointer' : 'bg-slate-100 text-slate-400 cursor-not-allowed' }}"
                                             >
@@ -830,6 +827,65 @@
         </div>
     @endif
 
+    <!-- ================= MODAL KONFIRMASI SELESAIKAN SESI (SINGLE) ================= -->
+    @if ($showCompleteConfirmModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="complete-modal-title">
+            <!-- Backdrop -->
+            <div
+                class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+                wire:click="cancelCompleteOrder"
+            ></div>
+
+            <div class="flex min-h-full items-center justify-center p-4 text-center">
+                <div class="relative w-full max-w-sm sm:max-w-md transform overflow-hidden rounded-3xl bg-white p-6 sm:p-7 text-left shadow-2xl transition-all border border-slate-200">
+                    <div class="flex items-center gap-3.5 mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-[#0B7B69] flex items-center justify-center shrink-0 border border-emerald-100">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 id="complete-modal-title" class="text-base sm:text-lg font-bold text-slate-900">
+                                Selesaikan Sesi
+                            </h3>
+                            @if ($completingOrderId)
+                                <span class="text-xs text-slate-400">Detail Sesi #{{ $completingOrderId }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <p class="text-sm sm:text-base text-slate-700 font-medium leading-relaxed">
+                        Selesaikan sesi bermain ini?
+                    </p>
+
+                    <div class="mt-6 flex items-center justify-end gap-3 pt-1">
+                        <button
+                            type="button"
+                            wire:click="cancelCompleteOrder"
+                            class="px-5 py-2.5 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition cursor-pointer min-h-[44px]"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="executeCompleteOrder"
+                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#0B7B69] hover:bg-[#086354] text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer min-h-[44px]"
+                        >
+                            <span wire:loading.remove wire:target="executeCompleteOrder">Selesaikan</span>
+                            <span wire:loading wire:target="executeCompleteOrder" class="inline-flex items-center gap-1.5">
+                                <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                                <span>Memproses...</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- ================= MODAL KONFIRMASI BULK COMPLETION ================= -->
     @if ($showBulkConfirmModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
@@ -852,7 +908,7 @@
                     </h3>
 
                     <p class="text-xs text-slate-500 mt-2 leading-relaxed">
-                        Sistem akan memverifikasi setiap pesanan. Hanya pesanan yang <strong>sudah lunas</strong> dan <strong>jam sewa telah berakhir</strong> yang akan diubah statusnya menjadi <em>Completed</em>. Hak ulasan bagi penyewa akan langsung diaktifkan.
+                        Sistem akan memverifikasi setiap pesanan. Hanya pesanan yang <strong>sudah lunas</strong> dan <strong>jam sewa telah berakhir</strong> yang akan diubah statusnya menjadi <em>Completed</em>.
                     </p>
 
                     <div class="mt-6 flex items-center justify-end gap-3">

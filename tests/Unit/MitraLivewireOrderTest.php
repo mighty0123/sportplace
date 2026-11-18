@@ -62,7 +62,8 @@ class MitraLivewireOrderTest extends TestCase
 
         $venue->setRelation('fields', collect([$field1, $field2]));
 
-        $manager = new class extends OrderManager {
+        $manager = new class extends OrderManager
+        {
             public ?User $currentUser = null;
 
             public Collection $mockVenues;
@@ -232,5 +233,20 @@ class MitraLivewireOrderTest extends TestCase
 
         $this->assertFalse($manager->showDetailModal);
         $this->assertNull($manager->viewingOrderId);
+    }
+
+    public function test_complete_order_confirmation_modal_lifecycle(): void
+    {
+        $manager = $this->createMockOrderManager();
+        $this->assertFalse($manager->showCompleteConfirmModal);
+        $this->assertNull($manager->completingOrderId);
+
+        $manager->confirmCompleteOrder(88);
+        $this->assertTrue($manager->showCompleteConfirmModal);
+        $this->assertEquals(88, $manager->completingOrderId);
+
+        $manager->cancelCompleteOrder();
+        $this->assertFalse($manager->showCompleteConfirmModal);
+        $this->assertNull($manager->completingOrderId);
     }
 }

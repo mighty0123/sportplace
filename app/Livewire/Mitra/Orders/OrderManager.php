@@ -53,6 +53,11 @@ class OrderManager extends MitraComponent
 
     public bool $showBulkConfirmModal = false;
 
+    // Single Complete Confirmation Modal
+    public bool $showCompleteConfirmModal = false;
+
+    public ?int $completingOrderId = null;
+
     // Detail Modal State (MTR-09)
     public bool $showDetailModal = false;
 
@@ -306,6 +311,27 @@ class OrderManager extends MitraComponent
         }
     }
 
+    public function confirmCompleteOrder(int $orderId): void
+    {
+        $this->completingOrderId = $orderId;
+        $this->showCompleteConfirmModal = true;
+    }
+
+    public function cancelCompleteOrder(): void
+    {
+        $this->showCompleteConfirmModal = false;
+        $this->completingOrderId = null;
+    }
+
+    public function executeCompleteOrder(): void
+    {
+        if ($this->completingOrderId) {
+            $orderId = $this->completingOrderId;
+            $this->cancelCompleteOrder();
+            $this->completeOrder($orderId);
+        }
+    }
+
     public function completeOrder(int $orderId): void
     {
         $order = BookingDetail::with(['field.venue'])->findOrFail($orderId);
@@ -341,10 +367,10 @@ class OrderManager extends MitraComponent
                 'complete_order',
                 $oldStatus,
                 'completed',
-                'Sesi bermain berhasil diselesaikan oleh mitra. Hak ulasan penyewa aktif.'
+                'Sesi bermain berhasil diselesaikan oleh mitra.'
             );
 
-            return ['status' => 'success', 'message' => 'Sesi bermain berhasil diselesaikan. Hak ulasan penyewa kini aktif.'];
+            return ['status' => 'success', 'message' => 'Sesi bermain berhasil diselesaikan.'];
         });
 
         if ($result['status'] === 'already_processed') {
