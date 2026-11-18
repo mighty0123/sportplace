@@ -3,11 +3,13 @@
 namespace App\Services\Payment;
 
 use App\Models\AuditLog;
-use App\Services\MidtransService; // sesuaikan namespace dengan berkas milik temanmu
+use App\Services\MidtransService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Exceptions\Booking\SlotUnavailableException;
+use App\Services\Booking\SlotReservationService;
 
 /**
  * Satu-satunya tempat yang mengubah booking menjadi "dibayar". Webhook dan pemeriksaan status memanggil layanan
@@ -15,7 +17,7 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentSettlementService
 {
-    public function __construct(private MidtransService $gateway)
+    public function __construct(private MidtransService $gateway, private SlotReservationService $slots)
     {
     }
 
@@ -159,22 +161,29 @@ class PaymentSettlementService
             return $this->refundInFull($payment, $header, 'Pembayaran tiba setelah booking dibatalkan.', $label, 'dibayar_batal');
         }
 
-        // 2. Terlambat (kedaluwarsa atau lewat batas): hidupkan kembali bila slot masih kosong, kalau tidak refund.
+        // 2. Slot: booking ini harus memegang reservasinya. Idempoten bila sudah memegang, dan gagal bila booking lain memegangnya
         $late = $header->status === 'expired' || ($header->status === 'pending' && $this->deadline($header)->lt($now));
-        if ($late) {
-            if ($this->slotTaken($header)) {
-                return $this->refundInFull($payment, $header, 'Pembayaran tiba setelah booking kedaluwarsa dan slot sudah dipesan pengguna lain.', $label, 'dibayar_terlambat');
+        try {
+            $this->slots->reserve($header->id);
+        } catch (SlotUnavailableException) {
+            if ($header->status === 'pending') {
+                DB::table('booking_headers')->where('id', $header->id)->where('status', 'pending')->update(['status' => 'canceled']);
             }
 
+            return $this->refundInFull($payment, $header,
+                $late ? 'Pembayaran tiba setelah booking kedaluwarsa dan slot sudah dipesan pengguna lain.'
+                        : 'Slot sudah dipegang booking lain saat pembayaran diterima.',
+                $label, $late ? 'dibayar_terlambat' : 'slot_bentrok');
+        }
+
+        if ($late) {
             $this->markBookingPaid($header, $header->status, "Pembayaran terlambat diterima, slot masih kosong. {$note}", 'dibayar_terlambat');
-            // TODO komisi: panggil CommissionService::recordPayment($header->id) di sini, di dalam transaksi yang sama.
 
             return new SettlementResult(SettlementResult::REVIVED, $header->id, 'Booking dihidupkan kembali.', true);
         }
 
         // 3. Jalur normal.
         $this->markBookingPaid($header, $header->status, $note, 'dibayar');
-        // TODO komisi: panggil CommissionService::recordPayment($header->id) di sini, di dalam transaksi yang sama.
 
         return new SettlementResult(SettlementResult::SETTLED, $header->id, 'Pembayaran berhasil.', true);
     }
@@ -197,6 +206,7 @@ class PaymentSettlementService
                 $to = $kind === 'expired' ? 'expired' : 'canceled';
                 $n = DB::table('booking_headers')->where('id', $header->id)->where('status', 'pending')->update(['status' => $to]);
                 if ($n) {
+                    $this->slots->release($header->id);
                     AuditLog::record(null, 'BookingHeader', $header->id, 'pembayaran_gagal', 'pending', $to,
                         $kind === 'expired' ? 'Pembayaran kedaluwarsa di gateway.' : 'Pembayaran dibatalkan di gateway.');
                 }
@@ -253,33 +263,6 @@ class PaymentSettlementService
         }
 
         return new SettlementResult(SettlementResult::REFUNDED, $header->id, 'Refund penuh dibuat.', false);
-    }
-
-    /** Ada booking lain (lunas, atau menunggu dan belum lewat batas) yang menempati salah satu slot booking ini? */
-    private function slotTaken(object $header): bool
-    {
-        $window = max(1, (int) config('booking.payment_window_minutes', 15));
-        $mine = DB::table('booking_details')->where('header_id', $header->id)->get(['field_id', 'tanggal_sewa', 'jam_mulai', 'jam_selesai']);
-
-        foreach ($mine as $d) {
-            $taken = DB::table('booking_details as d')
-                ->join('booking_headers as h', 'h.id', '=', 'd.header_id')
-                ->where('d.field_id', $d->field_id)->where('d.header_id', '!=', $header->id)
-                ->whereDate('d.tanggal_sewa', substr((string) $d->tanggal_sewa, 0, 10))
-                ->where('d.jam_mulai', '<', $d->jam_selesai)->where('d.jam_selesai', '>', $d->jam_mulai)
-                ->where(function ($w) use ($window) {
-                    $w->where('h.status', 'payment')
-                        ->orWhere(fn ($p) => $p->where('h.status', 'pending')
-                            ->whereRaw("COALESCE(h.expires_at, h.created_at + INTERVAL {$window} MINUTE) > ?", [now()]));
-                })
-                ->lockForUpdate()->first(['d.id']);
-
-            if ($taken) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function deadline(object $h): CarbonImmutable
