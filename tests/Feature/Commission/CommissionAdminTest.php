@@ -110,7 +110,7 @@ class CommissionAdminTest extends TestCase
     public function test_the_preview_shows_the_agreed_example(): void
     {
         Livewire::actingAs($this->makeUser('admin'))->test(CommissionPreview::class)
-            ->set('price', '150.000')->set('slots', '1')
+            ->set('price', '150.000')->set('slotCount', '1')
             ->assertSee('30.000')->assertSee('120.000')->assertSee('152.500');
     }
 
