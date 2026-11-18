@@ -94,14 +94,6 @@
         </div>
     </div>
 
-    <!-- Promo Voucher Info Banner -->
-    <div class="flex items-center gap-2 p-3 rounded-xl bg-amber-50/70 border border-amber-200/70 text-xs text-amber-900">
-        <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-        </svg>
-        <span class="leading-snug">Kode promo dapat digunakan di checkout</span>
-    </div>
-
     <!-- CTA Button -->
     <div>
         <a
@@ -123,5 +115,11 @@
             </svg>
             <span>Slot ditahan selama 15 menit</span>
         </div>
+
+        @guest
+            <div class="mt-2.5 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-[11px] text-emerald-800 text-center leading-relaxed">
+                <span class="font-semibold">Info:</span> Anda akan diminta masuk atau membuat akun saat melanjutkan ke pembayaran.
+            </div>
+        @endguest
     </div>
 </div>

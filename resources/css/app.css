@@ -4,8 +4,8 @@
 @import "@fontsource/poppins/600.css";
 @import "./theme.css";
 @import "./utilities.css";
-@import "./base.css";
 @import "./admin.css";
+@import "./base.css";
 
 /* Pola garis diagonal untuk state Blocked/Maintenance sesuai Desain System Bagian I §10 */
 .pattern-diagonal-blocked {

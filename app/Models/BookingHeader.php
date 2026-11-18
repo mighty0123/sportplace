@@ -10,13 +10,20 @@ class BookingHeader extends Model
 
     protected $fillable = [
         'penyewa_id',
+        'kode_booking',
         'total_tagihan',
         'status',
+        'expires_at',
+        'checked_in_at',
         'created_at',
+        'subtotal_slot',
+        'biaya_layanan',
     ];
 
     protected $casts = [
         'total_tagihan' => 'double',
+        'expires_at' => 'datetime',
+        'checked_in_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 
@@ -34,6 +41,11 @@ class BookingHeader extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class, 'header_id');
+    }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class, 'header_id');
     }
 
     public function isPaid(): bool

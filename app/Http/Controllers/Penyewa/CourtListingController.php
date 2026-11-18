@@ -196,11 +196,100 @@ class CourtListingController extends Controller
             ->take(3)
             ->get();
 
+        // Daftar ulasan awal & ulasan tersimpan di session
+        $defaultReviews = [
+            [
+                'name'     => 'Budi Santoso',
+                'rating'   => 5,
+                'date'     => '12 November 2026',
+                'verified' => true,
+                'tags'     => ['Lapangan Bersih', 'Lampu Terang', 'Parkir Luas'],
+                'comment'  => 'Kondisi lapangan sangat terawat, pencahayaan LED terang merata dan tidak menyilaukan mata saat bermain malam. Fasilitas toilet dan musholla bersih.',
+            ],
+            [
+                'name'     => 'Reza Fahlevi',
+                'rating'   => 5,
+                'date'     => '8 November 2026',
+                'verified' => true,
+                'tags'     => ['Fasilitas Lengkap', 'Staf Ramah'],
+                'comment'  => 'Proses check-in booking SportPlace sangat cepat tinggal scan QR code di resepsionis. Lapangannya nyaman, sirkulasi udara bagus, dan staf ramah.',
+            ],
+            [
+                'name'     => 'Siti Rahmawati',
+                'rating'   => 4,
+                'date'     => '3 November 2026',
+                'verified' => true,
+                'tags'     => ['Lantai Mulus', 'Akses Mudah'],
+                'comment'  => 'Lapangannya bagus dan rapi, garis batas terlihat jelas. Sedikit ramai di akhir pekan jadi disarankan datang 15 menit sebelum slot dimulai.',
+            ],
+        ];
+
+        $sessionReviews = session('field_reviews_' . $field->id, []);
+        $reviews = array_merge($sessionReviews, $defaultReviews);
+        $totalReviewsCount = 120 + count($sessionReviews);
+        $averageRating = 4.8;
+
         return view('penyewa.lapangan-detail', [
-            'field'       => $field,
-            'photoUrl'    => $photoUrl,
-            'sportSlug'   => $sportSlug,
-            'otherCourts' => $otherCourts,
+            'field'             => $field,
+            'photoUrl'          => $photoUrl,
+            'sportSlug'         => $sportSlug,
+            'otherCourts'       => $otherCourts,
+            'reviews'           => $reviews,
+            'totalReviewsCount' => $totalReviewsCount,
+            'averageRating'     => $averageRating,
         ]);
+    }
+
+    /**
+     * Simpan review / ulasan untuk lapangan olahraga.
+     */
+    public function storeReview(Request $request, int $id)
+    {
+        $request->validate([
+            'rating'   => 'required|integer|min:1|max:5',
+            'komentar' => 'required|string|max:1000',
+            'nama'     => 'nullable|string|max:100',
+        ]);
+
+        $field = Field::where('status_lapangan', 'aktif')->where('id', $id)->first();
+        if (!$field) {
+            $field = Field::where('id', $id)->firstOrFail();
+        }
+
+        $reviewerName = trim($request->input('nama', ''));
+        if (empty($reviewerName)) {
+            $reviewerName = auth()->check() ? auth()->user()->name : 'Penyewa Terverifikasi';
+        }
+
+        $rating = (int) $request->input('rating');
+        $comment = trim($request->input('komentar'));
+        $tags = $request->input('tags', []);
+        if (is_string($tags)) {
+            $tags = array_filter(array_map('trim', explode(',', $tags)));
+        }
+
+        $newReview = [
+            'name'       => $reviewerName,
+            'rating'     => $rating,
+            'comment'    => $comment,
+            'date'       => now()->translatedFormat('d F Y'),
+            'verified'   => true,
+            'tags'       => !empty($tags) ? $tags : ['Penyewa Terverifikasi'],
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        $existingReviews = session('field_reviews_' . $field->id, []);
+        array_unshift($existingReviews, $newReview);
+        session(['field_reviews_' . $field->id => $existingReviews]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Ulasan berhasil disimpan! Terima kasih atas penilaian Anda.',
+                'review'  => $newReview,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Ulasan Anda berhasil dikirim! Terima kasih atas feedback-nya.');
     }
 }

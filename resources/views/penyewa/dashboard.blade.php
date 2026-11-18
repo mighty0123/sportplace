@@ -1,8 +1,4 @@
-{{--
-    Dashboard Penyewa — SportPlace
-    Layout  : x-layouts.penyewa (Navbar-based replacing sidebar)
-    Design  : Sesuai referensi Figma (Top Navbar, Greeting + CTA, 3 Stat Cards, 3-Col Desktop Grid aligning Booking Cards & Aksi Cepat)
---}}
+
 <x-layouts.penyewa title="Dashboard — SportPlace" active="dashboard">
 <div class="space-y-8">
 
@@ -49,9 +45,9 @@
             label="Total Booking Bulan Ini"
             :value="$stats['month_count'] ?? 0"
             :badge="$stats['month_growth'] ?? '+0%'"
-            badge-type="trend-green"
+            :badge-type="$stats['month_badge_type'] ?? 'trend-auto'"
             :note="$stats['month_note'] ?? '0 booking dibanding bulan lalu'"
-            note-icon="check"
+            :note-icon="$stats['month_note_icon'] ?? 'check'"
             icon="trophy"
         />
 
