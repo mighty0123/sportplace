@@ -216,7 +216,7 @@ class TransactionMonitor
     {
         return DB::table('booking_headers as h')->join('users as u', 'u.id', '=', 'h.penyewa_id')
             ->where('h.id', $id)
-            ->selectRaw($this->core() . ', u.no_hp as customer_phone')
+            ->selectRaw($this->core() . ', u.no_hp as customer_phone, u.email as customer_email')
             ->first();
     }
 
@@ -322,7 +322,7 @@ class TransactionMonitor
         $defs  = $this->flagDefs();
         $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys($defs), $defs));
 
-        return "h.id, h.kode_booking, h.total_tagihan, h.subtotal_slot, h.biaya_layanan, h.status, h.expires_at, h.created_at, u.id as customer_id,
+        return "h.id, h.kode_booking, h.total_tagihan, h.subtotal_slot, h.biaya_layanan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name,
             (SELECT COUNT(*) FROM booking_details d WHERE d.header_id = h.id) as item_count,
             " . self::PAID_SUM . " as paid_total,
             {$count('succes')} as pay_succes, {$count('pending')} as pay_pending, {$count('failed')} as pay_failed,
