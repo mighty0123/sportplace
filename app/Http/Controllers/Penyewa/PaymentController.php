@@ -23,6 +23,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\Booking\SlotUnavailableException;
+use App\Services\Booking\SlotReservationService;
 
 class PaymentController extends Controller
 {
@@ -216,9 +218,8 @@ class PaymentController extends Controller
             $facilities = ['Ruang Ganti & Shower', 'Free Parkir Mobil/Motor', 'Lighting Standar Turnamen'];
         }
 
-        // Biaya & Diskon
-        $serviceFee = 2500;
-        $promoDiscount = 0;
+        // Biaya
+        $serviceFee = (int) config('booking.service_fee', 2500);
         $totalBayar = max(0, $subtotal + $serviceFee);
         $slotsPayload = json_encode($parsedSlots);
 
@@ -301,7 +302,6 @@ class PaymentController extends Controller
             'lineItems'           => $lineItems,
             'subtotal'            => $subtotal,
             'serviceFee'          => $serviceFee,
-            'promoDiscount'       => $promoDiscount,
             'totalBayar'          => $totalBayar,
             'slotsPayload'        => $slotsPayload,
             'expiresAtTimestamp'  => $expiresAtTimestamp,
@@ -309,15 +309,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Proses submit pembayaran dari halaman Review Pembayaran.
-     * Mengubah status pesanan menjadi lunas/payment dan mengalihkan ke Halaman Tiket Arena & Invoice.
-     */
-    /**
-     * Proses submit pembayaran dari halaman Review Pembayaran.
-     * Mengunci slot dengan status 'pending', membuat transaksi Midtrans Snapbox,
-     * dan mengembalikan Snap token untuk memicu popup pembayaran di frontend.
-     */
     public function processPayment(?int $id = null, ?Request $request = null): RedirectResponse|JsonResponse
     {
         $request = $request ?? request();
@@ -359,8 +350,7 @@ class PaymentController extends Controller
 
         // Hitung total tagihan dari slot yang sebenarnya
         $subtotal = array_sum(array_column($parsedSlots, 'price'));
-        $serviceFee = 2500;
-        $promoDiscount = 0;
+        $serviceFee = (int) config('booking.service_fee', 2500);
         $calculatedTotal = max(0, $subtotal + $serviceFee);
 
         $totalBayar = $calculatedTotal; // total selalu dihitung server; total_bayar dari formulir diabaikan
@@ -449,54 +439,48 @@ class PaymentController extends Controller
                 ? Carbon::parse($rawExpires, $tz)
                 : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes($paymentWindowMinutes) : $now->copy()->addMinutes($paymentWindowMinutes));
         } else {
-            // Kunci slot selama payment_window_minutes sejak pertama kali bayar sekarang
-            $sessionKey = 'checkout_expires_at_' . $field->id;
-            if (session()->has($sessionKey) && (int) session($sessionKey) > $now->timestamp) {
-                $expiresAt = Carbon::createFromTimestamp((int) session($sessionKey), $tz);
-            } else {
-                $expiresAt = $now->copy()->addMinutes($paymentWindowMinutes);
-            }
+            $serviceFee = (int) config('booking.service_fee', 2500);
 
-            // Buat record booking baru dengan status 'pending', isi kode_booking dengan BookingCode::unique(),
-            // dan ulangi bila terkena UniqueConstraintViolationException
-            $booking = null;
-            $maxAttempts = 5;
-            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-                try {
+            try {
+                $booking = DB::transaction(function () use ($user, $field, $parsedSlots, $tanggalSewa, $subtotal, $serviceFee, $totalBayar, $now, $paymentWindowMinutes) {
                     $booking = BookingHeader::create([
                         'penyewa_id'    => $user->id,
                         'kode_booking'  => BookingCode::unique(),
+                        'subtotal_slot' => $subtotal,
+                        'biaya_layanan' => $serviceFee,
                         'total_tagihan' => $totalBayar,
                         'status'        => 'pending',
                         'expires_at'    => $now->copy()->addMinutes($paymentWindowMinutes),
                         'created_at'    => $now,
                     ]);
-                    break;
-                } catch (UniqueConstraintViolationException|QueryException $e) {
-                    if ($attempt >= $maxAttempts) {
-                        throw $e;
+
+                    foreach ($parsedSlots as $slot) {
+                        BookingDetail::create([
+                            'header_id'    => $booking->id,
+                            'field_id'     => $field->id,
+                            'tanggal_sewa' => $tanggalSewa,
+                            'jam_mulai'    => strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'],
+                            'jam_selesai'  => strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'],
+                            'harga_slot'   => (float) $slot['price'],
+                            'status_item'  => 'ongoing',
+                            'created_at'   => $now,
+                        ]);
                     }
+
+                    // Indeks unik di database yang memutuskan siapa yang dapat. Gagal berarti seluruh transaksi dibatalkan.
+                    app(SlotReservationService::class)->reserve($booking->id);
+
+                    return $booking;
+                }, 3);
+            } catch (SlotUnavailableException $e) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
                 }
+
+                return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewa])->with('warning', $e->getMessage());
             }
 
-            $expiresAt = $booking->expires_at ? Carbon::parse($booking->getRawOriginal('expires_at'), $tz) : $expiresAt;
-
-            // Buat detail slot sesuai jadwal yang DIPILIH pengguna
-            foreach ($parsedSlots as $slot) {
-                $jamMulai = strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'];
-                $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'];
-
-                BookingDetail::create([
-                    'header_id'    => $booking->id,
-                    'field_id'     => $field->id,
-                    'tanggal_sewa' => $tanggalSewa,
-                    'jam_mulai'    => $jamMulai,
-                    'jam_selesai'  => $jamSelesai,
-                    'harga_slot'   => (float) $slot['price'],
-                    'status_item'  => 'ongoing',
-                    'created_at'   => $now,
-                ]);
-            }
+            $expiresAt = Carbon::parse($booking->getRawOriginal('expires_at'), $tz);
         }
 
         // Siapkan order_id unik untuk transaksi Midtrans
@@ -684,8 +668,7 @@ class PaymentController extends Controller
             ];
         }
 
-        $serviceFee = 2500;
-        $promoDiscount = 0;
+        $serviceFee = (int) config('booking.service_fee', 2500);
         $totalBayar = (float) $booking->total_tagihan;
 
         // Halaman detail hanya membaca. Status pembayaran ditulis oleh webhook dan checkPaymentStatus
@@ -777,7 +760,6 @@ class PaymentController extends Controller
             'facilities'           => $facilities,
             'lineItems'            => $lineItems,
             'serviceFee'           => $serviceFee,
-            'promoDiscount'        => $promoDiscount,
             'totalBayar'           => $totalBayar,
             'paymentMethod'        => $paymentMethod,
             'isPaid'               => $isPaid,
@@ -883,6 +865,7 @@ class PaymentController extends Controller
 
         // Ubah status booking menjadi canceled
         $booking->update(['status' => 'canceled']);
+        app(SlotReservationService::class)->release($booking->id);
         BookingDetail::where('header_id', $id)->update(['status_item' => 'no_show']);
 
         // Refund sebesar config('booking.refund_percent') persen bila pesanan sudah dibayar

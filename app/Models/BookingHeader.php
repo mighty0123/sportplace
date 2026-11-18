@@ -16,6 +16,8 @@ class BookingHeader extends Model
         'expires_at',
         'checked_in_at',
         'created_at',
+        'subtotal_slot',
+        'biaya_layanan',
     ];
 
     protected $casts = [
