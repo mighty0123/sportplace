@@ -10,7 +10,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('booking_headers', function (Blueprint $t) {
-            // Kosong berarti "tidak tercatat" (booking lama). Booking baru wajib mengisinya.
             $t->decimal('subtotal_slot', 15, 2)->nullable()->after('total_tagihan');
             $t->decimal('biaya_layanan', 15, 2)->nullable()->after('subtotal_slot');
         });
