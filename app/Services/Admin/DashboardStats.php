@@ -26,19 +26,21 @@ class DashboardStats
         'nonaktifkan'  => ['dinonaktifkan',  'warning', 'ban'],
         'aktifkan'     => ['diaktifkan',     'success', 'check-circle'],
         'banned'       => ['diblokir', 'danger', 'ban'],
+        'slot_bentrok' => ['bentrok slot', 'danger', 'alert-circle'],
+        'tambah_tarif' => ['ditetapkan', 'info', 'activity'],
         'selisih_pembayaran'    => ['bernominal tidak cocok', 'danger',  'alert-circle'],
         'refund_otomatis'       => ['direfund otomatis',      'warning', 'alert-circle'],
         'refund_perlu_ditinjau' => ['perlu refund manual',    'danger',  'alert-circle'],
         'dibayar_terlambat'     => ['dibayar terlambat',      'warning', 'clock'],
-        'slot_bentrok' => ['bentrok slot', 'danger', 'alert-circle'],
     ];
 
     public const PAYMENT_LABELS = [
-        'qris'          => 'QRIS',
-        'bank_transfer' => 'Transfer bank',
-        'ewallet'       => 'Dompet digital',
-        'va'            => 'Virtual account',
-        'credit_card'   => 'Kartu kredit',
+        'qris'           => 'QRIS',
+        'bank_transfer'  => 'Transfer bank',
+        'ewallet'        => 'Dompet digital',
+        'va'             => 'Virtual account',
+        'credit_card'    => 'Kartu kredit',
+        'CommissionRate' => 'Tarif komisi',
     ];
 
     private const ENTITY_LABELS = [

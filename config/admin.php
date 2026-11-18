@@ -60,13 +60,15 @@ return [
                 [
                     'label' => 'Pengaturan Komisi',
                     'icon' => 'percent',
-                    'route' => null,
-                    'disabled' => true,
+                    'route' => 'admin.komisi.index',
+                    'active' => 'admin.komisi.*'
                 ],
-                ['label' => 'Manajemen Pengguna',
-                'icon' => 'users', 
-                'route' => 'admin.pengguna.index', 
-                'active' => 'admin.pengguna.*'],
+                [
+                    'label' => 'Manajemen Pengguna',
+                    'icon' => 'users', 
+                    'route' => 'admin.pengguna.index', 
+                    'active' => 'admin.pengguna.*'
+                ],
             ],
         ],
     ],
