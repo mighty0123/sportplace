@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             VenueSeeder::class,
             FieldSeeder::class,
             FieldFacilitySeeder::class,
+            FieldPhotoSeeder::class,
             FieldScheduleSeeder::class,
             BookingSeeder::class,
             WalletSeeder::class,

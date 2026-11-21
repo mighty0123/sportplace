@@ -82,6 +82,38 @@ class CourtReviewTest extends TestCase
         $response->assertSee('review-modal');
     }
 
+    public function test_court_detail_displays_primary_photo_and_gallery_slider(): void
+    {
+        \App\Models\FieldPhoto::create([
+            'field_id'   => $this->field->id,
+            'foto_url'   => 'images/courts/futsal.jpg',
+            'is_primary' => 1,
+        ]);
+
+        \App\Models\FieldPhoto::create([
+            'field_id'   => $this->field->id,
+            'foto_url'   => 'images/fields/green-court-arena.jpg',
+            'is_primary' => 0,
+        ]);
+
+        \App\Models\FieldPhoto::create([
+            'field_id'   => $this->field->id,
+            'foto_url'   => 'images/fields/arena-sport-center.jpg',
+            'is_primary' => 0,
+        ]);
+
+        $response = $this->get('/penyewa/lapangan/' . $this->field->id);
+
+        $response->assertStatus(200);
+        $response->assertSee('main-field-image');
+        $response->assertSee('court-gallery-slider');
+        $response->assertSee('gallery-thumb-btn');
+        $response->assertSee('Utama');
+        $response->assertSee('images/courts/futsal.jpg');
+        $response->assertSee('images/fields/green-court-arena.jpg');
+        $response->assertSee('images/fields/arena-sport-center.jpg');
+    }
+
     public function test_user_can_submit_review_via_ajax(): void
     {
         $payload = [
