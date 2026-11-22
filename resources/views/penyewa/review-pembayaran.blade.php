@@ -557,11 +557,27 @@ document.addEventListener('DOMContentLoaded', function () {
                         onSuccess: function (result) {
                             console.log('Midtrans Payment Success:', result);
                             localStorage.removeItem(storageKey);
-                            window.location.href = res.redirect_url + '?paid=1';
+                            const confirmUrl = "{{ url('/penyewa/booking') }}/" + (res.booking_id || '') + "/confirm-payment";
+                            fetch(confirmUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    order_id: result ? result.order_id : null,
+                                    payment_type: result ? (result.payment_type || 'qris') : 'qris',
+                                    transaction_status: result ? (result.transaction_status || 'settlement') : 'settlement'
+                                })
+                            }).finally(() => {
+                                // Redirect langsung ke URL bersih tanpa query parameter
+                                window.location.href = res.redirect_url;
+                            });
                         },
                         onPending: function (result) {
                             console.log('Midtrans Payment Pending:', result);
-                            window.location.href = res.redirect_url + '?pending=1';
+                            window.location.href = res.redirect_url;
                         },
                         onError: function (result) {
                             console.error('Midtrans Payment Error:', result);
@@ -570,8 +586,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         onClose: function () {
                             console.log('Midtrans Snap popup ditutup oleh pengguna');
-                            // Arahkan ke halaman detail pembayaran karena slot sedang ditahan (pending)
-                            window.location.href = res.redirect_url + '?waiting=1';
+                            window.location.href = res.redirect_url;
                         }
                     });
                 } else {

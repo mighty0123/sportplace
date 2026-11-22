@@ -400,7 +400,7 @@
                         </div>
 
                         @if (!empty($snapToken))
-                            <div class="pt-2">
+                            <div class="pt-2 space-y-2">
                                 <button
                                     type="button"
                                     id="btn-resume-pay"
@@ -411,6 +411,32 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
                                     </svg>
                                     <span>Lanjutkan Bayar via Midtrans</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    id="btn-sync-pay"
+                                    onclick="checkPaymentStatusDirectly()"
+                                    class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-emerald-600/30 text-emerald-800 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                                >
+                                    <svg id="sync-icon" class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    <span id="sync-text">Saya Sudah Bayar (Cek Status)</span>
+                                </button>
+                            </div>
+                        @else
+                            <div class="pt-2">
+                                <button
+                                    type="button"
+                                    id="btn-sync-pay"
+                                    onclick="checkPaymentStatusDirectly()"
+                                    class="w-full py-2.5 px-4 rounded-xl bg-[#0B7B69] hover:bg-[#086354] text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                                >
+                                    <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    <span id="sync-text">Saya Sudah Bayar (Cek Status)</span>
                                 </button>
                             </div>
                         @endif
@@ -622,16 +648,63 @@ function copyTicketCode(code) {
 {{-- Midtrans Snap SDK, Resume Pay Handler & Real-Time Sync --}}
 <script src="{{ config('midtrans.snap_url') }}" data-client-key="{{ config('midtrans.client_key') }}"></script>
 <script>
+function confirmPaymentDirectly(result) {
+    const confirmUrl = "{{ route('penyewa.booking.confirm-payment', $booking->id) }}";
+    fetch(confirmUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            order_id: result ? result.order_id : null,
+            payment_type: result ? (result.payment_type || 'qris') : 'qris',
+            transaction_status: result ? (result.transaction_status || 'settlement') : 'settlement'
+        })
+    }).finally(() => {
+        // Langsung reload halaman saat ini TANPA mengubah URL
+        window.location.reload();
+    });
+}
+
+function checkPaymentStatusDirectly() {
+    const btn = document.getElementById('btn-sync-pay');
+    const icon = document.getElementById('sync-icon');
+    const text = document.getElementById('sync-text');
+    if (btn) btn.disabled = true;
+    if (icon) icon.classList.add('animate-spin');
+    if (text) text.textContent = 'Memverifikasi status...';
+
+    const confirmUrl = "{{ route('penyewa.booking.confirm-payment', $booking->id) }}";
+    fetch(confirmUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            payment_type: 'qris'
+        })
+    }).then(r => r.json()).then(data => {
+        // Seketika reload halaman pada URL yang sama (clean URL)
+        window.location.reload();
+    }).catch(() => {
+        window.location.reload();
+    });
+}
+
 function openMidtransSnap(token) {
     if (window.snap && token) {
         window.snap.pay(token, {
             onSuccess: function (result) {
                 console.log('Payment success:', result);
-                window.location.href = window.location.pathname + '?paid=1';
+                confirmPaymentDirectly(result);
             },
             onPending: function (result) {
                 console.log('Payment pending:', result);
-                window.location.reload();
+                confirmPaymentDirectly(result);
             },
             onError: function (result) {
                 console.error('Payment error:', result);
@@ -639,6 +712,14 @@ function openMidtransSnap(token) {
             },
             onClose: function () {
                 console.log('Snap modal closed');
+                // Otomatis cek status ke backend saat popup ditutup
+                fetch("{{ route('penyewa.booking.check-status', $booking->id) }}", {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                }).then(r => r.json()).then(data => {
+                    if (data.is_paid) {
+                        window.location.reload();
+                    }
+                }).catch(() => {});
             }
         });
     } else {
@@ -710,8 +791,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 clearInterval(pollInterval);
                 clearInterval(countdownInterval);
                 localStorage.removeItem(storageKey);
-                // Langsung arahkan ke halaman tiket terkonfirmasi begitu terdeteksi lunas
-                window.location.href = data.redirect || (window.location.pathname + '?paid=1');
+                // Langsung reload halaman saat terdeteksi lunas tanpa mengubah URL
+                window.location.reload();
             } else if (data.is_expired) {
                 clearInterval(pollInterval);
                 localStorage.removeItem(storageKey);
