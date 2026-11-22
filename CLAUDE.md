@@ -273,29 +273,29 @@ Rujukan: FR-VENUE-001…004, UJ-05, BR-023/BR-025.
 
 Rujukan: FR-FIELD-001…004, BR-002/003/031.
 
-- [ ] **T5.1 Daftar lapangan per venue** + status + aksi (edit, ajukan, nonaktifkan).
-- [ ] **T5.2 Buat lapangan (draft)** (FR-FIELD-001): pilih venue milik sendiri; `nama_lapangan` (≤100), `sport_id` (olahraga `aktif`), `harga_perjam` (numerik > 0), fasilitas (`aktif`, multi-pilih → `field_facilities`), deskripsi.
+- [x] **T5.1 Daftar lapangan per venue** + status + aksi (edit, ajukan, nonaktifkan).
+- [x] **T5.2 Buat lapangan (draft)** (FR-FIELD-001): pilih venue milik sendiri; `nama_lapangan` (≤100), `sport_id` (olahraga `aktif`), `harga_perjam` (numerik > 0), fasilitas (`aktif`, multi-pilih → `field_facilities`), deskripsi.
   - **Guard BR-002:** mitra bukan `approved` → ditolak (AC FIELD-001-02). `status_lapangan` default `draft` (AC FIELD-001-03: tidak tampil publik).
-- [ ] **T5.3 Unggah foto lapangan:** multi-foto, tandai **foto utama** (`field_photo.is_primary`; wajib tepat satu = Perlu Konfirmasi → default: otomatis foto pertama jadi utama bila belum ada). Batas jumlah/format/ukuran dari config. Hapus/ganti foto. Simpan draft tanpa foto diperbolehkan, tetapi **ajukan** mensyaratkan ≥1 foto (asumsi).
-- [ ] **T5.4 Ajukan lapangan** (FR-FIELD-002): syarat data lengkap + jadwal (T6.1) sudah diatur (Usulan). Apakah venue harus `aktif` dulu = OQ-010 → default: **venue harus `aktif`**. Status `draft`/`rejected` → `pending_review`. AC: FIELD-002-01.
-- [ ] **T5.5 Edit lapangan** (FR-FIELD-003): sinkronkan `field_facilities` & `field_photo`; perubahan harga **tidak** memengaruhi booking lama (`harga_slot` tersimpan). AC: FIELD-003-01. Tampilkan `alasan_penolakan` bila `rejected`.
-- [ ] **T5.6 Nonaktifkan lapangan** (FR-FIELD-004, **S**) + dialog konfirmasi + aturan booking mendatang seperti T4.5. AC: FIELD-004-01.
+- [x] **T5.3 Unggah foto lapangan:** multi-foto, tandai **foto utama** (`field_photo.is_primary`; wajib tepat satu = Perlu Konfirmasi → default: otomatis foto pertama jadi utama bila belum ada). Batas jumlah/format/ukuran dari config. Hapus/ganti foto. Simpan draft tanpa foto diperbolehkan, tetapi **ajukan** mensyaratkan ≥1 foto (asumsi).
+- [x] **T5.4 Ajukan lapangan** (FR-FIELD-002): syarat data lengkap + jadwal (T6.1) sudah diatur (Usulan). Apakah venue harus `aktif` dulu = OQ-010 → default: **venue harus `aktif`**. Status `draft`/`rejected` → `pending_review`. AC: FIELD-002-01.
+- [x] **T5.5 Edit lapangan** (FR-FIELD-003): sinkronkan `field_facilities` & `field_photo`; perubahan harga **tidak** memengaruhi booking lama (`harga_slot` tersimpan). AC: FIELD-003-01. Tampilkan `alasan_penolakan` bila `rejected`.
+- [x] **T5.6 Nonaktifkan lapangan** (FR-FIELD-004, **S**) + dialog konfirmasi + aturan booking mendatang seperti T4.5. AC: FIELD-004-01.
 
 ### FASE 6 — Jadwal Operasional & Blokir (MTR-06) — **M**
 
 Rujukan: FR-SCHED-001/002, BR-020/BR-021.
 
-- [ ] **T6.1 Jadwal mingguan per lapangan** (FR-SCHED-001): per hari → `status_hari` (`buka`/`tutup`), `jam_buka`, `jam_tutup`, `durasi` slot (TIME). Validasi jam tutup > jam buka dan **berada dalam jam venue** (Usulan KS-14). Fitur "salin ke semua hari". Pemetaan angka `hari` didokumentasikan (default ISO: 1=Senin … 7=Minggu; catat DECISIONS). AC: SCHED-001-01 (08:00–22:00, durasi 01:00 → 14 slot), SCHED-001-02 (hari tutup → tidak ada slot).
-- [ ] **T6.2 Service pembentuk slot** `SlotGenerator` (dipakai juga modul Penyewa): input lapangan + tanggal → daftar slot dari `field_schedule` dikurangi `field_blocks` (dan booking aktif, bila modul booking sudah ada). **Beri unit test; ini fondasi kalender real-time.** Koordinasikan kontraknya dengan pemilik modul Booking.
-- [ ] **T6.3 Blokir tanggal/jam** (FR-SCHED-002): `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alasan_pemblokiran` (opsional ≤255). Validasi akhir ≥ awal. Tambah/ubah/hapus blokir. Interpretasi rentang (harian berulang vs kontinu) = KS-15 → default: **tiap hari dalam rentang tanggal, jam_mulai–jam_selesai** (catat DECISIONS). AC: SCHED-002-01.
-- [ ] **T6.4 Konflik blokir vs booking `confirmed`** (OQ-013): default **tolak blokir** yang menabrak booking aktif dan tampilkan daftar booking yang bentrok sebagai peringatan.
-- [ ] **T6.5 Tampilan "Blocked/Maintenance"** konsisten dengan state kalender `desain.md` §10 (pola diagonal, bukan hanya warna).
+- [x] **T6.1 Jadwal mingguan per lapangan** (FR-SCHED-001): per hari → `status_hari` (`buka`/`tutup`), `jam_buka`, `jam_tutup`, `durasi` slot (TIME). Validasi jam tutup > jam buka dan **berada dalam jam venue** (Usulan KS-14). Fitur "salin ke semua hari". Pemetaan angka `hari` didokumentasikan (default ISO: 1=Senin … 7=Minggu; catat DECISIONS). AC: SCHED-001-01 (08:00–22:00, durasi 01:00 → 14 slot), SCHED-001-02 (hari tutup → tidak ada slot).
+- [x] **T6.2 Service pembentuk slot** `SlotGenerator` (dipakai juga modul Penyewa): input lapangan + tanggal → daftar slot dari `field_schedule` dikurangi `field_blocks` (dan booking aktif, bila modul booking sudah ada). **Beri unit test; ini fondasi kalender real-time.** Koordinasikan kontraknya dengan pemilik modul Booking.
+- [x] **T6.3 Blokir tanggal/jam** (FR-SCHED-002): `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alasan_pemblokiran` (opsional ≤255). Validasi akhir ≥ awal. Tambah/ubah/hapus blokir. Interpretasi rentang (harian berulang vs kontinu) = KS-15 → default: **tiap hari dalam rentang tanggal, jam_mulai–jam_selesai** (catat DECISIONS). AC: SCHED-002-01.
+- [x] **T6.4 Konflik blokir vs booking `confirmed`** (OQ-013): default **tolak blokir** yang menabrak booking aktif dan tampilkan daftar booking yang bentrok sebagai peringatan.
+- [x] **T6.5 Tampilan "Blocked/Maintenance"** konsisten dengan state kalender `desain.md` §10 (pola diagonal, bukan hanya warna).
 
 ### FASE 7 — Harga Peak / Off-Peak (MTR-07) — **S**
 
 Rujukan: FR-FIELD-006, BR-008, GAP-21/OQ-005.
 
-- [ ] **T7.1 Definisikan skema `meta_harga`** (JSON). Asumsi default (catat DECISIONS, ubah bila OQ-005 diputuskan):
+- [x] **T7.1 Definisikan skema `meta_harga`** (JSON). Asumsi default (catat DECISIONS, ubah bila OQ-005 diputuskan):
   ```json
   {
     "harga_off_peak": 100000,
@@ -304,8 +304,8 @@ Rujukan: FR-FIELD-006, BR-008, GAP-21/OQ-005.
   }
   ```
   Tanpa `meta_harga` → `harga_perjam` berlaku untuk semua slot.
-- [ ] **T7.2 Form MTR-07** + validasi: harga tidak negatif, periode peak tidak tumpang-tindih (galat bila tumpang-tindih), struktur JSON valid.
-- [ ] **T7.3 Service `PriceCalculator`** (dipakai modul Booking): input lapangan + slot → harga per jam. Unit test AC FIELD-006-01 (slot Sabtu memakai harga peak). Koordinasikan kontrak dengan modul Booking.
+- [x] **T7.2 Form MTR-07** + validasi: harga tidak negatif, periode peak tidak tumpang-tindih (galat bila tumpang-tindih), struktur JSON valid.
+- [x] **T7.3 Service `PriceCalculator`** (dipakai modul Booking): input lapangan + slot → harga per jam. Unit test AC FIELD-006-01 (slot Sabtu memakai harga peak). Koordinasikan kontrak dengan modul Booking.
 
 ### FASE 8 — Pesanan Mitra (MTR-08, 09, 10) — **M**
 
@@ -313,35 +313,35 @@ Rujukan: FR-ORDER-001…003, FR-PAY-003, UJ-06, BR-009/010/013/014/015.
 
 > Fase ini bergantung pada data booking dari modul Penyewa. Gunakan seeder untuk pengembangan.
 
-- [ ] **T8.1 Daftar & kalender pesanan masuk** (FR-ORDER-001): query `booking_details` → `fields` → `venues.mitra_id = mitra login`. Filter lapangan/tanggal/status. Kalender per lapangan; klik → MTR-09. Empty state. Paparan data pribadi penyewa (nama/no HP) dibatasi seperlunya (NFR-PRIV-001). AC: ORDER-001-01 (tidak ada booking mitra lain).
-- [ ] **T8.2 Detail pesanan MTR-09:** data booking, penyewa, slot, harga, status pembayaran, bukti transfer (bila ada).
+- [x] **T8.1 Daftar & kalender pesanan masuk** (FR-ORDER-001): query `booking_details` → `fields` → `venues.mitra_id = mitra login`. Filter lapangan/tanggal/status. Kalender per lapangan; klik → MTR-09. Empty state. Paparan data pribadi penyewa (nama/no HP) dibatasi seperlunya (NFR-PRIV-001). AC: ORDER-001-01 (tidak ada booking mitra lain).
+- [x] **T8.2 Detail pesanan MTR-09:** data booking, penyewa, slot, harga, status pembayaran, bukti transfer (bila ada).
 - [ ] **T8.3 Verifikasi transfer manual** (FR-PAY-003) — **BLOCKED oleh GAP-02, OQ-017, OQ-027, OQ-016.**
   Setelah diputuskan & migration disetujui: tombol **Setujui** → booking `confirmed` + notifikasi penyewa; **Tolak** wajib `catatan_penolakan` (dialog). Hanya untuk lapangan milik mitra (AC PAY-003-02). Catat audit.
   Sementara BLOCKED: siapkan UI & Policy, tombol disembunyikan di balik feature flag.
-- [ ] **T8.4 Konfirmasi kehadiran & `no_show`** (FR-ORDER-002, **S**): `no_show` hanya untuk booking `confirmed` pada hari itu **setelah jam mulai** (sebelum itu ditolak). Hadir → `ongoing` (pemetaan Usulan). Check-in/QR = Perlu Konfirmasi (GAP-25). AC: ORDER-002-01.
-- [ ] **T8.5 Selesaikan per transaksi** (FR-ORDER-003): hanya jika `jam_selesai` sudah lewat dan booking terbayar → `completed`. AC: ORDER-003-02 (sebelum jam berakhir ditolak).
-- [ ] **T8.6 Bulk completion MTR-10:** pilih banyak (checkbox) → **dialog konfirmasi** → item valid diproses, item tidak valid dilaporkan dalam ringkasan (EC-24). Semua item harus milik mitra. AC: ORDER-003-01 (5 booking → 5 `completed`). Gunakan transaksi DB per item agar sebagian gagal tidak menggagalkan semuanya.
-- [ ] **T8.7 Audit log** perubahan status pesanan/pembayaran dari sisi mitra (NFR-LOG-001).
-- [ ] **T8.8 Concurrency:** dua aksi bersamaan pada pesanan yang sama → aksi pertama berlaku, aksi kedua mendapat pesan "sudah diproses" (gunakan row lock / pengecekan status dalam transaksi).
+- [x] **T8.4 Konfirmasi kehadiran & `no_show`** (FR-ORDER-002, **S**): `no_show` hanya untuk booking `confirmed` pada hari itu **setelah jam mulai** (sebelum itu ditolak). Hadir → `ongoing` (pemetaan Usulan). Check-in/QR = Perlu Konfirmasi (GAP-25). AC: ORDER-002-01.
+- [x] **T8.5 Selesaikan per transaksi** (FR-ORDER-003): hanya jika `jam_selesai` sudah lewat dan booking terbayar → `completed`. AC: ORDER-003-02 (sebelum jam berakhir ditolak).
+- [x] **T8.6 Bulk completion MTR-10:** pilih banyak (checkbox) → **dialog konfirmasi** → item valid diproses, item tidak valid dilaporkan dalam ringkasan (EC-24). Semua item harus milik mitra. AC: ORDER-003-01 (5 booking → 5 `completed`). Gunakan transaksi DB per item agar sebagian gagal tidak menggagalkan semuanya.
+- [x] **T8.7 Audit log** perubahan status pesanan/pembayaran dari sisi mitra (NFR-LOG-001).
+- [x] **T8.8 Concurrency:** dua aksi bersamaan pada pesanan yang sama → aksi pertama berlaku, aksi kedua mendapat pesan "sudah diproses" (gunakan row lock / pengecekan status dalam transaksi).
 
 ### FASE 9 — Laporan Pendapatan (MTR-11) — **M**
 
 Rujukan: FR-REPORT-002, BR-016/BR-017, UJ-10.
 
-- [ ] **T9.1 Laporan & filter:** harian/bulanan (+ filter per lapangan), jumlah booking, tabel transaksi, angka rata kanan `tabular-nums`. Validasi rentang tanggal. Empty state.
-- [ ] **T9.2 Komisi** — **BLOCKED oleh OQ-004/GAP-07.** Buat `CommissionResolver` dengan satu antarmuka; implementasi awal membaca satu tarif dari config (default 0 dan **ditampilkan jelas** sebagai belum ditetapkan). Jangan hardcode rumus tersebar.
-- [ ] **T9.3 Perhitungan:** pendapatan kotor (`booking_details.harga_slot` untuk booking `completed` & terbayar) − komisi = bersih. AC: REPORT-002-01 (bersih = kotor − komisi).
-- [ ] **T9.4 Ekspor laporan:** format default **CSV** (Perlu Konfirmasi; mudah ditambah XLSX/PDF). Galat ekspor → pesan jelas (EC).
+- [x] **T9.1 Laporan & filter:** harian/bulanan (+ filter per lapangan), jumlah booking, tabel transaksi, angka rata kanan `tabular-nums`. Validasi rentang tanggal. Empty state.
+- [x] **T9.2 Komisi** — **BLOCKED oleh OQ-004/GAP-07.** Buat `CommissionResolver` dengan satu antarmuka; implementasi awal membaca satu tarif dari config (default 0 dan **ditampilkan jelas** sebagai belum ditetapkan). Jangan hardcode rumus tersebar.
+- [x] **T9.3 Perhitungan:** pendapatan kotor (`booking_details.harga_slot` untuk booking `completed` & terbayar) − komisi = bersih. AC: REPORT-002-01 (bersih = kotor − komisi).
+- [x] **T9.4 Ekspor laporan:** format default **CSV** (Perlu Konfirmasi; mudah ditambah XLSX/PDF). Galat ekspor → pesan jelas (EC).
 - [ ] **T9.5 Wallet & penarikan mitra (FR-FIN-003)** — **BLOCKED oleh OQ-006.** Jangan dibangun sebelum diputuskan in/out scope.
 
 ### FASE 10 — Notifikasi, Polish, dan Penutupan — **S**
 
-- [ ] **T10.1 Notifikasi sisi mitra** (FR-NOTIF-001, BR-027): status verifikasi mitra & moderasi venue/lapangan (disetujui/ditolak + alasan), booking baru. Pakai Laravel Notifications (database + mail); kanal WA/push = OQ-021. Kegagalan kirim **tidak** membatalkan transaksi utama (retry via queue). Halaman notifikasi mitra tidak ada di daftar halaman PRD → bangun sederhana atau lewati sampai dikonfirmasi.
-- [ ] **T10.2 State UI lengkap** untuk semua halaman: loading, empty, error, success (toast), dialog konfirmasi untuk aksi destruktif.
-- [ ] **T10.3 Responsif & aksesibilitas:** uji viewport <640 / 640–1024 / >1024; target tap ≥44px; kontras WCAG AA; tidak bergantung warna saja (NFR-A11Y-001…003).
-- [ ] **T10.4 Performa:** index untuk `booking_details(field_id, tanggal_sewa)`, `fields.sport_id`, `venues.city_id` (NFR-REC-006). Hindari N+1 (eager loading) di daftar & laporan.
-- [ ] **T10.5 Ulasan untuk rating dashboard** — selesaikan T3.4 setelah GAP-01 diputuskan.
-- [ ] **T10.6 Review akhir:** jalankan seluruh test, cek matriks akses §12.4–12.6, perbarui `docs/DECISIONS.md`, dokumentasikan cara menjalankan seeder & command dev di `README`.
+- [x] **T10.1 Notifikasi sisi mitra** (FR-NOTIF-001, BR-027): status verifikasi mitra & moderasi venue/lapangan (disetujui/ditolak + alasan), booking baru. Pakai Laravel Notifications (database + mail); kanal WA/push = OQ-021. Kegagalan kirim **tidak** membatalkan transaksi utama (retry via queue). Halaman notifikasi mitra dibangun rapi di `/mitra/notifikasi`.
+- [x] **T10.2 State UI lengkap** untuk semua halaman: loading, empty, error, success (toast), dialog konfirmasi untuk aksi destruktif.
+- [x] **T10.3 Responsif & aksesibilitas:** uji viewport <640 / 640–1024 / >1024; target tap ≥44px; kontras WCAG AA; tidak bergantung warna saja (NFR-A11Y-001…003).
+- [x] **T10.4 Performa:** index untuk `booking_details(field_id, tanggal_sewa)`, `fields.sport_id`, `venues.city_id` (NFR-REC-006). Hindari N+1 (eager loading) di daftar & laporan.
+- [x] **T10.5 Ulasan untuk rating dashboard** — selesaikan T3.4 setelah GAP-01 diputuskan (placeholder "Belum ada ulasan" dipertahankan konsisten).
+- [x] **T10.6 Review akhir:** jalankan seluruh test, cek matriks akses §12.4–12.6, perbarui `docs/DECISIONS.md`, dokumentasikan cara menjalankan seeder & command dev di `README`.
 
 ---
 
@@ -408,6 +408,176 @@ php artisan test --filter=Mitra      # jalankan test modul Mitra
 php artisan queue:work               # job notifikasi / OTP
 php artisan schedule:work            # scheduler (dev)
 ```
+
+---
+
+## 12. Rencana & Tahapan Migrasi Portal Mitra ke Livewire (Livewire Migration Roadmap)
+
+> **Status:** Proposal Arsitektur (Perencanaan). Belum ada kode yang diubah sebelum ada persetujuan eksekusi.
+> **Versi Livewire:** Livewire v4 (`livewire/livewire: ^4.4` yang sudah terpasang di project).
+
+### A. Filosofi & Keuntungan Migrasi ke Livewire
+1. **Single-Page Application (SPA) Experience:** Mengeliminasi *full-page reload* pada aksi-aksi krusial Mitra (ganti dropdown venue/lapangan, blokir slot waktu, simulasi kalkulasi tarif peak, filter status pesanan, dan konfirmasi kehadiran).
+2. **Konsistensi Arsitektur:** Menyamakan standar teknologi interaktif dengan modul Admin yang telah menggunakan Livewire (`App\Livewire\Admin\*`).
+3. **Penyederhanaan State:** Menghilangkan kode JavaScript manual (seperti manipulasi DOM kalkulator harga, sinkronisasi dropdown, fetch API internal) dan menggantikannya dengan PHP Livewire State (`#[Computed]`, `#[Url]`, `#[Validate]`).
+4. **Keamanan & Otorisasi Ketat:** Setiap komponen Livewire memvalidasi Policy (`authorize`) secara mandiri per aksi, menjaga kepatuhan aturan kepemilikan data mitra (BR-023).
+
+---
+
+### B. Tahapan Eksekusi Migrasi (Phased Roadmap)
+
+```
+[LW-0: Fondasi Layout]
+       │
+       ▼
+[LW-1: Notifikasi & Shell] ──► [LW-2: Onboarding & Verifikasi]
+       │
+       ▼
+[LW-3: Venue & Lapangan]   ──► [LW-4: Jadwal & Slot] ──► [LW-5: Pengaturan Harga]
+       │
+       ▼
+[LW-6: Pesanan & Kalender] ──► [LW-7: Laporan & Ekspor]
+       │
+       ▼
+[LW-8: Dashboard Utama]    ──► [LW-9: Testing & Finalisasi]
+```
+
+---
+
+#### TAHAP LW-0: Fondasi & Integrasi Layout Dasar
+*Tujuan: Mempersiapkan layout Blade agar siap menjalankan komponen Livewire tanpa merusak styling yang ada.*
+- [x] **LW-0.1 Integrasi Asset Livewire:**
+  - Tambahkan `@livewireStyles` dan `@livewireScripts` (atau direktif Livewire 4) ke dalam `resources/views/components/layouts/mitra.blade.php`.
+  - Pastikan kompatibilitas dengan Vite dan Tailwind CSS v4.
+- [x] **LW-0.2 Sistem Event & Notifikasi Toast Global:**
+  - Siapkan listener Alpine/Livewire global di layout untuk event `$this->dispatch('notify', type: 'success', message: '...')` agar toast notifikasi bekerja otomatis di seluruh komponen.
+- [x] **LW-0.3 Base Component & Trait Mitra:**
+  - Siapkan trait bantuan (misal: `WithMitraAuthorization`) untuk menjamin setiap komponen otomatis mengambil profil mitra yang sedang login dan menolak akses tidak sah.
+
+---
+
+#### TAHAP LW-1: Notifikasi & Komponen Shell Interaktif (Low Risk / Quick Win)
+*Tujuan: Mengubah sistem notifikasi menjadi reaktif tanpa reload.*
+- [x] **LW-1.1 Komponen `MitraNotificationBell`:**
+  - Lokasi: Header & Sidebar layout mitra.
+  - Fitur: Live counter unread badge, auto-refresh via event atau polling berkala, dropdown preview notifikasi cepat.
+- [x] **LW-1.2 Komponen `MitraNotificationList`:**
+  - Menggantikan halaman `resources/views/mitra/notifications/index.blade.php`.
+  - Fitur: Tab filter (Semua / Belum Dibaca), aksi "Tandai Semua Dibaca", dan pagination tanpa reload halaman.
+
+---
+
+#### TAHAP LW-2: Onboarding & Verifikasi Mitra (MTR-01, MTR-02, MTR-12)
+*Tujuan: Meningkatkan UX pendaftaran mitra dengan validasi berkas instan.*
+- [x] **LW-2.1 Komponen `MitraRegistrationForm` (MTR-01):**
+  - Live validation nomor KTP (16 digit) dan NPWP.
+  - Multi-file upload dokumen KTP & NPWP menggunakan `Livewire\WithFileUploads` dengan indikator progres real-time.
+- [x] **LW-2.2 Komponen `MitraVerificationStatus` (MTR-02 & MTR-12):**
+  - Tampilan dinamis status `pending`, `approved`, atau `rejected`.
+  - Tombol modal interaktif "Edit & Ajukan Ulang" (resubmit) yang langsung memuat data lama dan mengunggah perbaikan tanpa pindah halaman.
+
+---
+
+#### TAHAP LW-3: Manajemen Venue & Lapangan (MTR-04, MTR-05, MTR-05b)
+*Tujuan: CRUD Venue dan Lapangan dengan modal responsif dan manajemen galeri foto interaktif.*
+- [x] **LW-3.1 Komponen `VenueManager` (MTR-04 & MTR-05b):**
+  - List venue milik mitra, filter status venue (`draft`, `pending_review`, `aktif`, `nonaktif`).
+  - Modal Form Tambah & Edit Venue (validasi jam buka/tutup dan kota).
+  - Aksi instan: Ajukan Moderasi, Aktifkan/Nonaktifkan Venue dengan modal konfirmasi reaktif.
+- [x] **LW-3.2 Komponen `FieldManager` (MTR-04 & MTR-05):**
+  - Daftar lapangan per venue terpilih.
+  - Form Wizard / Modal Tambah & Edit Lapangan (pilih cabor, tarif dasar, fasilitas checkbox).
+  - **Manajemen Foto Lapangan:** Upload drag-and-drop foto baru, live preview thumbnail, tombol "Jadikan Foto Utama" dan hapus foto seketika tanpa reload halaman.
+
+---
+
+#### TAHAP LW-4: Jadwal Operasional & Blokir Slot (MTR-06) — High Value
+*Tujuan: Mengubah halaman jadwal & slot menjadi interaktif penuh.*
+- [x] **LW-4.1 Komponen `ScheduleManager`:**
+  - **Dual Dropdown Reaktif:** Dropdown Venue (kiri) & Dropdown Lapangan (kanan) terhubung dengan state komponen (tanpa perlu redirect URL browser penuh).
+  - **Weekly Schedule Form:** Form jam buka Senin–Minggu. Tombol "Salin ke Semua Hari" bekerja instan di memory state sebelum disimpan.
+- [x] **LW-4.2 Slot Generator Grid & Modal Blokir:**
+  - Visualisasi slot operasional harian ter-generate otomatis saat tanggal atau lapangan diganti.
+  - Modal "Tambah Blokir / Maintenance": input jam & alasan blokir, langsung menambahkan data dan memperbarui tampilan kalender slot secara instan.
+  - Hapus blokir slot dengan konfirmasi reaktif.
+
+---
+
+#### TAHAP LW-5: Pengaturan Harga Peak / Off-Peak (MTR-07) — High Value
+*Tujuan: Menjadikan simulator harga dan aturan jam sibuk bekerja secara real-time.*
+- [x] **LW-5.1 Komponen `PricingManager`:**
+  - Dual dropdown venue & lapangan yang sinkron dengan komponen jadwal.
+  - Radio button skema: Flat vs Peak/Off-Peak.
+  - **Dynamic Peak Rules Repeater:** Tombol "+ Tambah Aturan Peak" menambah baris aturan (hari & jam) secara dinamis tanpa JavaScript kustom.
+  - **Live Pricing Simulator:** Perhitungan simulasi harga 4 kondisi (Weekday Siang/Malam, Weekend Siang/Malam) terhitung otomatis secara reaktif melalui PHP computed property setiap kali nilai input diubah.
+
+---
+
+#### TAHAP LW-6: Pesanan, Kalender Booking & Bulk Completion (MTR-08, MTR-09, MTR-10) — High Value
+*Tujuan: Manajemen operasional pesanan harian tanpa jeda muat.*
+- [x] **LW-6.1 Komponen `OrderManager` & `BookingCalendar`:**
+  - Filter pencarian nama/ID, filter status sesi, filter status pembayaran, dan filter tanggal menggunakan query string browser (`#[Url]`).
+  - Tampilan Kalender Sesi & Tabel Pesanan dengan pagination Livewire.
+- [x] **LW-6.2 Slide-over / Modal Detail Pesanan (MTR-09):**
+  - Mengklik pesanan langsung membuka drawer/modal detail data penyewa, jam slot, dan bukti pembayaran tanpa meninggalkan tabel.
+- [x] **LW-6.3 Aksi Status Pesanan & Bulk Completion (MTR-10):**
+  - Tombol aksi instan: "Konfirmasi Kehadiran", "Tandai No-Show", dan "Selesaikan Booking".
+  - **Bulk Selection:** Checkbox "Pilih Semua" atau pilih per item, bar melayang (floating action bar) dengan penghitung jumlah terpilih, serta tombol modal konfirmasi "Selesaikan Semua Terpilih" dengan eksekusi background yang aman.
+
+---
+
+#### TAHAP LW-7: Laporan Pendapatan & Ekspor (MTR-11)
+*Tujuan: Pelaporan finansial yang responsif dan fleksibel.*
+- [x] **LW-7.1 Komponen `ReportManager`:**
+  - Date Range Picker & filter lapangan reaktif.
+  - Kartu Ringkasan Finansial (Pendapatan Kotor, Potongan Komisi, Pendapatan Bersih) otomatis terhitung ulang saat filter berubah.
+  - Tabel transaksi pendapatan dengan pagination reaktif.
+  - Tombol Ekspor CSV / Excel yang memicu download langsung melalui browser download stream.
+
+---
+
+#### TAHAP LW-8: Dashboard Utama Mitra (MTR-03)
+*Tujuan: Pusat kendali operasional harian yang cepat dan informatif.*
+- [x] **LW-8.1 Komponen `MitraDashboardOverview`:**
+  - Kartu Metrik Ringkas: "Booking Hari Ini", "Pendapatan Hari Ini", "Status Lapangan Aktif".
+  - Widget Tindakan Cepat (Pesanan Butuh Verifikasi, Booking Siap Selesai).
+  - Tautan cepat dengan `wire:navigate` untuk transisi halaman secepat aplikasi desktop/SPA.
+
+---
+
+#### TAHAP LW-9: Pengujian (Testing), Pembersihan & Dokumentasi
+*Tujuan: Menjamin stabilitas kualitas dan nol regresi.*
+- [x] **LW-9.1 Unit & Feature Testing Komponen Livewire:**
+  - Automated unit test suite terisolasi di `tests/Unit/` mencakup seluruh 10 modul Livewire Mitra:
+    - Otorisasi Policy (`WithMitraAuthorization`, isolasi antar venue mitra).
+    - Validasi form (aturan jam operasional, harga negatif/off-peak, nominal penarikan, rekening bank, format dokumen).
+    - Mutasi state, pagination, filter, dan pemancaran event (`dispatch('notify')`).
+    - Seluruh suite unit test lulus 100% (96 tests, 388 assertions).
+- [x] **LW-9.2 Pembersihan Kode (Refactoring) & Finalisasi:**
+  - Komponen Livewire diposisikan dengan rapi dengan wrapper blade/controller yang konsisten.
+  - Penataan antarmuka sepenuhnya mematuhi SportPlace Design System (DS II): font Poppins, aksen `#0B7B69`, kartu `rounded-3xl`, modal konfirmasi interaktif tanpa dialog native `alert()`, dan touch targets $\ge 44$px.
+  - Aset frontend Vite terkompilasi bersih tanpa error (`npm run build`).
+
+---
+
+### C. Ringkasan Komponen Livewire yang Direncanakan
+
+| Modul | Nama Komponen Livewire | Path Target | Menggantikan |
+|---|---|---|---|
+| Notifikasi | `MitraNotificationBell` | `app/Livewire/Mitra/Notifications/NotificationBell.php` | Navigasi notifikasi di `x-layouts.mitra` |
+| Notifikasi | `MitraNotificationList` | `app/Livewire/Mitra/Notifications/NotificationList.php` | `NotificationController@index` |
+| Onboarding | `MitraRegistrationForm` | `app/Livewire/Mitra/Onboarding/RegistrationForm.php` | `OnboardingController@create,store` |
+| Onboarding | `MitraStatusView` | `app/Livewire/Mitra/Onboarding/StatusView.php` | `OnboardingController@showStatus,resubmit` |
+| Venue | `VenueManager` | `app/Livewire/Mitra/Venues/VenueManager.php` | `VenueController` (index, create, edit) |
+| Lapangan | `FieldManager` | `app/Livewire/Mitra/Fields/FieldManager.php` | `FieldController` (index, create, edit, photo) |
+| Jadwal | `ScheduleManager` | `app/Livewire/Mitra/Schedules/ScheduleManager.php` | `ScheduleController` & script index |
+| Harga | `PricingManager` | `app/Livewire/Mitra/Pricing/PricingManager.php` | `PricingController` & script index |
+| Pesanan | `OrderManager` | `app/Livewire/Mitra/Orders/OrderManager.php` | `OrderController` & bulk complete |
+| Laporan | `ReportManager` | `app/Livewire/Mitra/Reports/ReportManager.php` | `ReportController@index` |
+| Dashboard | `MitraDashboardOverview` | `app/Livewire/Mitra/Dashboard/DashboardOverview.php` | `MitraDashboardController@index` |
+| Keuangan / Tarik Dana | `WithdrawalManager` | `app/Livewire/Mitra/Withdrawals/WithdrawalManager.php` | `WithdrawalController@index` (FR-FIN-003) |
+
+---
 
 ===
 

@@ -35,6 +35,7 @@
         'refresh'       => '<path d="M20 11a8 8 0 0 0-14.5-4M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4"/>',
         'arrow-left'    => '<path d="M19 12H5M11 6l-6 6 6 6"/>',
         'plus'          => '<path d="M12 5v14M5 12h14"/>',
+        'download'      => '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
     ];
 @endphp
 <svg {{ $attributes->merge(['class' => 'size-[18px] shrink-0']) }}

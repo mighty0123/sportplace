@@ -22,7 +22,9 @@ class DashboardController extends Controller
         $userId = $user?->id;
 
         $today = Carbon::today();
-        $now = Carbon::now();
+        $tz = config('app.timezone', 'Asia/Makassar');
+        $now = Carbon::now($tz);
+        $today = Carbon::today($tz);
 
         // 1. STATISTIK 1: Booking Aktif (Hari Ini)
         $activeDetails = BookingDetail::whereHas('header', function ($q) use ($userId) {
@@ -33,11 +35,9 @@ class DashboardController extends Controller
         $activeBookingsCount = $activeDetails->count();
 
         // Hitung berapa lapangan yang sedang berlangsung
-        $nowWib = $now->copy()->setTimezone('Asia/Jakarta');
-        $currentTime = $nowWib->format('H:i:s');
+        $currentTime = $now->format('H:i:s');
         $ongoingCount = $activeDetails->filter(function ($item) use ($currentTime) {
-            return ($item->status_item === 'ongoing' && $item->jam_mulai <= $currentTime && $item->jam_selesai >= $currentTime)
-                || ($item->status_item === 'ongoing' && $item->jam_mulai === '18:00:00');
+            return ($item->status_item === 'ongoing' && $item->jam_mulai <= $currentTime && $item->jam_selesai >= $currentTime);
         })->count();
 
         if ($ongoingCount > 0) {
@@ -74,25 +74,45 @@ class DashboardController extends Controller
         if ($prevMonthCount > 0) {
             $diff = $currentMonthCount - $prevMonthCount;
             $growthPercent = round(($diff / $prevMonthCount) * 100);
-            $growthSign = $growthPercent >= 0 ? "+{$growthPercent}%" : "{$growthPercent}%";
-            $monthNote = ($diff >= 0 ? "+{$diff}" : "{$diff}") . " booking dibanding bulan lalu";
+            $growthSign = $growthPercent > 0 ? "+{$growthPercent}%" : "{$growthPercent}%";
+            $monthNote = ($diff > 0 ? "+{$diff}" : "{$diff}") . " booking dibanding bulan lalu";
         } else {
-            $growthSign = "+100%";
-            $monthNote = "+{$currentMonthCount} booking dibanding bulan lalu";
+            if ($currentMonthCount > 0) {
+                $growthPercent = 100;
+                $growthSign = "+100%";
+                $monthNote = "+{$currentMonthCount} booking dibanding bulan lalu";
+            } else {
+                $growthPercent = 0;
+                $growthSign = "0%";
+                $monthNote = "0 booking dibanding bulan lalu";
+            }
+        }
+
+        if ($growthPercent > 0) {
+            $monthBadgeType = 'trend-up';
+            $monthNoteIcon  = 'trend-up';
+        } elseif ($growthPercent < 0) {
+            $monthBadgeType = 'trend-down';
+            $monthNoteIcon  = 'trend-down';
+        } else {
+            $monthBadgeType = 'trend-neutral';
+            $monthNoteIcon  = 'check';
         }
 
         $stats = [
-            'active_count'   => $activeBookingsCount,
-            'active_badge'   => 'Hari ini',
-            'active_note'    => $activeNote,
+            'active_count'     => $activeBookingsCount,
+            'active_badge'     => 'Hari ini',
+            'active_note'      => $activeNote,
 
-            'upcoming_count' => $upcomingBookingsCount,
-            'upcoming_badge' => 'Jadwal siap',
-            'upcoming_note'  => $upcomingNote,
+            'upcoming_count'   => $upcomingBookingsCount,
+            'upcoming_badge'   => 'Jadwal siap',
+            'upcoming_note'    => $upcomingNote,
 
-            'month_count'    => $currentMonthCount,
-            'month_growth'   => $growthSign,
-            'month_note'     => $monthNote,
+            'month_count'      => $currentMonthCount,
+            'month_growth'     => $growthSign,
+            'month_note'       => $monthNote,
+            'month_badge_type' => $monthBadgeType,
+            'month_note_icon'  => $monthNoteIcon,
         ];
 
         // 4. DAFTAR BOOKING AKTIF & MENDATANG (Maksimal 4 kartu sesuai layout figma)

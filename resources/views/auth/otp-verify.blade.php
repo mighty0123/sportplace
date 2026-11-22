@@ -112,7 +112,7 @@
 
             <!-- Success / Status Alert -->
             @if (session('status'))
-                <div class="mb-5 p-3.5 rounded-xl bg-[#E8F7EE] border border-[#BAEECD] flex items-start gap-2.5 text-xs font-medium text-[#0A7660]">
+                <div class="mb-5 p-4 rounded-2xl bg-[#E8F7EE] border border-[#BAEECD] flex items-start gap-2.5 text-xs font-medium text-[#0A7660]">
                     <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -122,7 +122,7 @@
 
             <!-- Error Alert -->
             @if ($errors->has('kode'))
-                <div class="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs font-medium text-red-700">
+                <div class="mb-5 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs font-medium text-red-700">
                     <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -151,7 +151,7 @@
                                 inputmode="numeric"
                                 maxlength="1"
                                 pattern="[0-9]"
-                                class="otp-digit w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-xl bg-[#F2F7F4] border-2 {{ $errors->has('kode') ? 'border-red-400 bg-red-50/30' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-[#1B2724] transition outline-none tabular-nums caret-transparent"
+                                class="otp-digit w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-2xl bg-[#F2F7F4] border-2 {{ $errors->has('kode') ? 'border-red-400 bg-red-50/30' : 'border-transparent' }} focus:bg-white focus:border-[#0A7660] focus:ring-2 focus:ring-[#0A7660]/20 text-[#1B2724] transition outline-none tabular-nums caret-transparent"
                                 autocomplete="off"
                                 aria-label="Digit {{ $i + 1 }} kode OTP"
                                 id="otp-{{ $i }}"
@@ -168,7 +168,7 @@
                 <button
                     type="submit"
                     id="btn-verify"
-                    class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>

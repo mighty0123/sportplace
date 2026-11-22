@@ -1,23 +1,33 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\ListingModerationController;
-use App\Http\Controllers\Admin\MitraVerificationController;
-use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HelpController;
-use App\Http\Controllers\Mitra\DashboardController;
+use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
+use App\Http\Controllers\Mitra\FieldController;
+use App\Http\Controllers\Mitra\NotificationController;
 use App\Http\Controllers\Mitra\OnboardingController;
+use App\Http\Controllers\Mitra\OrderController;
+use App\Http\Controllers\Mitra\PricingController;
+use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\Mitra\WithdrawalController;
 use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
-use App\Http\Controllers\Penyewa\ProfileController;
 use App\Http\Controllers\WelcomeController;
+
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ListingModerationController;
+use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\CommissionController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Models\MitraProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -64,12 +74,21 @@ Route::middleware('auth')->group(function () {
 Route::prefix('penyewa')->name('penyewa.')->group(function () {
     Route::get('/lapangan', [CourtListingController::class, 'index'])->name('lapangan');
     Route::get('/lapangan/{id}', [CourtListingController::class, 'show'])->name('lapangan.detail');
+    Route::post('/lapangan/{id}/review', [CourtListingController::class, 'storeReview'])->name('lapangan.review');
     Route::get('/booking/baru', [CourtListingController::class, 'index'])->name('booking.baru');
     Route::get('/kalender/{id?}', [CalendarController::class, 'index'])->name('kalender');
 });
 
 // Shortcut URL publik
 Route::redirect('/lapangan', '/penyewa/lapangan');
+
+// Verifikasi Tiket QR Code (Publik, dapat discan langsung dari kamera smartphone atau petugas arena)
+Route::get('/tiket/{code}', [PaymentController::class, 'verifyTicket'])->name('booking.verify');
+Route::post('/tiket/{code}/checkin', [PaymentController::class, 'checkInTicket'])->name('booking.checkin');
+
+// Webhook HTTP Notification Midtrans Gateway (Publik, tanpa CSRF / Auth)
+Route::post('/api/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification');
+Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification'])->name('midtrans.notification.alt');
 
 // Area Terproteksi Penyewa — Wajib login untuk booking, checkout, pembayaran, riwayat, dan profil (PRD FR-BOOK-002, FR-PAY-001)
 Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function () {
@@ -79,6 +98,7 @@ Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function
     Route::get('/checkout/{id?}', [PaymentController::class, 'review'])->name('checkout');
     Route::post('/bayar/{id?}', [PaymentController::class, 'processPayment'])->name('pembayaran.process');
     Route::get('/booking/{id}', [PaymentController::class, 'show'])->name('booking.detail');
+    Route::get('/booking/{id}/check-status', [PaymentController::class, 'checkPaymentStatus'])->name('booking.check-status');
     Route::get('/tiket/{id?}', [PaymentController::class, 'show'])->name('booking.ticket');
     Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
     Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');
@@ -104,8 +124,13 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     // Akses Dokumen Privat Terproteksi
     Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
+    // T10.1: Notifikasi Mitra (FR-NOTIF-001, BR-027)
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifikasi/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::post('/notifikasi/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+
     Route::middleware('mitra.approved')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
 
         // MTR-04 & MTR-05b: Manajemen Venue (FR-VENUE-001..004)
         Route::get('/venues', [VenueController::class, 'index'])->name('venues.index');
@@ -117,6 +142,45 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         Route::post('/venues/{venue}/submit', [VenueController::class, 'submitForReview'])->name('venues.submit');
         Route::post('/venues/{venue}/deactivate', [VenueController::class, 'deactivate'])->name('venues.deactivate');
         Route::post('/venues/{venue}/activate', [VenueController::class, 'activate'])->name('venues.activate');
+
+        // MTR-04 & MTR-05: Manajemen Lapangan (FR-FIELD-001..004)
+        Route::get('/venues/{venue}/fields', [FieldController::class, 'index'])->name('venues.fields.index');
+        Route::get('/venues/{venue}/fields/create', [FieldController::class, 'create'])->name('venues.fields.create');
+        Route::post('/venues/{venue}/fields', [FieldController::class, 'store'])->name('venues.fields.store');
+        Route::get('/fields', [FieldController::class, 'allFields'])->name('fields.all');
+        Route::get('/fields/{field}/edit', [FieldController::class, 'edit'])->name('fields.edit');
+        Route::put('/fields/{field}', [FieldController::class, 'update'])->name('fields.update');
+        Route::delete('/fields/{field}', [FieldController::class, 'destroy'])->name('fields.destroy');
+        Route::post('/fields/{field}/submit', [FieldController::class, 'submitForReview'])->name('fields.submit');
+        Route::post('/fields/{field}/toggle-status', [FieldController::class, 'toggleStatus'])->name('fields.toggle-status');
+        Route::delete('/fields/{field}/photos/{photo}', [FieldController::class, 'deletePhoto'])->name('fields.photos.destroy');
+        Route::post('/fields/{field}/photos/{photo}/set-primary', [FieldController::class, 'setPrimaryPhoto'])->name('fields.photos.set-primary');
+
+        // MTR-06: Jadwal Operasional & Blokir Lapangan (FR-SCHED-001..002)
+        Route::get('/jadwal', [ScheduleController::class, 'index'])->name('schedules.index');
+        Route::put('/fields/{field}/schedule', [ScheduleController::class, 'update'])->name('fields.schedule.update');
+        Route::post('/fields/{field}/blocks', [ScheduleController::class, 'storeBlock'])->name('fields.blocks.store');
+        Route::delete('/fields/{field}/blocks/{block}', [ScheduleController::class, 'destroyBlock'])->name('fields.blocks.destroy');
+        Route::get('/fields/{field}/slots-json', [ScheduleController::class, 'slotsJson'])->name('fields.slots.json');
+
+        // MTR-07: Pengaturan Harga Peak / Off-Peak (FR-FIELD-006)
+        Route::get('/harga', [PricingController::class, 'index'])->name('pricing.index');
+        Route::put('/fields/{field}/pricing', [PricingController::class, 'update'])->name('fields.pricing.update');
+
+        // MTR-08, MTR-09, MTR-10: Pesanan Mitra (FR-ORDER-001..003)
+        Route::get('/pesanan', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('/pesanan/{order}/confirm-attendance', [OrderController::class, 'confirmAttendance'])->name('orders.confirm-attendance');
+        Route::post('/pesanan/{order}/no-show', [OrderController::class, 'markNoShow'])->name('orders.no-show');
+        Route::post('/pesanan/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
+        Route::post('/pesanan-bulk-complete', [OrderController::class, 'bulkComplete'])->name('orders.bulk-complete');
+
+        // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
+        Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+
+        // MTR-13 / FR-FIN-003: Penarikan Dana Mitra (Wallet & Withdrawal)
+        Route::get('/penarikan', [WithdrawalController::class, 'index'])->name('withdrawals.index');
     });
 });
 
@@ -155,4 +219,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [TransactionController::class, 'index'])->name('index');
         Route::get('/{id}', [TransactionController::class, 'show'])->whereNumber('id')->name('show');
     });
+
+    Route::prefix('laporan')->name('laporan.')->middleware('can:view-reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
+        Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
+    });
+
+    Route::prefix('komisi')->name('komisi.')->middleware('can:manage-commission')->group(function () {
+        Route::get('/', [CommissionController::class, 'index'])->name('index');
+        Route::post('/tarif', [CommissionController::class, 'store'])->middleware('throttle:20,1')->name('store');
+    });
+
+    Route::prefix('pengguna')->name('pengguna.')->middleware('can:manage-users')->where(['id' => '[0-9]+'])->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [UserManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
+    });
+
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/profil/sesi/keluar', [ProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
 });

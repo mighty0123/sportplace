@@ -106,7 +106,7 @@
                             placeholder="nama@email.com"
                             required
                             autofocus
-                            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border-2 {{ $errors->has('email') ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-500/20 focus:border-rose-400' : 'border-[#D7E9DF] bg-[#F7FBF9] text-[#1B2724] focus:border-[#0A7660] focus:ring-[#0A7660]/10' }} focus:outline-none focus:ring-4 transition placeholder-[#9DB0A8]"
+                            class="w-full pl-10 pr-4 py-3 text-sm rounded-2xl border-2 {{ $errors->has('email') ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-500/20 focus:border-rose-400' : 'border-[#D7E9DF] bg-[#F7FBF9] text-[#1B2724] focus:border-[#0A7660] focus:ring-[#0A7660]/10' }} focus:outline-none focus:ring-4 transition placeholder-[#9DB0A8]"
                         />
                     </div>
                     @error('email')
@@ -120,7 +120,7 @@
                 </div>
 
                 <!-- Info Note -->
-                <div class="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#F1F9F7] border border-[#BBEDE3]/70 text-xs text-[#5A6C5B]">
+                <div class="flex items-start gap-2.5 p-4 rounded-2xl bg-[#F1F9F7] border border-[#BBEDE3]/70 text-xs text-[#5A6C5B]">
                     <svg class="w-4 h-4 text-[#0A7660] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -131,7 +131,7 @@
                 <button
                     type="submit"
                     id="btn-send-reset"
-                    class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm"
+                    class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm cursor-pointer"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>

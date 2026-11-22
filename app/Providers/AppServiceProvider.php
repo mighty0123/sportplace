@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use App\Support\PendingCounts;
 use App\Contracts\OtpSender;
 use App\Models\User;
 use App\Services\Auth\MailOtpSender;
+use App\Support\PendingCounts;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
@@ -34,5 +34,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('moderate-listings', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
         Gate::define('manage-master-data', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
         Gate::define('view-transactions', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('view-reports', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('manage-commission', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
+        Gate::define('manage-users', fn (User $user) => $user->role === 'admin' && $user->status_akun === 'aktif');
     }
 }

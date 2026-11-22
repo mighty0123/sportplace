@@ -54,19 +54,20 @@ return [
                 ],
                 [
                     'label' => 'Laporan',
-                    'icon' => 'file-text',
-                    'route' => null,
-                ],
+                    'icon' => 'file-text', 
+                    'route' => 'admin.laporan.index', 
+                    'active' => 'admin.laporan.*'],
                 [
                     'label' => 'Pengaturan Komisi',
                     'icon' => 'percent',
-                    'route' => null,
-                    'disabled' => true,
+                    'route' => 'admin.komisi.index',
+                    'active' => 'admin.komisi.*'
                 ],
                 [
                     'label' => 'Manajemen Pengguna',
-                    'icon' => 'users',
-                    'route' => null,
+                    'icon' => 'users', 
+                    'route' => 'admin.pengguna.index', 
+                    'active' => 'admin.pengguna.*'
                 ],
             ],
         ],

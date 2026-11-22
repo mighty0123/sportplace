@@ -112,7 +112,7 @@
                             minlength="8"
                             required
                             autofocus
-                            class="w-full pl-10 pr-11 py-3 text-sm rounded-xl border-2 {{ $errors->has('password') ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-500/20 focus:border-rose-400' : 'border-[#D7E9DF] bg-[#F7FBF9] text-[#1B2724] focus:border-[#0A7660] focus:ring-[#0A7660]/10' }} focus:outline-none focus:ring-4 transition placeholder-[#9DB0A8]"
+                            class="w-full pl-10 pr-11 py-3 text-sm rounded-2xl border-2 {{ $errors->has('password') ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-500/20 focus:border-rose-400' : 'border-[#D7E9DF] bg-[#F7FBF9] text-[#1B2724] focus:border-[#0A7660] focus:ring-[#0A7660]/10' }} focus:outline-none focus:ring-4 transition placeholder-[#9DB0A8]"
                         />
                         <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#7D8C78] hover:text-[#0A7660] transition">
                             <svg id="eye-show" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +171,7 @@
                             placeholder="Ketik ulang kata sandi baru"
                             minlength="8"
                             required
-                            class="w-full pl-10 pr-11 py-3 text-sm rounded-xl border-2 {{ $errors->has('password_confirmation') ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-500/20 focus:border-rose-400' : 'border-[#D7E9DF] bg-[#F7FBF9] text-[#1B2724] focus:border-[#0A7660] focus:ring-[#0A7660]/10' }} focus:outline-none focus:ring-4 transition placeholder-[#9DB0A8]"
+                            class="w-full pl-10 pr-11 py-3 text-sm rounded-2xl border-2 {{ $errors->has('password_confirmation') ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-500/20 focus:border-rose-400' : 'border-[#D7E9DF] bg-[#F7FBF9] text-[#1B2724] focus:border-[#0A7660] focus:ring-[#0A7660]/10' }} focus:outline-none focus:ring-4 transition placeholder-[#9DB0A8]"
                         />
                         <button type="button" id="toggle-confirm" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#7D8C78] hover:text-[#0A7660] transition">
                             <svg id="eye-show-c" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +199,7 @@
                 <button
                     type="submit"
                     id="btn-update"
-                    class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm"
+                    class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-[#0A7660] hover:bg-[#0B604F] active:bg-[#0C4E40] text-white text-sm font-semibold transition shadow-sm cursor-pointer"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
