@@ -18,6 +18,48 @@
     />
 
     {{-- =========================================================
+         SECTION 1.5: Onboarding Coach Banner untuk Pengguna Baru (Saran 1 & 5)
+    ========================================================= --}}
+    <div id="penyewa-onboarding-sim-card" class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#06231D] via-[#094034] to-[#0A7660] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border border-emerald-800/80">
+        <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-[#DEEF25] text-[#06231D] flex items-center justify-center shrink-0 shadow-xs font-bold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-sm font-bold text-white">Baru Pertama Kali di SportPlace?</h3>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#DEEF25]/20 text-[#DEEF25] border border-[#DEEF25]/30">Onboarding ± 1 Menit</span>
+                </div>
+                <p class="text-xs text-emerald-100/80 mt-0.5">Coba simulasi interaktif alur sewa lapangan agar Anda memahami proses pemilihan jam hingga tiket QR terbit.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2.5 shrink-0">
+            <button type="button" onclick="openBookingSimulation()" class="px-4 py-2 rounded-xl bg-[#DEEF25] hover:bg-[#cde01e] text-[#06231D] text-xs font-bold transition shadow-xs cursor-pointer">
+                Mulai Simulasi
+            </button>
+            <button type="button" onclick="dismissOnboardingSimCard()" class="p-2 rounded-xl text-emerald-300 hover:text-white hover:bg-white/10 transition cursor-pointer" title="Tutup pemberitahuan">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (localStorage.getItem('sportplace_sim_banner_dismissed') === 'true') {
+                const card = document.getElementById('penyewa-onboarding-sim-card');
+                if (card) card.classList.add('hidden');
+            }
+        });
+        function dismissOnboardingSimCard() {
+            const card = document.getElementById('penyewa-onboarding-sim-card');
+            if (card) card.classList.add('hidden');
+            localStorage.setItem('sportplace_sim_banner_dismissed', 'true');
+        }
+    </script>
+
+    {{-- =========================================================
          SECTION 2: 3 Metrics / Stat Cards Row (Data dari Database)
     ========================================================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

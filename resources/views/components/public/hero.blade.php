@@ -26,5 +26,20 @@
         <p class="text-base sm:text-lg text-emerald-100/90 max-w-2xl mx-auto leading-relaxed font-normal">
             Temukan lapangan olahraga yang sesuai dengan lokasi, cabang olahraga, harga, dan kebutuhanmu dengan konfirmasi instan.
         </p>
+
+        <!-- Quick Interactive Demo Simulation Pill (Saran 1 & 5) -->
+        <div class="pt-6">
+            <button
+                type="button"
+                onclick="openBookingSimulation()"
+                class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#0C4E40]/80 hover:bg-[#0C4E40] border border-[#43E5C5]/30 text-emerald-100 hover:text-white text-xs sm:text-sm font-semibold transition backdrop-blur-sm cursor-pointer shadow-xs group"
+            >
+                <span class="w-2 h-2 rounded-full bg-[#DEEF25] animate-pulse"></span>
+                <span>Coba Simulasi Alur Booking (± 1 Menit)</span>
+                <svg class="w-4 h-4 text-[#DEEF25] group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+            </button>
+        </div>
     </div>
 </section>

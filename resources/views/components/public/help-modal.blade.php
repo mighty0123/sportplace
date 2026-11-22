@@ -166,7 +166,7 @@
                             </div>
                             <div>
                                 <h4 class="text-sm font-bold text-slate-900">Ingin mencoba dulu?</h4>
-                                <p class="text-xs sm:text-sm text-slate-600 mt-0.5">Simulasi 4 langkah, aman dan tanpa biaya.</p>
+                                <p class="text-xs sm:text-sm text-slate-600 mt-0.5">Simulasi 4 langkah (± 1 menit), aman dan tanpa biaya.</p>
                             </div>
                         </div>
                         <button
@@ -460,7 +460,7 @@
             <div class="px-6 py-2 bg-amber-50 text-amber-900 border-b border-amber-200/80 text-xs font-medium flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span>Mode demo • Tidak ada pemesanan nyata ataupun pemotongan saldo</span>
+                    <span>Mode demo • Simulasi kilat ± 1 menit tanpa pemotongan saldo</span>
                 </div>
                 <button
                     type="button"
@@ -529,9 +529,15 @@
                      STEP 1: PILIH LAPANGAN (FOTO 16:9, FASILITAS DI DALAM, HARGA MENONJOL)
                 ========================================================= --}}
                 <div id="sim-step-1" class="space-y-4">
-                    <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                        Pilih lapangan yang ingin dipesan
-                    </h3>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                            Pilih lapangan yang ingin dipesan
+                        </h3>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#0A7660] border border-emerald-200 text-xs font-semibold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Estimasi: ± 1 Menit
+                        </span>
+                    </div>
 
                     <!-- 2 Kartu Lapangan Visual dengan Foto 16:9 -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
@@ -758,12 +764,15 @@
                      STEP 3: REVIEW & PEMBAYARAN SIMULASI
                 ========================================================= --}}
                 <div id="sim-step-3" class="space-y-4 hidden">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
                         <h3 class="text-sm sm:text-base font-bold text-slate-900">
                             Review pesanan & metode pembayaran
                         </h3>
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-                            <span>Slot Terkunci: 14:59</span>
+                        <!-- Live Micro-Animated Countdown Timer (Saran 2) -->
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold shadow-xs">
+                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                            <span>Slot Terkunci: </span>
+                            <span id="sim-lock-countdown" class="font-mono text-amber-950 font-bold transition-all duration-300">14:59</span>
                         </div>
                     </div>
 
@@ -797,11 +806,11 @@
                         </div>
                     </div>
 
-                    <!-- Payment Method Demo Radio -->
-                    <div class="space-y-2">
+                    <!-- Payment Method Demo Radio & Interactive Visual Preview (Saran 3) -->
+                    <div class="space-y-3">
                         <span class="text-xs font-bold text-slate-700 block">Pilihan Pembayaran Instan:</span>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <label class="p-3.5 rounded-xl border-2 border-[#0A7660] bg-[#DEF1E7]/30 flex items-center gap-3 cursor-pointer">
+                            <label id="sim-pay-opt-qris" onclick="selectSimulationPayment('qris')" class="p-3.5 rounded-xl border-2 border-[#0A7660] bg-[#DEF1E7]/30 flex items-center gap-3 cursor-pointer transition">
                                 <input type="radio" name="sim_payment_method" value="qris" checked class="text-[#0A7660] focus:ring-[#0A7660]">
                                 <div class="text-xs sm:text-sm">
                                     <span class="font-bold text-slate-900 block">QRIS Instan (Semua E-Wallet)</span>
@@ -809,13 +818,43 @@
                                 </div>
                             </label>
 
-                            <label class="p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-3 cursor-pointer">
+                            <label id="sim-pay-opt-va" onclick="selectSimulationPayment('va')" class="p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-3 cursor-pointer transition">
                                 <input type="radio" name="sim_payment_method" value="va" class="text-[#0A7660] focus:ring-[#0A7660]">
                                 <div class="text-xs sm:text-sm">
                                     <span class="font-bold text-slate-900 block">Virtual Account Bank</span>
                                     <span class="text-xs text-slate-500">BCA, Mandiri, BNI, BRI</span>
                                 </div>
                             </label>
+                        </div>
+
+                        <!-- Simulated Payment Interactive Preview (QRIS or VA) -->
+                        <div id="sim-pay-preview-qris" class="p-4 rounded-2xl bg-white border border-slate-200 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                            <div class="w-20 h-20 bg-slate-100 border border-slate-200 rounded-xl p-2 flex items-center justify-center shrink-0">
+                                <svg class="w-full h-full text-slate-800" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm10 0h2v2h-2v-2zm4 0h4v2h-4v-2zm0 4h2v2h-2v-2zm-4 2h2v2h-2v-2zm6 0h2v2h-2v-2zM6 6h2v2H6V6zm12 0h2v2h-2V6zM6 18h2v2H6v-2z"/>
+                                </svg>
+                            </div>
+                            <div class="space-y-1 text-xs">
+                                <span class="font-bold text-slate-900 block">Simulasi QRIS SportPlace</span>
+                                <p class="text-slate-500 leading-relaxed">
+                                    Pada pemesanan nyata, kode QR dinamis ini dapat di-scan langsung menggunakan aplikasi mobile banking atau e-wallet apa saja.
+                                </p>
+                                <span class="inline-block text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                    Verifikasi Otomatis &lt; 3 Detik
+                                </span>
+                            </div>
+                        </div>
+
+                        <div id="sim-pay-preview-va" class="hidden p-4 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-700">Nomor Virtual Account BCA (Demo):</span>
+                                <span class="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full text-[11px]">BCA VA</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <span class="font-mono text-base font-bold text-slate-900 tracking-wider">8808 0822 6478 4108</span>
+                                <span class="text-[11px] text-[#0A7660] font-semibold">Tersedia di riwayat</span>
+                            </div>
+                            <p class="text-slate-500 text-[11px]">Bayar via ATM, m-Banking, atau Internet Banking sesuai nominal tepat.</p>
                         </div>
                     </div>
                 </div>
@@ -887,18 +926,21 @@
                         <!-- Ticket Footer Ribbon -->
                         <div class="px-5 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
                             <span>Status: Konfirmasi Instan</span>
-                            <span class="font-bold text-[#0A7660]">SportPlace Official Demo</span>
+                            <span class="font-bold text-[#0A7660]">Garansi Reschedule H-1</span>
                         </div>
                     </div>
 
-                    <!-- What happens next -->
-                    <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-left space-y-1.5 text-xs text-emerald-900 max-w-md mx-auto">
+                    <!-- What happens next (Saran 4: Ditambahkan edukasi reschedule H-1) -->
+                    <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-left space-y-2 text-xs text-emerald-900 max-w-md mx-auto">
                         <p class="font-bold text-emerald-800">Informasi Alur Pemesanan Asli:</p>
-                        <p class="leading-relaxed">
-                            1. Slot jam yang Anda bayar otomatis menjadi merah bagi pengguna lain (anti *double booking*).<br>
-                            2. Tiket ini langsung tersimpan otomatis di menu <strong>Riwayat Booking</strong> di profil Anda.<br>
-                            3. Anda cukup datang ke venue saat jam main dimulai!
-                        </p>
+                        <ol class="list-decimal list-inside space-y-1.5 leading-relaxed text-slate-700">
+                            <li>Slot jam yang Anda bayar otomatis menjadi merah bagi pengguna lain (anti <em>double booking</em>).</li>
+                            <li>Tiket ini langsung tersimpan otomatis di menu <strong>Riwayat Booking</strong> di profil Anda.</li>
+                            <li>Anda cukup datang ke venue saat jam main dimulai dan tunjukkan tiket QR.</li>
+                            <li class="pt-1 text-[#0A7660] font-semibold">
+                                Butuh reschedule atau kendala jadwal? Anda dapat mengajukan perubahan jadwal (<em>reschedule</em>) maksimal H-1 sebelum jam bermain langsung dari menu <strong>Riwayat Booking</strong>.
+                            </li>
+                        </ol>
                     </div>
                 </div>
 
@@ -1002,6 +1044,7 @@
 
     // Tutup Jendela Simulasi
     window.closeBookingSimulation = function () {
+        window.stopSimulationTimer();
         const modal = document.getElementById('booking-simulation-modal');
         const backdrop = document.getElementById('sim-modal-backdrop');
         const card = document.getElementById('sim-modal-card');
@@ -1016,6 +1059,68 @@
             modal.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
         }, 200);
+    };
+
+    // Countdown Timer untuk Step 3 (Saran 2)
+    window.simTimerRemaining = 899; // 14:59 in seconds
+    window.simTimerInterval = null;
+
+    window.startSimulationTimer = function () {
+        window.stopSimulationTimer();
+        window.simTimerRemaining = 899;
+        window.updateTimerDisplay();
+
+        window.simTimerInterval = setInterval(() => {
+            if (window.simTimerRemaining > 0) {
+                window.simTimerRemaining--;
+                window.updateTimerDisplay();
+            } else {
+                window.stopSimulationTimer();
+            }
+        }, 1000);
+    };
+
+    window.stopSimulationTimer = function () {
+        if (window.simTimerInterval) {
+            clearInterval(window.simTimerInterval);
+            window.simTimerInterval = null;
+        }
+    };
+
+    window.updateTimerDisplay = function () {
+        const timerEl = document.getElementById('sim-lock-countdown');
+        if (!timerEl) return;
+        const minutes = Math.floor(window.simTimerRemaining / 60);
+        const seconds = window.simTimerRemaining % 60;
+        timerEl.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    };
+
+    // Toggle Pilihan Pembayaran QRIS vs VA (Saran 3)
+    window.selectSimulationPayment = function (method) {
+        const qrisOpt = document.getElementById('sim-pay-opt-qris');
+        const vaOpt = document.getElementById('sim-pay-opt-va');
+        const qrisPrev = document.getElementById('sim-pay-preview-qris');
+        const vaPrev = document.getElementById('sim-pay-preview-va');
+
+        if (method === 'qris') {
+            if (qrisOpt) {
+                qrisOpt.className = 'p-3.5 rounded-xl border-2 border-[#0A7660] bg-[#DEF1E7]/30 flex items-center gap-3 cursor-pointer transition';
+            }
+            if (vaOpt) {
+                vaOpt.className = 'p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-3 cursor-pointer transition';
+            }
+            if (qrisPrev) qrisPrev.classList.remove('hidden');
+            if (vaPrev) vaPrev.classList.add('hidden');
+        } else {
+            if (vaOpt) {
+                vaOpt.className = 'p-3.5 rounded-xl border-2 border-[#0A7660] bg-[#DEF1E7]/30 flex items-center gap-3 cursor-pointer transition';
+            }
+            if (qrisOpt) {
+                qrisOpt.className = 'p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-3 cursor-pointer transition';
+            }
+            if (vaPrev) vaPrev.classList.remove('hidden');
+            if (qrisPrev) qrisPrev.classList.add('hidden');
+        }
     };
 
     // Set Step Simulasi (1..4)
@@ -1065,16 +1170,20 @@
         const finishActions = document.getElementById('sim-finish-actions');
 
         if (stepNumber === 1) {
+            window.stopSimulationTimer();
             if (backBtn) backBtn.classList.add('hidden');
             if (nextBtn) {
                 nextBtn.classList.remove('hidden');
+                nextBtn.disabled = false;
                 nextBtn.innerHTML = '<span>Lanjut ke Jam Main</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
             }
             if (finishActions) finishActions.classList.add('hidden');
         } else if (stepNumber === 2) {
+            window.stopSimulationTimer();
             if (backBtn) backBtn.classList.remove('hidden');
             if (nextBtn) {
                 nextBtn.classList.remove('hidden');
+                nextBtn.disabled = false;
                 nextBtn.innerHTML = '<span>Lanjut ke Pembayaran</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
             }
             if (finishActions) finishActions.classList.add('hidden');
@@ -1082,9 +1191,13 @@
             if (backBtn) backBtn.classList.remove('hidden');
             if (nextBtn) {
                 nextBtn.classList.remove('hidden');
-                nextBtn.innerHTML = '<span>Bayar Sekarang (Simulasi)</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = '<span>Bayar Sekarang (Demo)</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>';
             }
             if (finishActions) finishActions.classList.add('hidden');
+
+            // Mulai countdown timer slot lock (Saran 2)
+            window.startSimulationTimer();
 
             // Update step 3 texts
             const revCourt = document.getElementById('sim-review-court');
@@ -1096,6 +1209,7 @@
             if (costCourt) costCourt.textContent = 'Rp ' + window.simState.courtPrice.toLocaleString('id-ID');
             if (costTotal) costTotal.textContent = 'Rp ' + (window.simState.courtPrice + 2500).toLocaleString('id-ID');
         } else if (stepNumber === 4) {
+            window.stopSimulationTimer();
             if (backBtn) backBtn.classList.add('hidden');
             if (nextBtn) nextBtn.classList.add('hidden');
             if (finishActions) finishActions.classList.remove('hidden');
@@ -1113,12 +1227,13 @@
             const nextBtn = document.getElementById('sim-next-btn');
             if (nextBtn) {
                 nextBtn.disabled = true;
-                nextBtn.innerHTML = '<span class="inline-block animate-spin mr-1">⌛</span> Memproses Tiket...';
+                nextBtn.innerHTML = '<svg class="w-4 h-4 animate-spin mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Memproses Pembayaran Demo...</span>';
             }
             setTimeout(() => {
                 if (nextBtn) nextBtn.disabled = false;
+                window.stopSimulationTimer();
                 window.setSimulationStep(4);
-            }, 500);
+            }, 900);
         } else if (window.simState.step < 4) {
             window.setSimulationStep(window.simState.step + 1);
         }
@@ -1132,6 +1247,7 @@
 
     // Reset simulasi ke kondisi awal
     window.resetBookingSimulation = function () {
+        window.stopSimulationTimer();
         window.simState = {
             step: 1,
             courtId: 1,
@@ -1141,6 +1257,7 @@
             slotTime: '19:00 - 20:00',
         };
         window.selectSimulationCourt(1, 'Arena Futsal Vinyl Super (Indoor)', 150000);
+        window.selectSimulationPayment('qris');
         window.setSimulationStep(1);
     };
 
