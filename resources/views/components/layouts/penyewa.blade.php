@@ -19,7 +19,7 @@
     <x-penyewa.navbar :active="$active ?? 'dashboard'" />
 
     <!-- ========== MAIN PAGE CONTENT ========== -->
-    <main class="flex-1 max-w-screen-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <main class="overflow-y:hidden flex-1 max-w-screen-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {{-- Flash Messages (Dismissible & Auto-hide) --}}
         @if (session('success'))
             <div id="flash-alert-success" class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200/90 p-4 text-sm text-emerald-800 flex items-center justify-between gap-3 shadow-xs transition-all duration-300 transform opacity-100 translate-y-0" role="alert">
@@ -90,62 +90,6 @@
     <!-- ========== JAVASCRIPT LOGIC ========== -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Mobile navigation menu toggle
-            const mobileToggle = document.getElementById('mobile-nav-toggle');
-            const mobileMenu   = document.getElementById('mobile-nav-menu');
-            if (mobileToggle && mobileMenu) {
-                mobileToggle.addEventListener('click', function () {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
-
-            // User Profile Dropdown logic
-            const profileBtn       = document.getElementById('user-profile-dropdown-btn');
-            const profileMenu      = document.getElementById('user-profile-menu');
-            const profileContainer = document.getElementById('user-profile-dropdown-container');
-            const profileChevron   = document.getElementById('profile-chevron');
-
-            function toggleProfileDropdown() {
-                if (!profileMenu) return;
-                const isClosed = profileMenu.classList.contains('hidden');
-                if (isClosed) {
-                    profileMenu.classList.remove('hidden');
-                    profileBtn.setAttribute('aria-expanded', 'true');
-                    if (profileChevron) profileChevron.classList.add('rotate-180');
-                } else {
-                    profileMenu.classList.add('hidden');
-                    profileBtn.setAttribute('aria-expanded', 'false');
-                    if (profileChevron) profileChevron.classList.remove('rotate-180');
-                }
-            }
-
-            function closeProfileDropdown() {
-                if (profileMenu && !profileMenu.classList.contains('hidden')) {
-                    profileMenu.classList.add('hidden');
-                    profileBtn.setAttribute('aria-expanded', 'false');
-                    if (profileChevron) profileChevron.classList.remove('rotate-180');
-                }
-            }
-
-            if (profileBtn && profileMenu) {
-                profileBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    toggleProfileDropdown();
-                });
-
-                document.addEventListener('click', function (e) {
-                    if (profileContainer && !profileContainer.contains(e.target)) {
-                        closeProfileDropdown();
-                    }
-                });
-
-                document.addEventListener('keydown', function (e) {
-                    if (e.key === 'Escape') {
-                        closeProfileDropdown();
-                    }
-                });
-            }
-
             // Auto dismiss flash alerts after 4 seconds
             const flashAlertIds = ['flash-alert-success', 'flash-alert-warning', 'flash-alert-error'];
             flashAlertIds.forEach(function (id) {
