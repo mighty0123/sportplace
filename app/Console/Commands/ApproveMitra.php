@@ -59,7 +59,9 @@ class ApproveMitra extends Command
         }
         $profile->save();
 
-        $this->info("Mitra [{$email}] berhasil disetujui (status: approved).");
+        $user->notify(new \App\Notifications\MitraVerificationStatusUpdated('approved'));
+
+        $this->info("Mitra [{$email}] berhasil disetujui (status: approved) dan notifikasi telah dikirim.");
 
         return Command::SUCCESS;
     }

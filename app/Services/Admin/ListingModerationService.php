@@ -178,7 +178,7 @@ class ListingModerationService
         return AuditLog::query()->with('user:id,name')
             ->whereIn('entitas_type', [$entity, "App\\Models\\{$entity}"])
             ->where('entitas_id', $id)
-            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data'])
+            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data', 'ekspor'])
             ->latest('created_at')->latest('id')->get();
     }
 
@@ -219,7 +219,10 @@ class ListingModerationService
 
         $this->decide($jenis, $id, $admin, 'aktif', 'setujui', null, $note, requireParent: true);
 
-        return $this->nameOf($jenis, $subject);
+        $name = $this->nameOf($jenis, $subject);
+        $this->notifyOwner($jenis, $id, $name, 'aktif', null);
+
+        return $name;
     }
 
     public function reject(string $jenis, int $id, User $admin, string $reason): string
@@ -229,7 +232,22 @@ class ListingModerationService
 
         $this->decide($jenis, $id, $admin, 'rejected', 'tolak', $reason, $reason, requireParent: false);
 
-        return $this->nameOf($jenis, $subject);
+        $name = $this->nameOf($jenis, $subject);
+        $this->notifyOwner($jenis, $id, $name, 'rejected', $reason);
+
+        return $name;
+    }
+
+    private function notifyOwner(string $jenis, int $id, string $name, string $status, ?string $alasan): void
+    {
+        $userId = $jenis === 'venue'
+            ? DB::table('venues')->join('mitra_profiles', 'mitra_profiles.id', '=', 'venues.mitra_id')->where('venues.id', $id)->value('mitra_profiles.user_id')
+            : DB::table('fields')->join('venues', 'venues.id', '=', 'fields.venue_id')->join('mitra_profiles', 'mitra_profiles.id', '=', 'venues.mitra_id')->where('fields.id', $id)->value('mitra_profiles.user_id');
+
+        if ($userId) {
+            $user = User::find($userId);
+            $user?->notify((new \App\Notifications\ListingModerationStatusUpdated($jenis, $name, $status, $alasan))->afterCommit());
+        }
     }
 
     private function decide(string $jenis, int $id, User $admin, string $newStatus, string $aksi, ?string $reason, string $note, bool $requireParent): void

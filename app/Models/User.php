@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Support\Media;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
@@ -24,6 +26,11 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::get(fn () => Media::url($this->foto_profil));
+    }
+
     // Relasi User (customer) ke BookingHeader (1 to many)
     public function bookingHeaders()
     {
@@ -40,6 +47,12 @@ class User extends Authenticatable
     public function wallet()
     {
         return $this->hasOne(Wallet::class);
+    }
+
+    // Relasi User ke Penarikan Dana / Withdrawals (1 to many)
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
     }
 
     // Relasi User ke kode OTP (1 to many; satu aktif per tujuan — GAP-09)

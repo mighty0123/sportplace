@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Portal Mitra — SportPlace' }}</title>
 
     <!-- Google Fonts Poppins (DS II §1) -->
@@ -10,9 +11,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 </head>
 <body class="h-full font-sans text-slate-800 antialiased flex flex-col md:flex-row bg-[#F4F7F5] overflow-x-hidden">
+
+    <!-- Global Toast Manager (Alpine / Livewire Events & Flash Session) -->
+    <x-mitra.toast-manager />
 
     <!-- Backdrop Gelap untuk Mobile saat Sidebar Terbuka -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300 backdrop-blur-xs" aria-hidden="true"></div>
@@ -39,6 +44,7 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
+            <livewire:mitra.notifications.notification-bell variant="sidebar" />
 
             <div class="pt-3 px-4 pb-1 text-[10px] font-bold tracking-wider text-emerald-400/60 uppercase">Operasional</div>
             <a href="{{ url('/mitra/venues') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition {{ (request()->is('mitra/venues*') || request()->is('mitra/fields*')) ? 'bg-[#0B7B69] text-white shadow-xs' : 'text-emerald-100/70 hover:bg-[#07261F] hover:text-white' }}">
@@ -72,6 +78,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
                 <span>Laporan Pendapatan</span>
+            </a>
+            <a href="{{ url('/mitra/penarikan') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition {{ request()->is('mitra/penarikan*') ? 'bg-[#0B7B69] text-white shadow-xs' : 'text-emerald-100/70 hover:bg-[#07261F] hover:text-white' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span>Penarikan Dana</span>
             </a>
 
             <div class="pt-3 px-4 pb-1 text-[10px] font-bold tracking-wider text-emerald-400/60 uppercase">Akun</div>
@@ -118,16 +130,71 @@
                 </button>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <livewire:mitra.notifications.notification-bell variant="header" />
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="text-xs font-semibold text-rose-600 hover:underline min-h-[44px] flex items-center">Keluar</button>
+                    <button type="submit" class="text-xs font-semibold text-rose-600 hover:underline min-h-[44px] px-2 flex items-center">Keluar</button>
                 </form>
             </div>
         </header>
 
         <!-- Flash Messages & Main Content -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden space-y-4">
+            @if (session('success'))
+                <div class="rounded-2xl bg-emerald-50 border border-emerald-200/90 p-4 text-emerald-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in" role="alert">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-[#0B7B69] flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <p class="text-xs sm:text-sm font-medium">{{ session('success') }}</p>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-emerald-700 hover:text-emerald-900 p-1.5 rounded-lg transition" aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="rounded-2xl bg-rose-50 border border-rose-200/90 p-4 text-rose-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in" role="alert">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <p class="text-xs sm:text-sm font-medium">{{ session('error') }}</p>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-rose-700 hover:text-rose-900 p-1.5 rounded-lg transition" aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('status'))
+                <div class="rounded-2xl bg-blue-50 border border-blue-200/90 p-4 text-blue-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in" role="alert">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p class="text-xs sm:text-sm font-medium">{{ session('status') }}</p>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-blue-700 hover:text-blue-900 p-1.5 rounded-lg transition" aria-label="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            @endif
+
             {{ $slot }}
         </main>
     </div>
@@ -210,5 +277,6 @@
             });
         });
     </script>
+    @livewireScripts
 </body>
 </html>

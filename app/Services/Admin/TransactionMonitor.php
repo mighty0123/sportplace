@@ -13,7 +13,11 @@ class TransactionMonitor
     // Label usulan: arti status 'payment' belum diputuskan
     public const BOOKING_STATUS = ['pending' => 'Menunggu bayar', 'payment' => 'Dibayar', 'canceled' => 'Dibatalkan', 'expired' => 'Kedaluwarsa'];
     public const PAYMENT_STATE = ['lunas' => 'Lunas', 'menunggu' => 'Menunggu bayar', 'gagal' => 'Gagal', 'belum' => 'Belum bayar'];
-    public const PERIODS = ['hari-ini' => 'Hari ini', '7' => '7 hari', '30' => '30 hari', '90' => '90 hari', 'semua' => 'Semua waktu', 'kustom' => 'Pilih tanggal'];
+    public const PERIODS = [
+        'hari-ini' => 'Hari ini', '7' => '7 hari', '30' => '30 hari', '90' => '90 hari',
+        'bulan-ini' => 'Bulan ini', 'bulan-lalu' => 'Bulan lalu',
+        'semua' => 'Semua waktu', 'kustom' => 'Pilih tanggal',
+    ];
     public const SORTS   = ['terbaru' => 'Terbaru dulu', 'terlama' => 'Terlama dulu', 'nominal' => 'Nominal terbesar'];
 
     private const PAID   = "EXISTS (SELECT 1 FROM payments p WHERE p.header_id = h.id AND p.status_pembayaran = 'succes')";
@@ -33,6 +37,9 @@ class TransactionMonitor
         'no_items'        => ['(NOT ' . self::ITEMS . ')', 'Booking tidak memiliki rincian slot.'],
         'refund_over'     => ['(' . self::REFUND_ACTIVE . ' > ' . self::PAID_SUM . ' + 0.5)', 'Total refund melebihi nominal yang berhasil dibayar.'],
         'refunded_not_canceled' => ["(h.status = 'payment' AND (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') > 0 AND (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') >= " . self::PAID_SUM . ' - 0.5)', 'Refund penuh sudah selesai, tetapi status booking masih dibayar. Seharusnya dibatalkan?'],
+        'subtotal_mismatch' => ['(h.subtotal_slot IS NOT NULL AND ' . self::ITEMS . ' AND ABS(h.subtotal_slot - ' . self::ITEMS_SUM . ') > 0.5)', 'Subtotal tidak cocok dengan jumlah harga slot.'],
+        'total_mismatch' => ['(h.subtotal_slot IS NOT NULL AND h.biaya_layanan IS NOT NULL AND ABS(h.subtotal_slot + h.biaya_layanan - h.total_tagihan) > 0.5)', 'Total tagihan tidak cocok dengan subtotal ditambah biaya layanan.'],
+        'total_below_subtotal' => ['(h.subtotal_slot IS NOT NULL AND h.total_tagihan < h.subtotal_slot - 0.5)', 'Total tagihan lebih kecil dari jumlah harga slot, padahal tidak ada diskon. Periksa harga yang dibayar.'],
     ];
 
     private const FLAG_SHORT = [
@@ -43,6 +50,9 @@ class TransactionMonitor
         'refund_over'     => 'Refund melebihi pembayaran',
         'overdue_pending' => 'Lewat batas bayar',
         'refunded_not_canceled' => 'Sudah direfund penuh, status masih dibayar',
+        'subtotal_mismatch' => 'Subtotal tidak cocok dengan slot',
+        'total_mismatch'    => 'Total tidak cocok dengan rincian',
+        'total_below_subtotal' => 'Total di bawah harga slot',
     ];
 
     // ---- filter
@@ -75,6 +85,10 @@ class TransactionMonitor
             case '7':        return [$now->subDays(6)->startOfDay(), null, null];
             case '30':       return [$now->subDays(29)->startOfDay(), null, null];
             case '90':       return [$now->subDays(89)->startOfDay(), null, null];
+            case 'bulan-ini':  return [$now->startOfMonth(), null, null];
+            case 'bulan-lalu':
+                $last = $now->subMonthNoOverflow();
+                return [$last->startOfMonth(), $last->endOfMonth(), null];
             case 'semua':    return [null, null, null];
         }
 
@@ -140,16 +154,7 @@ class TransactionMonitor
 
     public function rows(array $f, int $perPage): LengthAwarePaginator
     {
-        $q = $this->base($f)
-            ->leftJoin('booking_details as d1', function ($j) {
-                // Hanya rincian pertama per booking, supaya satu booking tetap satu baris.
-                $j->on('d1.header_id', '=', 'h.id')
-                    ->whereRaw('d1.id = (SELECT MIN(d0.id) FROM booking_details d0 WHERE d0.header_id = h.id)');
-            })
-            ->leftJoin('fields as fx', 'fx.id', '=', 'd1.field_id')
-            ->leftJoin('venues as vx', 'vx.id', '=', 'fx.venue_id')
-            ->leftJoin('mitra_profiles as mx', 'mx.id', '=', 'vx.mitra_id')
-            ->selectRaw($this->core() . ', vx.nama_venue, fx.nama_lapangan, mx.nama_usaha');
+        $q = $this->withFirstItem($this->base($f))->selectRaw($this->core() . ', vx.nama_venue, fx.nama_lapangan, mx.nama_usaha');
 
         match ($f['sort']) {
             'terlama' => $q->orderBy('h.created_at')->orderBy('h.id'),
@@ -175,18 +180,43 @@ class TransactionMonitor
         return [
             'count'   => (clone $base)->count(),
             'paid'    => (float) DB::table('payments')->whereIn('header_id', $ids)->where('status_pembayaran', 'succes')->sum('nominal_bayar'),
+            'paid_bookings' => (int) DB::table('payments')->whereIn('header_id', $ids)->where('status_pembayaran', 'succes')->distinct()->count('header_id'),
             'refund'  => (float) DB::table('refunds')->whereIn('header_id', $ids)->where('status_refund', 'completed')->sum('nominal_refund'),
             'flagged' => (clone $base)->whereRaw($this->anyFlag())->count(),
         ];
     }
 
-    // ---- detail
+    /** Menambahkan rincian slot pertama (lapangan, venue, mitra) supaya satu booking tetap satu baris. */
+    public function withFirstItem(Builder $q): Builder
+    {
+        return $q->leftJoin('booking_details as d1', function ($j) {
+                $j->on('d1.header_id', '=', 'h.id')
+                    ->whereRaw('d1.id = (SELECT MIN(d0.id) FROM booking_details d0 WHERE d0.header_id = h.id)');
+            })
+            ->leftJoin('fields as fx', 'fx.id', '=', 'd1.field_id')
+            ->leftJoin('venues as vx', 'vx.id', '=', 'fx.venue_id')
+            ->leftJoin('mitra_profiles as mx', 'mx.id', '=', 'vx.mitra_id');
+    }
 
+    /** Baris laporan: kolom ringan tanpa penanda, urut dari yang terlama. */
+    public function reportRows(array $f): Builder
+    {
+        return $this->withFirstItem($this->base($f))
+            ->selectRaw("h.id, h.kode_booking, h.created_at, h.status, h.total_tagihan, u.name as customer_name,
+                vx.nama_venue, fx.nama_lapangan, mx.nama_usaha,
+                (SELECT COUNT(*) FROM booking_details d WHERE d.header_id = h.id) as item_count,
+                " . self::PAID_SUM . " as paid_total,
+                (SELECT p.metode_pembayaran FROM payments p WHERE p.header_id = h.id ORDER BY (p.status_pembayaran = 'succes') DESC, p.id DESC LIMIT 1) as method,
+                (SELECT COALESCE(SUM(r.nominal_refund), 0) FROM refunds r WHERE r.header_id = h.id AND r.status_refund = 'completed') as refund_done")
+            ->orderBy('h.created_at')->orderBy('h.id');
+    }
+
+    // ---- detail
     public function find(int $id): ?object
     {
         return DB::table('booking_headers as h')->join('users as u', 'u.id', '=', 'h.penyewa_id')
             ->where('h.id', $id)
-            ->selectRaw($this->core() . ', u.no_hp as customer_phone')
+            ->selectRaw($this->core() . ', u.no_hp as customer_phone, u.email as customer_email')
             ->first();
     }
 
@@ -292,7 +322,7 @@ class TransactionMonitor
         $defs  = $this->flagDefs();
         $flags = implode(', ', array_map(fn ($k, $v) => "{$v[0]} as flag_{$k}", array_keys($defs), $defs));
 
-        return "h.id, h.kode_booking, h.total_tagihan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name, u.email as customer_email,
+        return "h.id, h.kode_booking, h.total_tagihan, h.subtotal_slot, h.biaya_layanan, h.status, h.expires_at, h.created_at, u.id as customer_id, u.name as customer_name,
             (SELECT COUNT(*) FROM booking_details d WHERE d.header_id = h.id) as item_count,
             " . self::PAID_SUM . " as paid_total,
             {$count('succes')} as pay_succes, {$count('pending')} as pay_pending, {$count('failed')} as pay_failed,

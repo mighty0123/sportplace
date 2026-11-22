@@ -14,11 +14,11 @@
         <p id="{{ $id }}-hint" class="mt-0.5 text-caption text-ink-muted">{{ $hint }}</p>
     @endif
 
-    <input id="{{ $id }}" type="{{ $type }}" name="{{ $name }}" autocomplete="off"
+    <input id="{{ $id }}" type="{{ $type }}" name="{{ $name }}" autocomplete="{{ $attributes->get('autocomplete', 'off') }}"
         @if ($required) required @endif
         @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
         @if ($hasError) aria-invalid="true" @endif
-        {{ $attributes->except(['class', 'id']) }}
+        {{ $attributes->except(['class', 'id', 'autocomplete']) }}
         @class([
             'mt-1.5 min-h-11 w-full rounded-md border bg-surface px-3 text-body-md text-ink placeholder:text-ink-muted lg:min-h-10',
             'focus-visible:outline-2 focus-visible:outline-offset-1',
