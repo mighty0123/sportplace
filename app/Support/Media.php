@@ -4,6 +4,9 @@ namespace App\Support;
 
 class Media
 {
+    /**
+     * Alamat gambar dari path di database
+     */
     public static function url(?string $path, ?string $fallback = null): ?string
     {
         if (blank($path)) {

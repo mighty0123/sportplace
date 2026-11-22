@@ -26,6 +26,7 @@ class UpdateProfileRequest extends FormRequest
         return [
             'name'  => ['required', 'string', 'min:3', 'max:100'],
             'no_hp' => ['required', 'regex:/^(\+62|62|0)8[1-9][0-9]{6,11}$/', Rule::unique('users', 'no_hp')->ignore($this->user()->id)],
+            'foto_profil' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:2048'],
         ];
     }
 

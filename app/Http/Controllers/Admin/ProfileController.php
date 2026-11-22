@@ -32,7 +32,13 @@ class ProfileController extends Controller
 
     public function update(UpdateProfileRequest $request): RedirectResponse
     {
-        $changed = $this->profile->updateProfile($request->user(), $request->validated('name'), $request->validated('no_hp'));
+        $user = $request->user();
+        $changed = $this->profile->updateProfile($user, $request->validated('name'), $request->validated('no_hp'));
+
+        if ($request->hasFile('foto_profil')) {
+            $this->profile->updateAvatar($user, $request->file('foto_profil'));
+            $changed = $changed ?: ['foto profil'];
+        }
 
         return redirect()->route('admin.profile')->with('success', $changed ? 'Profil diperbarui.' : 'Tidak ada perubahan.');
     }
