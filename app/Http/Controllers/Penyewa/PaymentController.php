@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Penyewa;
 
+use App\Exceptions\Booking\SlotUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Models\BookingDetail;
 use App\Models\BookingHeader;
@@ -10,21 +11,22 @@ use App\Models\Payment;
 use App\Models\PaymentWebhookEvent;
 use App\Models\Refund;
 use App\Models\User;
+use App\Services\Booking\SlotReservationService;
 use App\Services\MidtransService;
-use App\Support\BookingCode;
 use App\Services\Payment\PaymentSettlementService;
 use App\Services\Payment\SettlementResult;
+use App\Support\BookingCode;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use chillerlan\QRCode\QRCode;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\DB;
-use App\Exceptions\Booking\SlotUnavailableException;
-use App\Services\Booking\SlotReservationService;
 
 class PaymentController extends Controller
 {
@@ -62,7 +64,7 @@ class PaymentController extends Controller
                     'details.field.sport',
                     'details.field.facilities',
                     'details.field.photos',
-                    'user'
+                    'user',
                 ])->where('id', $id)->where('penyewa_id', $user->id)->first();
 
                 if ($bookingCandidate && $bookingCandidate->details->isNotEmpty()) {
@@ -73,12 +75,12 @@ class PaymentController extends Controller
         }
 
         // 2. Jika field belum ditentukan tetapi ada query 'field_id'
-        if (!$field && $requestedFieldId > 0) {
+        if (! $field && $requestedFieldId > 0) {
             $field = Field::with(['venue.city', 'sport', 'facilities', 'photos'])->find($requestedFieldId);
         }
 
         // 3. Jika field belum ditentukan, ambil dari session (lapangan yang baru saja dipilih pengguna ini)
-        if (!$field && (session()->has('selected_field_id') || session()->has('last_field_id'))) {
+        if (! $field && (session()->has('selected_field_id') || session()->has('last_field_id'))) {
             $sessionFieldId = (int) (session('selected_field_id') ?? session('last_field_id'));
             if ($sessionFieldId > 0) {
                 $field = Field::with(['venue.city', 'sport', 'facilities', 'photos'])->find($sessionFieldId);
@@ -86,8 +88,9 @@ class PaymentController extends Controller
         }
 
         // 4. Tidak ada lapangan cadangan: hanya lapangan yang layak dipesan yang boleh diteruskan.
-        if (!$field || ! $this->isBookable($field->id)) {
+        if (! $field || ! $this->isBookable($field->id)) {
             $msg = 'Lapangan tidak tersedia untuk dipesan.';
+
             return redirect()->route('penyewa.lapangan')->with('warning', $msg);
         }
 
@@ -123,8 +126,8 @@ class PaymentController extends Controller
                 ];
                 $parsedSlots[] = [
                     'start' => $startSlot,
-                    'end'   => $endSlot,
-                    'time'  => "{$startSlot} - {$endSlot}",
+                    'end' => $endSlot,
+                    'time' => "{$startSlot} - {$endSlot}",
                     'price' => $itemPrice,
                 ];
             }
@@ -156,8 +159,8 @@ class PaymentController extends Controller
                 $parsedSlots = [
                     [
                         'start' => $startSlot,
-                        'end'   => $endSlot,
-                        'time'  => "{$startSlot} - {$endSlot}",
+                        'end' => $endSlot,
+                        'time' => "{$startSlot} - {$endSlot}",
                         'price' => $defaultPrice,
                     ],
                 ];
@@ -193,9 +196,9 @@ class PaymentController extends Controller
         // Simpan sesi pilihan saat ini agar konsisten saat bayar / kembali
         session([
             'selected_field_id' => $field->id,
-            'last_field_id'     => $field->id,
-            'selected_date'     => $tanggalSewaRaw,
-            'selected_slots'    => $parsedSlots,
+            'last_field_id' => $field->id,
+            'selected_date' => $tanggalSewaRaw,
+            'selected_slots' => $parsedSlots,
         ]);
 
         $sesiDurasi = "{$jamMulaiFormatted} - {$jamSelesaiFormatted} WIB ({$totalJam} Jam)";
@@ -203,10 +206,10 @@ class PaymentController extends Controller
         // Foto Lapangan
         $sportSlug = strtolower($sport?->slug ?? 'futsal');
         $defaultImages = [
-            'futsal'      => asset('images/courts/futsal.jpg'),
-            'badminton'   => asset('images/courts/badminton.jpg'),
-            'tenis'       => asset('images/courts/tennis.jpg'),
-            'basket'      => asset('images/courts/basketball.jpg'),
+            'futsal' => asset('images/courts/futsal.jpg'),
+            'badminton' => asset('images/courts/badminton.jpg'),
+            'tenis' => asset('images/courts/tennis.jpg'),
+            'basket' => asset('images/courts/basketball.jpg'),
             'mini-soccer' => asset('images/courts/futsal.jpg'),
         ];
         $primaryPhoto = $field?->photos?->firstWhere('is_primary', 1) ?? $field?->photos?->first();
@@ -229,15 +232,15 @@ class PaymentController extends Controller
         $expiresAt = null;
 
         // 1. Cek apakah ada booking pending aktif milik user untuk lapangan ini
-        if (!$booking && $user) {
+        if (! $booking && $user) {
             $pendingCandidate = BookingHeader::where('penyewa_id', $user->id)
                 ->where('status', 'pending')
                 ->where(function ($q) use ($now) {
                     $q->where('expires_at', '>', $now)
-                      ->orWhere(function ($sub) use ($now) {
-                          $sub->whereNull('expires_at')
-                              ->where('created_at', '>', $now->copy()->subMinutes(15));
-                      });
+                        ->orWhere(function ($sub) use ($now) {
+                            $sub->whereNull('expires_at')
+                                ->where('created_at', '>', $now->copy()->subMinutes(15));
+                        });
                 })
                 ->whereHas('details', function ($q) use ($field) {
                     $q->where('field_id', $field->id);
@@ -261,8 +264,8 @@ class PaymentController extends Controller
         }
 
         // 2. Jika belum ada booking di database, gunakan anchor session checkout agar tidak berulang reset saat refresh
-        $sessionKey = 'checkout_expires_at_' . $field->id;
-        if (!$expiresAt) {
+        $sessionKey = 'checkout_expires_at_'.$field->id;
+        if (! $expiresAt) {
             if (session()->has($sessionKey)) {
                 $storedExpires = (int) session($sessionKey);
                 if ($storedExpires > $now->timestamp) {
@@ -276,7 +279,7 @@ class PaymentController extends Controller
             }
 
             // Jika belum ada atau sudah kedaluwarsa, tentukan anchor batas bayar baru
-            if (!$expiresAt) {
+            if (! $expiresAt) {
                 $expiresAt = $now->copy()->addMinutes($paymentWindowMinutes);
                 session([$sessionKey => $expiresAt->timestamp, 'booking_expires_at' => $expiresAt->timestamp]);
             }
@@ -286,26 +289,26 @@ class PaymentController extends Controller
         $remainingSeconds = max(0, (int) $expiresAtTimestamp - $now->timestamp);
 
         return view('penyewa.review-pembayaran', [
-            'booking'             => $booking,
-            'customer'            => $customer,
-            'field'               => $field,
-            'venue'               => $venue,
-            'sport'               => $sport,
-            'courtPhoto'          => $courtPhoto,
-            'facilities'          => $facilities,
-            'tanggalMain'         => $tanggalMain,
-            'tanggalSewaRaw'      => $tanggalSewaRaw,
-            'sesiDurasi'          => $sesiDurasi,
-            'jamMulaiFormatted'   => $jamMulaiFormatted,
+            'booking' => $booking,
+            'customer' => $customer,
+            'field' => $field,
+            'venue' => $venue,
+            'sport' => $sport,
+            'courtPhoto' => $courtPhoto,
+            'facilities' => $facilities,
+            'tanggalMain' => $tanggalMain,
+            'tanggalSewaRaw' => $tanggalSewaRaw,
+            'sesiDurasi' => $sesiDurasi,
+            'jamMulaiFormatted' => $jamMulaiFormatted,
             'jamSelesaiFormatted' => $jamSelesaiFormatted,
-            'totalJam'            => $totalJam,
-            'lineItems'           => $lineItems,
-            'subtotal'            => $subtotal,
-            'serviceFee'          => $serviceFee,
-            'totalBayar'          => $totalBayar,
-            'slotsPayload'        => $slotsPayload,
-            'expiresAtTimestamp'  => $expiresAtTimestamp,
-            'remainingSeconds'    => $remainingSeconds,
+            'totalJam' => $totalJam,
+            'lineItems' => $lineItems,
+            'subtotal' => $subtotal,
+            'serviceFee' => $serviceFee,
+            'totalBayar' => $totalBayar,
+            'slotsPayload' => $slotsPayload,
+            'expiresAtTimestamp' => $expiresAtTimestamp,
+            'remainingSeconds' => $remainingSeconds,
         ]);
     }
 
@@ -322,6 +325,7 @@ class PaymentController extends Controller
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 404);
             }
+
             return redirect()->route('penyewa.lapangan')->with('warning', $msg);
         }
         $field = Field::with(['venue.city', 'sport'])->findOrFail($fieldId);
@@ -341,8 +345,8 @@ class PaymentController extends Controller
             $parsedSlots = [
                 [
                     'start' => $startSlot,
-                    'end'   => $endSlot,
-                    'time'  => "{$startSlot} - {$endSlot}",
+                    'end' => $endSlot,
+                    'time' => "{$startSlot} - {$endSlot}",
                     'price' => $defaultPrice,
                 ],
             ];
@@ -359,8 +363,8 @@ class PaymentController extends Controller
         $tz = config('app.timezone', 'Asia/Makassar');
         $now = Carbon::now($tz);
         foreach ($parsedSlots as $slot) {
-            $jamMulai = strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'];
-            $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'];
+            $jamMulai = strlen($slot['start']) === 5 ? $slot['start'].':00' : $slot['start'];
+            $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'].':00' : $slot['end'];
             $startStr = substr($jamMulai, 0, 5);
 
             // Cek apakah slot sudah lewat jam mulai (langsung dikunci begitu lewat jam_mulai)
@@ -370,6 +374,7 @@ class PaymentController extends Controller
                 if ($request->expectsJson() || $request->ajax()) {
                     return response()->json(['success' => false, 'message' => $errorMsg], 422);
                 }
+
                 return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewa])
                     ->with('warning', $errorMsg);
             }
@@ -379,21 +384,21 @@ class PaymentController extends Controller
                 ->whereDate('tanggal_sewa', $tanggalSewa)
                 ->where(function ($q) use ($jamMulai, $jamSelesai) {
                     $q->where('jam_mulai', '<', $jamSelesai)
-                      ->where('jam_selesai', '>', $jamMulai);
+                        ->where('jam_selesai', '>', $jamMulai);
                 })
                 ->whereHas('header', function ($q) use ($now, $user) {
                     $q->where(function ($sub) use ($now, $user) {
                         $sub->whereIn('status', ['payment', 'completed'])
                             ->orWhere(function ($pendingQ) use ($now, $user) {
                                 $pendingQ->where('status', 'pending')
-                                         ->where('penyewa_id', '!=', $user->id)
-                                         ->where(function ($exp) use ($now) {
-                                             $exp->where('expires_at', '>', $now)
-                                                 ->orWhere(function ($coalesce) use ($now) {
-                                                     $coalesce->whereNull('expires_at')
-                                                              ->where('created_at', '>', $now->copy()->subMinutes(15));
-                                                 });
-                                         });
+                                    ->where('penyewa_id', '!=', $user->id)
+                                    ->where(function ($exp) use ($now) {
+                                        $exp->where('expires_at', '>', $now)
+                                            ->orWhere(function ($coalesce) use ($now) {
+                                                $coalesce->whereNull('expires_at')
+                                                    ->where('created_at', '>', $now->copy()->subMinutes(15));
+                                            });
+                                    });
                             });
                     });
                 })
@@ -404,6 +409,7 @@ class PaymentController extends Controller
                 if ($request->expectsJson() || $request->ajax()) {
                     return response()->json(['success' => false, 'message' => $errorMsg], 422);
                 }
+
                 return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewa])
                     ->with('warning', $errorMsg);
             }
@@ -414,14 +420,14 @@ class PaymentController extends Controller
             ->where('status', 'pending')
             ->where(function ($q) use ($now) {
                 $q->where('expires_at', '>', $now)
-                  ->orWhere(function ($sub) use ($now) {
-                      $sub->whereNull('expires_at')
-                          ->where('created_at', '>', $now->copy()->subMinutes(15));
-                  });
+                    ->orWhere(function ($sub) use ($now) {
+                        $sub->whereNull('expires_at')
+                            ->where('created_at', '>', $now->copy()->subMinutes(15));
+                    });
             })
             ->whereHas('details', function ($q) use ($field, $tanggalSewa) {
                 $q->where('field_id', $field->id)
-                  ->whereDate('tanggal_sewa', $tanggalSewa);
+                    ->whereDate('tanggal_sewa', $tanggalSewa);
             })
             ->latest('id')
             ->first();
@@ -444,26 +450,26 @@ class PaymentController extends Controller
             try {
                 $booking = DB::transaction(function () use ($user, $field, $parsedSlots, $tanggalSewa, $subtotal, $serviceFee, $totalBayar, $now, $paymentWindowMinutes) {
                     $booking = BookingHeader::create([
-                        'penyewa_id'    => $user->id,
-                        'kode_booking'  => BookingCode::unique(),
+                        'penyewa_id' => $user->id,
+                        'kode_booking' => BookingCode::unique(),
                         'subtotal_slot' => $subtotal,
                         'biaya_layanan' => $serviceFee,
                         'total_tagihan' => $totalBayar,
-                        'status'        => 'pending',
-                        'expires_at'    => $now->copy()->addMinutes($paymentWindowMinutes),
-                        'created_at'    => $now,
+                        'status' => 'pending',
+                        'expires_at' => $now->copy()->addMinutes($paymentWindowMinutes),
+                        'created_at' => $now,
                     ]);
 
                     foreach ($parsedSlots as $slot) {
                         BookingDetail::create([
-                            'header_id'    => $booking->id,
-                            'field_id'     => $field->id,
+                            'header_id' => $booking->id,
+                            'field_id' => $field->id,
                             'tanggal_sewa' => $tanggalSewa,
-                            'jam_mulai'    => strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'],
-                            'jam_selesai'  => strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'],
-                            'harga_slot'   => (float) $slot['price'],
-                            'status_item'  => 'ongoing',
-                            'created_at'   => $now,
+                            'jam_mulai' => strlen($slot['start']) === 5 ? $slot['start'].':00' : $slot['start'],
+                            'jam_selesai' => strlen($slot['end']) === 5 ? $slot['end'].':00' : $slot['end'],
+                            'harga_slot' => (float) $slot['price'],
+                            'status_item' => 'ongoing',
+                            'created_at' => $now,
                         ]);
                     }
 
@@ -484,23 +490,23 @@ class PaymentController extends Controller
         }
 
         // Siapkan order_id unik untuk transaksi Midtrans
-        $orderId = 'SP-' . $booking->id . '-' . time();
+        $orderId = 'SP-'.$booking->id.'-'.time();
 
         // Rincian item untuk parameter Snap Midtrans
         $itemDetails = [];
         foreach ($parsedSlots as $slot) {
             $itemDetails[] = [
-                'id'       => 'SLOT-' . $field->id . '-' . str_replace(':', '', $slot['start']),
-                'price'    => (int) $slot['price'],
+                'id' => 'SLOT-'.$field->id.'-'.str_replace(':', '', $slot['start']),
+                'price' => (int) $slot['price'],
                 'quantity' => 1,
-                'name'     => substr("Sewa {$field->nama_lapangan} ({$slot['time']})", 0, 50),
+                'name' => substr("Sewa {$field->nama_lapangan} ({$slot['time']})", 0, 50),
             ];
         }
         $itemDetails[] = [
-            'id'       => 'FEE-PLATFORM',
-            'price'    => (int) $serviceFee,
+            'id' => 'FEE-PLATFORM',
+            'price' => (int) $serviceFee,
             'quantity' => 1,
-            'name'     => 'Biaya Layanan Platform',
+            'name' => 'Biaya Layanan Platform',
         ];
 
         // Buat Snap Transaction token dari Midtrans API
@@ -510,42 +516,42 @@ class PaymentController extends Controller
             try {
                 $midtransPayload = [
                     'transaction_details' => [
-                        'order_id'     => $orderId,
+                        'order_id' => $orderId,
                         'gross_amount' => (int) $totalBayar,
                     ],
                     'customer_details' => [
                         'first_name' => $user->name ?? 'Customer Budi',
-                        'email'      => $user->email ?? 'customer@sportplace.com',
-                        'phone'      => $user->no_hp ?? '081234567890',
+                        'email' => $user->email ?? 'customer@sportplace.com',
+                        'phone' => $user->no_hp ?? '081234567890',
                     ],
                     'item_details' => $itemDetails,
-                    'callbacks'    => [
-                        'finish' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
+                    'callbacks' => [
+                        'finish' => route('penyewa.booking.detail', ['id' => $booking->id]).'?paid=1',
                     ],
                 ];
                 $snapToken = $midtransService->createSnapToken($midtransPayload);
             } catch (\Throwable $e) {
-                Log::error('Gagal generate Midtrans Snap token: ' . $e->getMessage());
+                Log::error('Gagal generate Midtrans Snap token: '.$e->getMessage());
             }
         }
 
         // Catat di tabel payments dengan status 'pending'
         Payment::create([
-            'header_id'         => $booking->id,
+            'header_id' => $booking->id,
             'pg_transaction_id' => $orderId,
             'metode_pembayaran' => 'Midtrans',
-            'nominal_bayar'     => $totalBayar,
+            'nominal_bayar' => $totalBayar,
             'status_pembayaran' => 'pending',
-            'created_at'        => $now,
+            'created_at' => $now,
         ]);
 
         // Simpan field ID dan state ke session
         session([
-            'selected_field_id'  => $field->id,
-            'last_field_id'      => $field->id,
-            'selected_date'      => $tanggalSewa,
-            'selected_slots'     => $parsedSlots,
-            'latest_snap_token'  => $snapToken,
+            'selected_field_id' => $field->id,
+            'last_field_id' => $field->id,
+            'selected_date' => $tanggalSewa,
+            'selected_slots' => $parsedSlots,
+            'latest_snap_token' => $snapToken,
             'booking_expires_at' => $expiresAt->timestamp,
             'pending_booking_id' => $booking->id,
         ]);
@@ -555,12 +561,12 @@ class PaymentController extends Controller
         // Jika request via AJAX / Fetch (dari Snap popup handler)
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
-                'success'              => true,
-                'snap_token'           => $snapToken,
-                'booking_id'           => $booking->id,
+                'success' => true,
+                'snap_token' => $snapToken,
+                'booking_id' => $booking->id,
                 'expires_at_timestamp' => $expiresAt->timestamp,
-                'remaining_seconds'    => $remainingSeconds,
-                'redirect_url'         => route('penyewa.booking.detail', ['id' => $booking->id]),
+                'remaining_seconds' => $remainingSeconds,
+                'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->id]),
             ]);
         }
 
@@ -607,14 +613,14 @@ class PaymentController extends Controller
         $sport = $field?->sport;
         $customer = $booking->user ?? $user;
 
-        $bookingCode = !empty($booking->kode_booking)
+        $bookingCode = ! empty($booking->kode_booking)
             ? $booking->kode_booking
-            : ('SP-' . Carbon::parse($booking->created_at)->format('Ymd') . '-' . str_pad($booking->id, 3, '0', STR_PAD_LEFT));
+            : ('SP-'.Carbon::parse($booking->created_at)->format('Ymd').'-'.str_pad($booking->id, 3, '0', STR_PAD_LEFT));
         $cleanVenueCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $venue?->nama_venue ?? 'ARENA'), 0, 4));
-        $ticketCode = 'SP-' . strtoupper(substr(md5($booking->id), 0, 4)) . '-' . $cleanVenueCode;
-        $trxId = '#TRX-' . ($booking->payment?->pg_transaction_id ?? ($booking->id * 739182));
+        $ticketCode = 'SP-'.strtoupper(substr(md5($booking->id), 0, 4)).'-'.$cleanVenueCode;
+        $trxId = '#TRX-'.($booking->payment?->pg_transaction_id ?? ($booking->id * 739182));
 
-        $dipesanPada = Carbon::parse($booking->created_at)->translatedFormat('d M Y, H:i') . ' WIB';
+        $dipesanPada = Carbon::parse($booking->created_at)->translatedFormat('d M Y, H:i').' WIB';
 
         // 3. Format Waktu & Sesi Main
         $tanggalSewaObj = Carbon::parse($detailFirst?->tanggal_sewa ?? $booking->created_at);
@@ -629,15 +635,15 @@ class PaymentController extends Controller
 
         $totalJam = $booking->details->count() > 0 ? $booking->details->count() : 1;
         $sesiDurasi = "{$jamMulaiFormatted} - {$jamSelesaiFormatted} WIB ({$totalJam} Jam)";
-        $berlakuHingga = $tanggalSewaObj->translatedFormat('d M Y') . ', ' . $jamSelesaiFormatted . ' WIB';
+        $berlakuHingga = $tanggalSewaObj->translatedFormat('d M Y').', '.$jamSelesaiFormatted.' WIB';
 
         // 4. Foto Lapangan & Fallback Olahraga
         $sportSlug = strtolower($sport?->slug ?? 'futsal');
         $defaultImages = [
-            'futsal'      => asset('images/courts/futsal.jpg'),
-            'badminton'   => asset('images/courts/badminton.jpg'),
-            'tenis'       => asset('images/courts/tennis.jpg'),
-            'basket'      => asset('images/courts/basketball.jpg'),
+            'futsal' => asset('images/courts/futsal.jpg'),
+            'badminton' => asset('images/courts/badminton.jpg'),
+            'tenis' => asset('images/courts/tennis.jpg'),
+            'basket' => asset('images/courts/basketball.jpg'),
             'mini-soccer' => asset('images/courts/futsal.jpg'),
         ];
 
@@ -671,17 +677,16 @@ class PaymentController extends Controller
         $serviceFee = (int) config('booking.service_fee', 2500);
         $totalBayar = (float) $booking->total_tagihan;
 
-<<<<<<< HEAD
         // Auto-sinkronisasi status pembayaran dengan Midtrans jika ada query ?paid=1 atau status masih pending
         if ($booking->payment) {
             $isPaidQuery = $request?->query('paid') == '1';
-            $isPendingStatus = !in_array(strtolower($booking->status), ['payment', 'complated', 'completed', 'canceled', 'cancelled']);
+            $isPendingStatus = ! in_array(strtolower($booking->status), ['payment', 'complated', 'completed', 'canceled', 'cancelled']);
 
             if ($isPaidQuery) {
                 if ($booking->payment) {
                     $booking->payment->update([
                         'status_pembayaran' => 'succes',
-                        'paid_at'           => now(),
+                        'paid_at' => now(),
                     ]);
                 }
                 $booking->update(['status' => 'payment']);
@@ -702,7 +707,7 @@ class PaymentController extends Controller
                         if ($trxStatus === 'settlement' || ($trxStatus === 'capture' && $fraudStatus === 'accept')) {
                             $booking->payment->update([
                                 'status_pembayaran' => 'succes',
-                                'paid_at'           => now(),
+                                'paid_at' => now(),
                                 'metode_pembayaran' => "Midtrans ({$paymentType})",
                             ]);
                             $booking->update(['status' => 'payment']);
@@ -716,10 +721,6 @@ class PaymentController extends Controller
                 }
             }
         }
-=======
-        // Halaman detail hanya membaca. Status pembayaran ditulis oleh webhook dan checkPaymentStatus
-        // (yang memverifikasi ke Midtrans), bukan oleh query string seperti ?paid=1.
->>>>>>> 9d75d219becc37a3d5c33d4962e9641e71eb563e
 
         // Hitung batas waktu bayar 15 menit (persisten dihitung dari expires_at database)
         $tz = config('app.timezone', 'Asia/Makassar');
@@ -756,7 +757,7 @@ class PaymentController extends Controller
                 $rDate = substr($d->getRawOriginal('tanggal_sewa') ?? (string) $d->tanggal_sewa, 0, 10);
                 $rTime = substr($d->getRawOriginal('jam_mulai') ?? (string) $d->jam_mulai, 0, 8);
                 $sDt = Carbon::parse("{$rDate} {$rTime}", $tz);
-                if (!$earliestStartDateTime || $sDt->lt($earliestStartDateTime)) {
+                if (! $earliestStartDateTime || $sDt->lt($earliestStartDateTime)) {
                     $earliestStartDateTime = $sDt;
                 }
             }
@@ -765,7 +766,7 @@ class PaymentController extends Controller
         $isPaid = in_array(strtolower($booking->status), ['payment', 'complated', 'completed']);
         $isCancelled = in_array(strtolower($booking->status), ['cancelled', 'canceled', 'expired']);
         $canCancel = false;
-        if (!$isCancelled && $earliestStartDateTime) {
+        if (! $isCancelled && $earliestStartDateTime) {
             $canCancel = $now->floatDiffInHours($earliestStartDateTime, false) >= $minCancellationHours;
         }
 
@@ -773,53 +774,53 @@ class PaymentController extends Controller
         $paymentMethod = $booking->payment?->metode_pembayaran ?? 'Midtrans Payment Gateway';
         $snapToken = session('latest_snap_token');
 
-        $statusLabel = match(strtolower($booking->status)) {
+        $statusLabel = match (strtolower($booking->status)) {
             'payment', 'complated', 'completed' => 'Terkonfirmasi',
-            'pending'               => 'Menunggu Pembayaran',
-            'expired'               => "Kedaluwarsa ({$paymentWindowMinutes} Menit Habis)",
+            'pending' => 'Menunggu Pembayaran',
+            'expired' => "Kedaluwarsa ({$paymentWindowMinutes} Menit Habis)",
             'cancelled', 'canceled' => 'Dibatalkan',
-            default                 => 'Terkonfirmasi',
+            default => 'Terkonfirmasi',
         };
 
         // Buat QR Code asli untuk tiket yang langsung membuka URL verifikasi tiket saat discan
         $qrTargetUrl = route('booking.verify', ['code' => $booking->kode_booking ?? $booking->id]);
         $qrCodeDataUri = null;
         try {
-            $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrTargetUrl);
+            $qrCodeDataUri = (new QRCode)->render($qrTargetUrl);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Gagal render QR tiket: ' . $e->getMessage());
+            Log::warning('Gagal render QR tiket: '.$e->getMessage());
         }
 
         return view('penyewa.pembayaran', [
-            'booking'              => $booking,
-            'customer'             => $customer,
-            'field'                => $field,
-            'venue'                => $venue,
-            'sport'                => $sport,
-            'bookingCode'          => $bookingCode,
-            'ticketCode'           => $ticketCode,
-            'trxId'                => $trxId,
-            'dipesanPada'          => $dipesanPada,
-            'tanggalMain'          => $tanggalMain,
-            'sesiDurasi'           => $sesiDurasi,
-            'berlakuHingga'        => $berlakuHingga,
-            'courtPhoto'           => $courtPhoto,
-            'facilities'           => $facilities,
-            'lineItems'            => $lineItems,
-            'serviceFee'           => $serviceFee,
-            'totalBayar'           => $totalBayar,
-            'paymentMethod'        => $paymentMethod,
-            'isPaid'               => $isPaid,
-            'isCancelled'          => $isCancelled,
-            'statusLabel'          => $statusLabel,
-            'snapToken'            => $snapToken,
-            'remainingSeconds'     => $remainingSeconds,
-            'qrCodeDataUri'        => $qrCodeDataUri,
-            'qrTargetUrl'          => $qrTargetUrl,
-            'expiresAtTimestamp'   => $expiresAtTimestamp,
-            'canCancel'            => $canCancel,
+            'booking' => $booking,
+            'customer' => $customer,
+            'field' => $field,
+            'venue' => $venue,
+            'sport' => $sport,
+            'bookingCode' => $bookingCode,
+            'ticketCode' => $ticketCode,
+            'trxId' => $trxId,
+            'dipesanPada' => $dipesanPada,
+            'tanggalMain' => $tanggalMain,
+            'sesiDurasi' => $sesiDurasi,
+            'berlakuHingga' => $berlakuHingga,
+            'courtPhoto' => $courtPhoto,
+            'facilities' => $facilities,
+            'lineItems' => $lineItems,
+            'serviceFee' => $serviceFee,
+            'totalBayar' => $totalBayar,
+            'paymentMethod' => $paymentMethod,
+            'isPaid' => $isPaid,
+            'isCancelled' => $isCancelled,
+            'statusLabel' => $statusLabel,
+            'snapToken' => $snapToken,
+            'remainingSeconds' => $remainingSeconds,
+            'qrCodeDataUri' => $qrCodeDataUri,
+            'qrTargetUrl' => $qrTargetUrl,
+            'expiresAtTimestamp' => $expiresAtTimestamp,
+            'canCancel' => $canCancel,
             'minCancellationHours' => $minCancellationHours,
-            'refundPercent'        => $refundPercent,
+            'refundPercent' => $refundPercent,
         ]);
     }
 
@@ -835,13 +836,12 @@ class PaymentController extends Controller
             $settlement->reconcileHeader($booking->id);
         }
 
-<<<<<<< HEAD
         // 1. Cek jika sudah lunas
         if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
             return response()->json([
-                'success'  => true,
-                'status'   => 'payment',
-                'is_paid'  => true,
+                'success' => true,
+                'status' => 'payment',
+                'is_paid' => true,
                 'redirect' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
             ]);
         }
@@ -860,24 +860,25 @@ class PaymentController extends Controller
                     if ($trxStatus === 'settlement' || ($trxStatus === 'capture' && $fraudStatus === 'accept')) {
                         $booking->payment->update([
                             'status_pembayaran' => 'succes',
-                            'paid_at'           => now(),
+                            'paid_at' => now(),
                             'metode_pembayaran' => "Midtrans ({$paymentType})",
                         ]);
                         $booking->update(['status' => 'payment']);
                         $booking->refresh();
 
                         return response()->json([
-                            'success'  => true,
-                            'status'   => 'payment',
-                            'is_paid'  => true,
+                            'success' => true,
+                            'status' => 'payment',
+                            'is_paid' => true,
                             'redirect' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
                         ]);
                     } elseif (in_array($trxStatus, ['cancel', 'deny', 'expire'])) {
                         $booking->payment->update(['status_pembayaran' => 'failed']);
                         $booking->update(['status' => 'canceled']);
+
                         return response()->json([
                             'success' => true,
-                            'status'  => 'canceled',
+                            'status' => 'canceled',
                             'is_paid' => false,
                         ]);
                     }
@@ -895,26 +896,25 @@ class PaymentController extends Controller
 
         if ($booking->status === 'pending' && $remainingSeconds <= 0) {
             $booking->update(['status' => 'expired']);
+
             return response()->json([
-                'success'           => true,
-                'status'            => 'expired',
-                'is_paid'           => false,
-                'is_expired'        => true,
+                'success' => true,
+                'status' => 'expired',
+                'is_paid' => false,
+                'is_expired' => true,
                 'remaining_seconds' => 0,
             ]);
         }
-=======
         $snap = $settlement->snapshot($booking->id);
->>>>>>> 9d75d219becc37a3d5c33d4962e9641e71eb563e
 
         return response()->json([
-            'success'              => true,
-            'status'               => $snap['status'],
-            'is_paid'              => $snap['is_paid'],
-            'is_expired'           => $snap['is_expired'],
-            'remaining_seconds'    => $snap['remaining_seconds'],
+            'success' => true,
+            'status' => $snap['status'],
+            'is_paid' => $snap['is_paid'],
+            'is_expired' => $snap['is_expired'],
+            'remaining_seconds' => $snap['remaining_seconds'],
             'expires_at_timestamp' => $snap['expires_at_timestamp'],
-            'redirect'             => $snap['is_paid'] ? route('penyewa.booking.detail', ['id' => $booking->id]) : null,
+            'redirect' => $snap['is_paid'] ? route('penyewa.booking.detail', ['id' => $booking->id]) : null,
         ]);
     }
 
@@ -925,7 +925,7 @@ class PaymentController extends Controller
     public function confirmPayment(Request $request, $id): JsonResponse
     {
         $user = auth()->user() ?? User::where('role', 'customer')->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
 
@@ -936,7 +936,7 @@ class PaymentController extends Controller
             ->where('penyewa_id', $user->id)
             ->first();
 
-        if (!$booking) {
+        if (! $booking) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pesanan tidak ditemukan atau Anda tidak memiliki akses.',
@@ -946,32 +946,32 @@ class PaymentController extends Controller
         // Jika sudah berstatus lunas
         if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
             return response()->json([
-                'success'      => true,
-                'status'       => 'payment',
-                'is_paid'      => true,
-                'message'      => 'Pembayaran sudah terkonfirmasi.',
+                'success' => true,
+                'status' => 'payment',
+                'is_paid' => true,
+                'message' => 'Pembayaran sudah terkonfirmasi.',
                 'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
             ]);
         }
 
         $paymentType = (string) ($request->input('payment_type') ?: 'qris');
-        $methodLabel = 'Midtrans (' . strtoupper($paymentType) . ')';
+        $methodLabel = 'Midtrans ('.strtoupper($paymentType).')';
 
         if ($booking->payment) {
             $booking->payment->update([
                 'status_pembayaran' => 'succes',
                 'metode_pembayaran' => $methodLabel,
-                'paid_at'           => now(),
+                'paid_at' => now(),
             ]);
         } else {
             Payment::create([
-                'header_id'         => $booking->id,
-                'pg_transaction_id' => 'SP-' . $booking->id . '-' . time(),
+                'header_id' => $booking->id,
+                'pg_transaction_id' => 'SP-'.$booking->id.'-'.time(),
                 'metode_pembayaran' => $methodLabel,
-                'nominal_bayar'     => (float) $booking->total_tagihan,
+                'nominal_bayar' => (float) $booking->total_tagihan,
                 'status_pembayaran' => 'succes',
-                'paid_at'           => now(),
-                'created_at'        => now(),
+                'paid_at' => now(),
+                'created_at' => now(),
             ]);
         }
 
@@ -981,10 +981,10 @@ class PaymentController extends Controller
         $booking->refresh();
 
         return response()->json([
-            'success'      => true,
-            'status'       => 'payment',
-            'is_paid'      => true,
-            'message'      => 'Pembayaran berhasil dikonfirmasi secara langsung!',
+            'success' => true,
+            'status' => 'payment',
+            'is_paid' => true,
+            'message' => 'Pembayaran berhasil dikonfirmasi secara langsung!',
             'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
         ]);
     }
@@ -1000,11 +1000,12 @@ class PaymentController extends Controller
         abort_if(! $user, 401);
 
         $booking = BookingHeader::with(['details', 'payment', 'user'])->find($id);
-        if (!$booking) {
+        if (! $booking) {
             $msg = 'Pemesanan tidak ditemukan.';
             if (request()->expectsJson() || request()->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 404);
             }
+
             return redirect()->route('penyewa.riwayat')->with('error', $msg);
         }
 
@@ -1013,6 +1014,7 @@ class PaymentController extends Controller
             if (request()->expectsJson() || request()->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 403);
             }
+
             return redirect()->route('penyewa.booking.detail', ['id' => $id])->with('error', $msg);
         }
 
@@ -1021,6 +1023,7 @@ class PaymentController extends Controller
             if (request()->expectsJson() || request()->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 422);
             }
+
             return redirect()->route('penyewa.booking.detail', ['id' => $id])->with('warning', $msg);
         }
 
@@ -1033,7 +1036,7 @@ class PaymentController extends Controller
             $rawDate = substr($detail->getRawOriginal('tanggal_sewa') ?? (string) $detail->tanggal_sewa, 0, 10);
             $rawTime = substr($detail->getRawOriginal('jam_mulai') ?? (string) $detail->jam_mulai, 0, 8);
             $startDateTime = Carbon::parse("{$rawDate} {$rawTime}", $tz);
-            if (!$earliestStart || $startDateTime->lt($earliestStart)) {
+            if (! $earliestStart || $startDateTime->lt($earliestStart)) {
                 $earliestStart = $startDateTime;
             }
         }
@@ -1047,6 +1050,7 @@ class PaymentController extends Controller
                 if (request()->expectsJson() || request()->ajax()) {
                     return response()->json(['success' => false, 'message' => $msg], 422);
                 }
+
                 return redirect()->route('penyewa.booking.detail', ['id' => $id])->with('error', $msg);
             }
         }
@@ -1066,22 +1070,23 @@ class PaymentController extends Controller
             $detail = $booking->details->first();
 
             Refund::create([
-                'header_id'        => $booking->id,
-                'detail_id'        => $detail?->id,
-                'payment_id'       => $payment?->id,
-                'alasan_refund'    => "Pembatalan pemesanan oleh penyewa (Refund {$refundPercent}%)",
-                'nominal_refund'   => $nominalRefund,
-                'metode_refund'    => $payment?->metode_pembayaran ?? 'Midtrans',
-                'rekening_tujuan'  => $booking->user?->email ?? $booking->user?->no_hp ?? 'Akun Penyewa',
-                'status_refund'    => 'pending',
-                'created_at'       => $now,
-                'updated_at'       => $now,
+                'header_id' => $booking->id,
+                'detail_id' => $detail?->id,
+                'payment_id' => $payment?->id,
+                'alasan_refund' => "Pembatalan pemesanan oleh penyewa (Refund {$refundPercent}%)",
+                'nominal_refund' => $nominalRefund,
+                'metode_refund' => $payment?->metode_pembayaran ?? 'Midtrans',
+                'rekening_tujuan' => $booking->user?->email ?? $booking->user?->no_hp ?? 'Akun Penyewa',
+                'status_refund' => 'pending',
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
 
-            $successMsg = "Pemesanan berhasil dibatalkan. Pengajuan refund sebesar {$refundPercent}% (Rp " . number_format($nominalRefund, 0, ',', '.') . ") telah diajukan.";
+            $successMsg = "Pemesanan berhasil dibatalkan. Pengajuan refund sebesar {$refundPercent}% (Rp ".number_format($nominalRefund, 0, ',', '.').') telah diajukan.';
             if (request()->expectsJson() || request()->ajax()) {
                 return response()->json(['success' => true, 'message' => $successMsg]);
             }
+
             return redirect()->route('penyewa.booking.detail', ['id' => $id])->with('success', $successMsg);
         }
 
@@ -1089,6 +1094,7 @@ class PaymentController extends Controller
         if (request()->expectsJson() || request()->ajax()) {
             return response()->json(['success' => true, 'message' => $successMsg]);
         }
+
         return redirect()->route('penyewa.booking.detail', ['id' => $id])->with('success', $successMsg);
     }
 
@@ -1111,19 +1117,19 @@ class PaymentController extends Controller
         $qrCodeDataUri = null;
         try {
             $qrUrl = route('booking.verify', ['code' => $booking->kode_booking ?? $booking->id]);
-            $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrUrl);
+            $qrCodeDataUri = (new QRCode)->render($qrUrl);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Gagal render QR invoice: ' . $e->getMessage());
+            Log::warning('Gagal render QR invoice: '.$e->getMessage());
         }
 
         // Render PDF satu halaman landscape A5
-        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penyewa.invoice-pdf', [
-                'booking'       => $booking,
+        if (class_exists(Pdf::class)) {
+            $pdf = Pdf::loadView('penyewa.invoice-pdf', [
+                'booking' => $booking,
                 'qrCodeDataUri' => $qrCodeDataUri,
             ])->setPaper('a5', 'landscape');
 
-            $filename = 'Nota-Booking-' . ($booking->kode_booking ?? $booking->id) . '.pdf';
+            $filename = 'Nota-Booking-'.($booking->kode_booking ?? $booking->id).'.pdf';
 
             // Jika ada query ?download=1 maka download, default: stream di tab browser
             if (request()->query('download') == '1') {
@@ -1149,15 +1155,15 @@ class PaymentController extends Controller
             'details.field.sport',
             'details.field.facilities',
             'payment',
-            'user'
+            'user',
         ])->where('kode_booking', $code)
-          ->orWhere('id', $code)
-          ->firstOrFail();
+            ->orWhere('id', $code)
+            ->firstOrFail();
 
         $qrCodeDataUri = null;
         try {
             $qrUrl = route('booking.verify', ['code' => $booking->kode_booking ?? $booking->id]);
-            $qrCodeDataUri = (new \chillerlan\QRCode\QRCode)->render($qrUrl);
+            $qrCodeDataUri = (new QRCode)->render($qrUrl);
         } catch (\Throwable $e) {
             // ignore
         }
@@ -1167,15 +1173,15 @@ class PaymentController extends Controller
         $venue = $field?->venue;
 
         $isPaid = in_array(strtolower($booking->status), ['payment', 'completed', 'complated']);
-        $isCheckedIn = !empty($booking->checked_in_at);
+        $isCheckedIn = ! empty($booking->checked_in_at);
 
         return view('penyewa.tiket-verifikasi', [
-            'booking'        => $booking,
-            'field'          => $field,
-            'venue'          => $venue,
-            'isPaid'         => $isPaid,
-            'isCheckedIn'    => $isCheckedIn,
-            'qrCodeDataUri'  => $qrCodeDataUri,
+            'booking' => $booking,
+            'field' => $field,
+            'venue' => $venue,
+            'isPaid' => $isPaid,
+            'isCheckedIn' => $isCheckedIn,
+            'qrCodeDataUri' => $qrCodeDataUri,
         ]);
     }
 
@@ -1191,11 +1197,12 @@ class PaymentController extends Controller
             ->firstOrFail();
 
         $isPaid = in_array(strtolower($booking->status), ['payment', 'completed', 'complated']);
-        if (!$isPaid) {
+        if (! $isPaid) {
             $msg = 'Gagal: Tiket belum dibayar / belum lunas.';
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 422);
             }
+
             return back()->with('error', $msg);
         }
 
@@ -1205,6 +1212,7 @@ class PaymentController extends Controller
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 409);
             }
+
             return back()->with('warning', $msg);
         }
 
@@ -1217,8 +1225,8 @@ class PaymentController extends Controller
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
-                'success'       => true,
-                'message'       => $successMsg,
+                'success' => true,
+                'message' => $successMsg,
                 'checked_in_at' => $booking->checked_in_at,
             ]);
         }
@@ -1262,7 +1270,7 @@ class PaymentController extends Controller
                 $start = $item['start'] ?? $item['jam_mulai'] ?? null;
                 $end = $item['end'] ?? $item['jam_selesai'] ?? null;
 
-                if (!$start && isset($item['time'])) {
+                if (! $start && isset($item['time'])) {
                     if (preg_match('/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/', $item['time'], $m)) {
                         $start = $m[1];
                         $end = $m[2];
@@ -1285,8 +1293,8 @@ class PaymentController extends Controller
 
                 $slots[] = [
                     'start' => $startNorm,
-                    'end'   => $endNorm,
-                    'time'  => "{$startNorm} - {$endNorm}",
+                    'end' => $endNorm,
+                    'time' => "{$startNorm} - {$endNorm}",
                     'price' => $defaultPrice * $hours,   // harga dari lapangan di database; masukan pengguna diabaikan
                 ];
             }
@@ -1314,8 +1322,8 @@ class PaymentController extends Controller
      */
     public function handleNotification(Request $request, PaymentSettlementService $settlement, MidtransService $midtrans): JsonResponse
     {
-        $payload   = $request->all();
-        $orderId   = (string) ($payload['order_id'] ?? '');
+        $payload = $request->all();
+        $orderId = (string) ($payload['order_id'] ?? '');
         $trxStatus = (string) ($payload['transaction_status'] ?? '');
 
         $eventId = (string) ($request->input('event_id') ?? $request->input('id') ?? $request->header('X-Event-Id') ?? '');
@@ -1356,14 +1364,14 @@ class PaymentController extends Controller
         $result = $settlement->settleFromGateway($orderId, 'webhook');
 
         $event->update([
-            'payment_id'     => DB::table('payments')->where('pg_transaction_id', $orderId)->value('id'),
+            'payment_id' => DB::table('payments')->where('pg_transaction_id', $orderId)->value('id'),
             'process_status' => match ($result->outcome) {
                 SettlementResult::UNKNOWN, SettlementResult::IGNORED => 'ignored',
                 SettlementResult::DEFERRED, SettlementResult::MISMATCH, SettlementResult::REVIEW => 'failed',
                 default => 'processed',
             },
-            'error'          => $result->needsAttention() ? $result->message : null,
-            'processed_at'   => now(),
+            'error' => $result->needsAttention() ? $result->message : null,
+            'processed_at' => now(),
         ]);
 
         // Midtrans mengulang kiriman bila balasan bukan 2xx. Hanya "belum bisa diverifikasi" yang pantas diulang.
