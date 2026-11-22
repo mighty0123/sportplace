@@ -11,7 +11,6 @@
                 <div class="lg:col-span-6 space-y-6">
                     <!-- Pill Tag -->
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#DEF1E7] border border-[#BBE3D0] text-[#0A7660] text-xs font-semibold uppercase tracking-wider">
-                        <span class="w-1.5 h-1.5 rounded-full bg-[#0A7660]"></span>
                         <span>Tentang SportPlace Indonesia</span>
                     </div>
 

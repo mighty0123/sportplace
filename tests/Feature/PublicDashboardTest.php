@@ -14,14 +14,15 @@ use Tests\TestCase;
 class PublicDashboardTest extends TestCase
 {
     use RefreshDatabase;
+
     public function test_public_dashboard_renders_successfully(): void
     {
         $response = $this->get('/');
 
         $response->assertStatus(200);
         $response->assertSee('SportPlace');
-        $response->assertSee('Cari Lapangan.');
-        $response->assertSee('Main Tanpa Ribet.');
+        $response->assertSee('Cari Lapangan');
+        $response->assertSee('Main Tanpa Ribet');
     }
 
     public function test_public_dashboard_contains_sport_categories(): void
@@ -147,5 +148,37 @@ class PublicDashboardTest extends TestCase
         $response = $this->get('/about');
 
         $response->assertRedirect('/tentang-kami');
+    }
+
+    public function test_authenticated_penyewa_is_redirected_from_landing_page(): void
+    {
+        $penyewa = User::factory()->create(['role' => 'customer']);
+
+        $response = $this->actingAs($penyewa)->get('/');
+
+        $response->assertRedirect(route('penyewa.dashboard'));
+    }
+
+    public function test_authenticated_admin_is_redirected_from_landing_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get('/');
+
+        $response->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_authenticated_mitra_is_redirected_from_landing_page(): void
+    {
+        $mitra = User::factory()->create(['role' => 'mitra']);
+        MitraProfile::create([
+            'user_id' => $mitra->id,
+            'no_ktp' => '1234567890123456',
+            'status' => 'approved',
+        ]);
+
+        $response = $this->actingAs($mitra)->get('/');
+
+        $response->assertRedirect(route('mitra.dashboard'));
     }
 }

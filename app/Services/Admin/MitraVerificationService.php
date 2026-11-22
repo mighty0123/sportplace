@@ -61,7 +61,7 @@ class MitraVerificationService
             // Dua bentuk nama entitas ada di data: nama pendek (helper aplikasi) dan nama class lengkap.
             ->whereIn('entitas_type', ['MitraProfile', MitraProfile::class])
             ->where('entitas_id', $profile->id)
-            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data'])
+            ->whereNotIn('aksi', ['lihat_dokumen', 'lihat_nik', 'lihat_data', 'ekspor'])
             ->latest('created_at')
             ->latest('id')
             ->get();
@@ -92,7 +92,13 @@ class MitraVerificationService
             AuditLog::record($admin, 'MitraProfile', $profile->id, $aksi, 'pending', $newStatus, $reason);
         });
 
-        return $profile->refresh();
+        $refreshed = $profile->refresh();
+
+        if ($refreshed->user) {
+            $refreshed->user->notify((new \App\Notifications\MitraVerificationStatusUpdated($newStatus, $reason))->afterCommit());
+        }
+
+        return $refreshed;
     }
 
     /** Foto pemeriksaan saat keputusan dibuat: centang manual dan hasil otomatis. */

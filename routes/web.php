@@ -1,29 +1,33 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\ListingModerationController;
-use App\Http\Controllers\Admin\MitraVerificationController;
-use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HelpController;
-use App\Http\Controllers\Mitra\DashboardController;
 use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
 use App\Http\Controllers\Mitra\FieldController;
+use App\Http\Controllers\Mitra\NotificationController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\OrderController;
 use App\Http\Controllers\Mitra\PricingController;
-use App\Http\Controllers\Mitra\ReportController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\Mitra\WithdrawalController;
 use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
-use App\Http\Controllers\Penyewa\ProfileController;
 use App\Http\Controllers\WelcomeController;
+
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ListingModerationController;
+use App\Http\Controllers\Admin\MitraVerificationController;
+use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\CommissionController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Models\MitraProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -121,6 +125,11 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     // Akses Dokumen Privat Terproteksi
     Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
+    // T10.1: Notifikasi Mitra (FR-NOTIF-001, BR-027)
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifikasi/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::post('/notifikasi/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+
     Route::middleware('mitra.approved')->group(function () {
         Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
 
@@ -170,6 +179,9 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+
+        // MTR-13 / FR-FIN-003: Penarikan Dana Mitra (Wallet & Withdrawal)
+        Route::get('/penarikan', [WithdrawalController::class, 'index'])->name('withdrawals.index');
     });
 });
 
@@ -208,4 +220,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [TransactionController::class, 'index'])->name('index');
         Route::get('/{id}', [TransactionController::class, 'show'])->whereNumber('id')->name('show');
     });
+
+    Route::prefix('laporan')->name('laporan.')->middleware('can:view-reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
+        Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
+    });
+
+    Route::prefix('komisi')->name('komisi.')->middleware('can:manage-commission')->group(function () {
+        Route::get('/', [CommissionController::class, 'index'])->name('index');
+        Route::post('/tarif', [CommissionController::class, 'store'])->middleware('throttle:20,1')->name('store');
+    });
+
+    Route::prefix('pengguna')->name('pengguna.')->middleware('can:manage-users')->where(['id' => '[0-9]+'])->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [UserManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
+    });
+
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/profil/sesi/keluar', [ProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
 });

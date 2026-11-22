@@ -12,6 +12,8 @@ use App\Models\Refund;
 use App\Models\User;
 use App\Services\MidtransService;
 use App\Support\BookingCode;
+use App\Services\Payment\PaymentSettlementService;
+use App\Services\Payment\SettlementResult;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -20,6 +22,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
+use App\Exceptions\Booking\SlotUnavailableException;
+use App\Services\Booking\SlotReservationService;
 
 class PaymentController extends Controller
 {
@@ -32,15 +37,16 @@ class PaymentController extends Controller
         Carbon::setLocale('id');
         $request = $request ?? request();
 
-        $user = auth()->user() ?? User::where('role', 'customer')->first();
+        $user = auth()->user();
+        abort_if(! $user, 401);
         $booking = null;
         $field = null;
 
         // 1. Ambil field_id dari parameter query / request / route ID
         $requestedFieldId = (int) (
-            $request?->input('field_id') ??
-            $request?->query('field_id') ??
-            $request?->query('field') ??
+            $request->input('field_id') ??
+            $request->query('field_id') ??
+            $request->query('field') ??
             0
         );
 
@@ -50,14 +56,14 @@ class PaymentController extends Controller
             if ($fieldCandidate) {
                 $field = $fieldCandidate;
             } else {
-                // Jika bukan ID Field, cari sebagai BookingHeader
+                // Jika bukan ID Field, cari sebagai BookingHeader MILIK PENGGUNA ini
                 $bookingCandidate = BookingHeader::with([
                     'details.field.venue.city',
                     'details.field.sport',
                     'details.field.facilities',
                     'details.field.photos',
                     'user'
-                ])->find($id);
+                ])->where('id', $id)->where('penyewa_id', $user->id)->first();
 
                 if ($bookingCandidate && $bookingCandidate->details->isNotEmpty()) {
                     $booking = $bookingCandidate;
@@ -71,7 +77,7 @@ class PaymentController extends Controller
             $field = Field::with(['venue.city', 'sport', 'facilities', 'photos'])->find($requestedFieldId);
         }
 
-        // 3. Jika field belum ditentukan, ambil dari session (lapangan yang baru saja dipilih user di listing/kalender)
+        // 3. Jika field belum ditentukan, ambil dari session (lapangan yang baru saja dipilih pengguna ini)
         if (!$field && (session()->has('selected_field_id') || session()->has('last_field_id'))) {
             $sessionFieldId = (int) (session('selected_field_id') ?? session('last_field_id'));
             if ($sessionFieldId > 0) {
@@ -79,18 +85,10 @@ class PaymentController extends Controller
             }
         }
 
-        // 4. Jika masih belum ada, defaultkan ke Lapangan Futsal aktif pertama (Field ID 1 atau 2)
-        if (!$field) {
-            $field = Field::with(['venue.city', 'sport', 'facilities', 'photos'])
-                ->where('status_lapangan', 'aktif')
-                ->whereHas('sport', function ($q) {
-                    $q->where('slug', 'futsal')->orWhere('nama_olahraga', 'LIKE', '%futsal%');
-                })
-                ->first();
-        }
-
-        if (!$field) {
-            $field = Field::with(['venue.city', 'sport', 'facilities', 'photos'])->firstOrFail();
+        // 4. Tidak ada lapangan cadangan: hanya lapangan yang layak dipesan yang boleh diteruskan.
+        if (!$field || ! $this->isBookable($field->id)) {
+            $msg = 'Lapangan tidak tersedia untuk dipesan.';
+            return redirect()->route('penyewa.lapangan')->with('warning', $msg);
         }
 
         // Simpan field terpilih ke session agar tetap konsisten
@@ -220,9 +218,8 @@ class PaymentController extends Controller
             $facilities = ['Ruang Ganti & Shower', 'Free Parkir Mobil/Motor', 'Lighting Standar Turnamen'];
         }
 
-        // Biaya & Diskon
-        $serviceFee = 2500;
-        $promoDiscount = 0;
+        // Biaya
+        $serviceFee = (int) config('booking.service_fee', 2500);
         $totalBayar = max(0, $subtotal + $serviceFee);
         $slotsPayload = json_encode($parsedSlots);
 
@@ -305,7 +302,6 @@ class PaymentController extends Controller
             'lineItems'           => $lineItems,
             'subtotal'            => $subtotal,
             'serviceFee'          => $serviceFee,
-            'promoDiscount'       => $promoDiscount,
             'totalBayar'          => $totalBayar,
             'slotsPayload'        => $slotsPayload,
             'expiresAtTimestamp'  => $expiresAtTimestamp,
@@ -313,30 +309,22 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Proses submit pembayaran dari halaman Review Pembayaran.
-     * Mengubah status pesanan menjadi lunas/payment dan mengalihkan ke Halaman Tiket Arena & Invoice.
-     */
-    /**
-     * Proses submit pembayaran dari halaman Review Pembayaran.
-     * Mengunci slot dengan status 'pending', membuat transaksi Midtrans Snapbox,
-     * dan mengembalikan Snap token untuk memicu popup pembayaran di frontend.
-     */
     public function processPayment(?int $id = null, ?Request $request = null): RedirectResponse|JsonResponse
     {
         $request = $request ?? request();
-        $user = auth()->user() ?? User::where('role', 'customer')->first();
+        $user = auth()->user();
+        abort_if(! $user, 401);
 
         // Ambil field_id yang dipilih dari request, parameter rute, atau session
-        $fieldId = (int) (
-            $request?->input('field_id') ??
-            $request?->query('field_id') ??
-            $id ??
-            session('selected_field_id') ??
-            session('last_field_id') ??
-            1
-        );
-        $field = Field::with(['venue.city', 'sport'])->find($fieldId) ?? Field::first();
+        $fieldId = (int) ($request->input('field_id') ?? $request->query('field_id') ?? $id ?? 0);
+        if ($fieldId <= 0 || ! $this->isBookable($fieldId)) {
+            $msg = 'Lapangan tidak tersedia untuk dipesan.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 404);
+            }
+            return redirect()->route('penyewa.lapangan')->with('warning', $msg);
+        }
+        $field = Field::with(['venue.city', 'sport'])->findOrFail($fieldId);
 
         $paymentMethod = $request?->input('metode_pembayaran', 'Midtrans');
         $tanggalSewa = $request?->input('tanggal_sewa') ?? session('selected_date') ?? now()->addDay()->format('Y-m-d');
@@ -362,14 +350,10 @@ class PaymentController extends Controller
 
         // Hitung total tagihan dari slot yang sebenarnya
         $subtotal = array_sum(array_column($parsedSlots, 'price'));
-        $serviceFee = 2500;
-        $promoDiscount = 0;
+        $serviceFee = (int) config('booking.service_fee', 2500);
         $calculatedTotal = max(0, $subtotal + $serviceFee);
 
-        $totalBayar = (float) ($request?->input('total_bayar', 0));
-        if ($totalBayar <= 0) {
-            $totalBayar = $calculatedTotal;
-        }
+        $totalBayar = $calculatedTotal; // total selalu dihitung server; total_bayar dari formulir diabaikan
 
         // Validasi ketersediaan setiap slot sebelum pemesanan
         $tz = config('app.timezone', 'Asia/Makassar');
@@ -455,54 +439,48 @@ class PaymentController extends Controller
                 ? Carbon::parse($rawExpires, $tz)
                 : ($rawCreated ? Carbon::parse($rawCreated, $tz)->addMinutes($paymentWindowMinutes) : $now->copy()->addMinutes($paymentWindowMinutes));
         } else {
-            // Kunci slot selama payment_window_minutes sejak pertama kali bayar sekarang
-            $sessionKey = 'checkout_expires_at_' . $field->id;
-            if (session()->has($sessionKey) && (int) session($sessionKey) > $now->timestamp) {
-                $expiresAt = Carbon::createFromTimestamp((int) session($sessionKey), $tz);
-            } else {
-                $expiresAt = $now->copy()->addMinutes($paymentWindowMinutes);
-            }
+            $serviceFee = (int) config('booking.service_fee', 2500);
 
-            // Buat record booking baru dengan status 'pending', isi kode_booking dengan BookingCode::unique(),
-            // dan ulangi bila terkena UniqueConstraintViolationException
-            $booking = null;
-            $maxAttempts = 5;
-            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-                try {
+            try {
+                $booking = DB::transaction(function () use ($user, $field, $parsedSlots, $tanggalSewa, $subtotal, $serviceFee, $totalBayar, $now, $paymentWindowMinutes) {
                     $booking = BookingHeader::create([
                         'penyewa_id'    => $user->id,
                         'kode_booking'  => BookingCode::unique(),
+                        'subtotal_slot' => $subtotal,
+                        'biaya_layanan' => $serviceFee,
                         'total_tagihan' => $totalBayar,
                         'status'        => 'pending',
                         'expires_at'    => $now->copy()->addMinutes($paymentWindowMinutes),
                         'created_at'    => $now,
                     ]);
-                    break;
-                } catch (UniqueConstraintViolationException|QueryException $e) {
-                    if ($attempt >= $maxAttempts) {
-                        throw $e;
+
+                    foreach ($parsedSlots as $slot) {
+                        BookingDetail::create([
+                            'header_id'    => $booking->id,
+                            'field_id'     => $field->id,
+                            'tanggal_sewa' => $tanggalSewa,
+                            'jam_mulai'    => strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'],
+                            'jam_selesai'  => strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'],
+                            'harga_slot'   => (float) $slot['price'],
+                            'status_item'  => 'ongoing',
+                            'created_at'   => $now,
+                        ]);
                     }
+
+                    // Indeks unik di database yang memutuskan siapa yang dapat. Gagal berarti seluruh transaksi dibatalkan.
+                    app(SlotReservationService::class)->reserve($booking->id);
+
+                    return $booking;
+                }, 3);
+            } catch (SlotUnavailableException $e) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
                 }
+
+                return redirect()->route('penyewa.kalender', ['id' => $field->id, 'date' => $tanggalSewa])->with('warning', $e->getMessage());
             }
 
-            $expiresAt = $booking->expires_at ? Carbon::parse($booking->getRawOriginal('expires_at'), $tz) : $expiresAt;
-
-            // Buat detail slot sesuai jadwal yang DIPILIH pengguna
-            foreach ($parsedSlots as $slot) {
-                $jamMulai = strlen($slot['start']) === 5 ? $slot['start'] . ':00' : $slot['start'];
-                $jamSelesai = strlen($slot['end']) === 5 ? $slot['end'] . ':00' : $slot['end'];
-
-                BookingDetail::create([
-                    'header_id'    => $booking->id,
-                    'field_id'     => $field->id,
-                    'tanggal_sewa' => $tanggalSewa,
-                    'jam_mulai'    => $jamMulai,
-                    'jam_selesai'  => $jamSelesai,
-                    'harga_slot'   => (float) $slot['price'],
-                    'status_item'  => 'ongoing',
-                    'created_at'   => $now,
-                ]);
-            }
+            $expiresAt = Carbon::parse($booking->getRawOriginal('expires_at'), $tz);
         }
 
         // Siapkan order_id unik untuk transaksi Midtrans
@@ -598,107 +576,28 @@ class PaymentController extends Controller
         Carbon::setLocale('id');
         $request = $request ?? request();
 
-        $user = auth()->user() ?? User::where('role', 'customer')->first();
+        $user = auth()->user();
+        abort_if(! $user, 401);
 
-        // 1. Ambil data BookingHeader berdasarkan ID atau kode_booking, atau fallback ke booking terbaru milik user
-        $booking = null;
+        // 1. Ambil booking MILIK PENGGUNA yang sedang masuk. Milik orang lain dijawab 404.
+        $relations = [
+            'details.field.venue.city',
+            'details.field.sport',
+            'details.field.facilities',
+            'details.field.photos',
+            'payment',
+            'user',
+        ];
 
         if ($id) {
-            $booking = BookingHeader::with([
-                'details.field.venue.city',
-                'details.field.sport',
-                'details.field.facilities',
-                'details.field.photos',
-                'payment',
-                'user'
-            ])->where('id', $id)
-              ->orWhere('kode_booking', $id)
-              ->first();
-
-            // Jika ID yang dimasukkan adalah ID BookingDetail, cari BookingHeader induknya
-            if (!$booking) {
-                $detailItem = BookingDetail::find($id);
-                if ($detailItem) {
-                    $booking = BookingHeader::with([
-                        'details.field.venue.city',
-                        'details.field.sport',
-                        'details.field.facilities',
-                        'details.field.photos',
-                        'payment',
-                        'user'
-                    ])->find($detailItem->header_id);
-                }
-            }
-
-            // Jika $id adalah ID Field, cari booking terkait field tersebut
-            if (!$booking) {
-                $fieldBooking = BookingHeader::with([
-                    'details.field.venue.city',
-                    'details.field.sport',
-                    'details.field.facilities',
-                    'details.field.photos',
-                    'payment',
-                    'user'
-                ])->whereHas('details', function ($q) use ($id) {
-                    $q->where('field_id', $id);
-                })->latest('id')->first();
-
-                if ($fieldBooking) {
-                    $booking = $fieldBooking;
-                }
-            }
-        }
-
-        // Cek booking milik user yang cocok dengan session selected_field_id
-        if (!$booking && session()->has('selected_field_id')) {
-            $selectedFieldId = session('selected_field_id');
-            $booking = BookingHeader::with([
-                'details.field.venue.city',
-                'details.field.sport',
-                'details.field.facilities',
-                'details.field.photos',
-                'payment',
-                'user'
-            ])->whereHas('details', function ($q) use ($selectedFieldId) {
-                $q->where('field_id', $selectedFieldId);
-            })->latest('id')->first();
-        }
-
-        // Jika tidak ada ID atau tidak ditemukan, ambil booking terbaru milik user saat ini
-        if (!$booking && $user) {
-            $booking = BookingHeader::with([
-                'details.field.venue.city',
-                'details.field.sport',
-                'details.field.facilities',
-                'details.field.photos',
-                'payment',
-                'user'
-            ])->where('penyewa_id', $user->id)->latest('id')->first();
-        }
-
-        // Fallback jika belum ada booking: cari booking Futsal (Bukan Tenis)
-        if (!$booking) {
-            $booking = BookingHeader::with([
-                'details.field.venue.city',
-                'details.field.sport',
-                'details.field.facilities',
-                'details.field.photos',
-                'payment',
-                'user'
-            ])->whereHas('details.field.sport', function ($q) {
-                $q->where('slug', 'futsal')->orWhere('nama_olahraga', 'LIKE', '%futsal%');
-            })->latest('id')->first();
-        }
-
-        if (!$booking) {
-            $booking = BookingHeader::with([
-                'details.field.venue.city',
-                'details.field.sport',
-                'details.field.facilities',
-                'details.field.photos',
-                'payment',
-                'user'
-            ])->firstOrFail();
+            abort_unless(is_numeric($id), 404);
+            $booking = $this->ownedBooking((int) $id, $relations);
+        } else {
+            // Tanpa ID: booking terbaru milik pengguna ini saja.
+            $booking = BookingHeader::with($relations)
+                ->where('penyewa_id', $user->id)
+                ->latest('id')
+                ->firstOrFail();
         }
 
         // 2. Format Data Header & Metadata Transaksi
@@ -769,10 +668,10 @@ class PaymentController extends Controller
             ];
         }
 
-        $serviceFee = 2500;
-        $promoDiscount = 0;
+        $serviceFee = (int) config('booking.service_fee', 2500);
         $totalBayar = (float) $booking->total_tagihan;
 
+<<<<<<< HEAD
         // Auto-sinkronisasi status pembayaran dengan Midtrans jika ada query ?paid=1 atau status masih pending
         if ($booking->payment) {
             $isPaidQuery = $request?->query('paid') == '1';
@@ -817,6 +716,10 @@ class PaymentController extends Controller
                 }
             }
         }
+=======
+        // Halaman detail hanya membaca. Status pembayaran ditulis oleh webhook dan checkPaymentStatus
+        // (yang memverifikasi ke Midtrans), bukan oleh query string seperti ?paid=1.
+>>>>>>> 9d75d219becc37a3d5c33d4962e9641e71eb563e
 
         // Hitung batas waktu bayar 15 menit (persisten dihitung dari expires_at database)
         $tz = config('app.timezone', 'Asia/Makassar');
@@ -904,7 +807,6 @@ class PaymentController extends Controller
             'facilities'           => $facilities,
             'lineItems'            => $lineItems,
             'serviceFee'           => $serviceFee,
-            'promoDiscount'        => $promoDiscount,
             'totalBayar'           => $totalBayar,
             'paymentMethod'        => $paymentMethod,
             'isPaid'               => $isPaid,
@@ -924,14 +826,16 @@ class PaymentController extends Controller
     /**
      * Endpoint API untuk mengecek status pembayaran booking secara realtime (auto-polling frontend).
      */
-    public function checkPaymentStatus(int $id, Request $request): JsonResponse
+    public function checkPaymentStatus(int $id, PaymentSettlementService $settlement): JsonResponse
     {
-        $booking = BookingHeader::with('payment')->find($id);
+        $booking = $this->ownedBooking($id); // 404 bila bukan milik pengguna
 
-        if (!$booking) {
-            return response()->json(['success' => false, 'message' => 'Pesanan tidak ditemukan'], 404);
+        // Cadangan bila webhook terlambat; dibatasi sekali per interval per pesanan dan bisa dimatikan lewat konfigurasi.
+        if ($booking->status === 'pending') {
+            $settlement->reconcileHeader($booking->id);
         }
 
+<<<<<<< HEAD
         // 1. Cek jika sudah lunas
         if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
             return response()->json([
@@ -999,13 +903,18 @@ class PaymentController extends Controller
                 'remaining_seconds' => 0,
             ]);
         }
+=======
+        $snap = $settlement->snapshot($booking->id);
+>>>>>>> 9d75d219becc37a3d5c33d4962e9641e71eb563e
 
         return response()->json([
             'success'              => true,
-            'status'               => $booking->status,
-            'is_paid'              => false,
-            'remaining_seconds'    => $remainingSeconds,
-            'expires_at_timestamp' => $expiresAt->timestamp,
+            'status'               => $snap['status'],
+            'is_paid'              => $snap['is_paid'],
+            'is_expired'           => $snap['is_expired'],
+            'remaining_seconds'    => $snap['remaining_seconds'],
+            'expires_at_timestamp' => $snap['expires_at_timestamp'],
+            'redirect'             => $snap['is_paid'] ? route('penyewa.booking.detail', ['id' => $booking->id]) : null,
         ]);
     }
 
@@ -1087,7 +996,8 @@ class PaymentController extends Controller
      */
     public function cancel(int $id): RedirectResponse|JsonResponse
     {
-        $user = auth()->user() ?? User::where('role', 'customer')->first();
+        $user = auth()->user();
+        abort_if(! $user, 401);
 
         $booking = BookingHeader::with(['details', 'payment', 'user'])->find($id);
         if (!$booking) {
@@ -1098,7 +1008,7 @@ class PaymentController extends Controller
             return redirect()->route('penyewa.riwayat')->with('error', $msg);
         }
 
-        if ($booking->penyewa_id !== $user->id) {
+        if ((int) $booking->penyewa_id !== (int) $user->id) {
             $msg = 'Anda tidak memiliki hak untuk membatalkan pesanan ini.';
             if (request()->expectsJson() || request()->ajax()) {
                 return response()->json(['success' => false, 'message' => $msg], 403);
@@ -1143,6 +1053,7 @@ class PaymentController extends Controller
 
         // Ubah status booking menjadi canceled
         $booking->update(['status' => 'canceled']);
+        app(SlotReservationService::class)->release($booking->id);
         BookingDetail::where('header_id', $id)->update(['status_item' => 'no_show']);
 
         // Refund sebesar config('booking.refund_percent') persen bila pesanan sudah dibayar
@@ -1188,14 +1099,13 @@ class PaymentController extends Controller
     {
         Carbon::setLocale('id');
 
-        $booking = BookingHeader::with([
+        abort_unless(is_numeric($id), 404);
+        $booking = $this->ownedBooking((int) $id, [
             'details.field.venue.city',
             'details.field.sport',
             'payment',
-            'user'
-        ])->where('id', $id)
-          ->orWhere('kode_booking', $id)
-          ->firstOrFail();
+            'user',
+        ]);
 
         // Generate QR Code untuk disematkan di nota
         $qrCodeDataUri = null;
@@ -1347,12 +1257,10 @@ class PaymentController extends Controller
         foreach ($rawItems as $item) {
             $start = null;
             $end = null;
-            $price = $defaultPrice;
 
             if (is_array($item)) {
                 $start = $item['start'] ?? $item['jam_mulai'] ?? null;
                 $end = $item['end'] ?? $item['jam_selesai'] ?? null;
-                $price = isset($item['price']) ? (float) $item['price'] : (isset($item['harga_slot']) ? (float) $item['harga_slot'] : $defaultPrice);
 
                 if (!$start && isset($item['time'])) {
                     if (preg_match('/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/', $item['time'], $m)) {
@@ -1364,9 +1272,6 @@ class PaymentController extends Controller
                 if (preg_match('/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})(?::(\d+))?/', $item, $matches)) {
                     $start = $matches[1];
                     $end = $matches[2];
-                    if (!empty($matches[3])) {
-                        $price = (float) $matches[3];
-                    }
                 }
             }
 
@@ -1376,11 +1281,13 @@ class PaymentController extends Controller
                 $startNorm = sprintf('%02d:%02d', (int) $startParts[0], (int) ($startParts[1] ?? 0));
                 $endNorm = sprintf('%02d:%02d', (int) $endParts[0], (int) ($endParts[1] ?? 0));
 
+                $hours = max(1, (strtotime($endNorm) - strtotime($startNorm)) / 3600);
+
                 $slots[] = [
                     'start' => $startNorm,
                     'end'   => $endNorm,
                     'time'  => "{$startNorm} - {$endNorm}",
-                    'price' => $price > 0 ? $price : $defaultPrice,
+                    'price' => $defaultPrice * $hours,   // harga dari lapangan di database; masukan pengguna diabaikan
                 ];
             }
         }
@@ -1405,228 +1312,84 @@ class PaymentController extends Controller
      *    - Jika slot masih kosong: booking dihidupkan kembali (status: payment).
      *    - Jika slot sudah dipesan orang lain: buat refund penuh (100%).
      */
-    public function handleNotification(Request $request): JsonResponse
+    public function handleNotification(Request $request, PaymentSettlementService $settlement, MidtransService $midtrans): JsonResponse
     {
-        $payload = $request->all();
-        $provider = 'midtrans';
+        $payload   = $request->all();
+        $orderId   = (string) ($payload['order_id'] ?? '');
+        $trxStatus = (string) ($payload['transaction_status'] ?? '');
 
-        // 1. Tentukan event_id unik dari payload / gateway
-        $eventId = (string) (
-            $request->input('event_id') ??
-            $request->input('id') ??
-            $request->header('X-Event-Id') ??
-            ($request->input('transaction_id') ? ($request->input('transaction_id') . ':' . ($request->input('transaction_status') ?? 'event')) : '')
+        $eventId = (string) ($request->input('event_id') ?? $request->input('id') ?? $request->header('X-Event-Id') ?? '');
+        if ($eventId === '') {
+            $transactionId = (string) ($payload['transaction_id'] ?? '');
+            $eventId = $transactionId !== '' ? "{$transactionId}:{$trxStatus}" : "{$orderId}:{$trxStatus}";
+        }
+
+        // Kiriman yang sudah selesai diproses diabaikan. Yang gagal diproses sebelumnya boleh dicoba lagi.
+        $event = PaymentWebhookEvent::where('provider', 'midtrans')->where('event_id', $eventId)->first();
+        if ($event && $event->process_status === 'processed') {
+            return response()->json(['status' => 'ignored', 'message' => 'Duplicate webhook event ignored without effect']);
+        }
+        if (! $event) {
+            try {
+                $event = PaymentWebhookEvent::create([
+                    'provider' => 'midtrans', 'event_id' => $eventId, 'pg_transaction_id' => $orderId ?: null,
+                    'event_type' => $trxStatus ?: null, 'signature_valid' => false, 'payload' => $payload,
+                    'process_status' => 'received', 'received_at' => now(),
+                ]);
+            } catch (UniqueConstraintViolationException|QueryException) {
+                return response()->json(['status' => 'ignored', 'message' => 'Duplicate webhook event ignored without effect']);
+            }
+        }
+
+        $valid = $midtrans->verifySignature(
+            $orderId, (string) ($payload['status_code'] ?? ''), (string) ($payload['gross_amount'] ?? ''), (string) ($payload['signature_key'] ?? '')
         );
+        if (! $valid) {
+            Log::warning("Midtrans Notification: tanda tangan tidak valid untuk event {$eventId}");
+            $event->update(['signature_valid' => false, 'process_status' => 'failed', 'error' => 'Invalid signature']);
 
-        $orderId = (string) ($payload['order_id'] ?? '');
-        $transactionStatus = (string) ($payload['transaction_status'] ?? '');
-        if (empty($eventId)) {
-            $eventId = "{$orderId}:{$transactionStatus}";
-        }
-
-        // Cek kiriman ganda sebelum simpan (idempotency check)
-        $existingEvent = PaymentWebhookEvent::where('provider', $provider)
-            ->where('event_id', $eventId)
-            ->first();
-
-        if ($existingEvent) {
-            Log::info("Midtrans Webhook: Kiriman ganda diabaikan tanpa efek ({$provider} - {$eventId})");
-            return response()->json([
-                'status'  => 'ignored',
-                'message' => 'Duplicate webhook event ignored without effect',
-            ], 200);
-        }
-
-        $payment = !empty($orderId) ? Payment::where('pg_transaction_id', $orderId)->first() : null;
-
-        // Simpan kiriman mentah ke payment_webhook_events terlebih dahulu
-        try {
-            $webhookEvent = PaymentWebhookEvent::create([
-                'provider'          => $provider,
-                'event_id'          => $eventId,
-                'pg_transaction_id' => $orderId ?: null,
-                'event_type'        => $transactionStatus ?: null,
-                'payment_id'        => $payment?->id,
-                'signature_valid'   => false,
-                'payload'           => $payload,
-                'process_status'    => 'received',
-                'received_at'       => now(),
-            ]);
-        } catch (UniqueConstraintViolationException|QueryException $e) {
-            Log::info("Midtrans Webhook: Constraint unik kiriman ganda tertangkap ({$provider} - {$eventId})");
-            return response()->json([
-                'status'  => 'ignored',
-                'message' => 'Duplicate webhook event ignored without effect',
-            ], 200);
-        }
-
-        // 2. Verifikasi tanda tangan
-        $statusCode = (string) ($payload['status_code'] ?? '');
-        $grossAmount = (string) ($payload['gross_amount'] ?? '');
-        $signatureKey = (string) ($payload['signature_key'] ?? '');
-
-        $midtransService = app(MidtransService::class);
-        $signatureValid = $midtransService->verifySignature($orderId, $statusCode, $grossAmount, $signatureKey);
-
-        if (!$signatureValid) {
-            Log::warning("Midtrans Notification: Signature tidak valid untuk event {$eventId}", $payload);
-            $webhookEvent->update([
-                'signature_valid' => false,
-                'process_status'  => 'failed',
-                'error'           => 'Invalid signature',
-            ]);
             return response()->json(['message' => 'Invalid signature'], 403);
         }
+        $event->update(['signature_valid' => true]);
 
-        $webhookEvent->update(['signature_valid' => true]);
+        // Status TIDAK dibaca dari isi kiriman: tanda tangan tidak mencakupnya. Layanan menanyakan ulang ke API Midtrans.
+        $result = $settlement->settleFromGateway($orderId, 'webhook');
 
-        // 3. Ambil ulang status dari API gateway Midtrans
-        $gatewayStatus = $midtransService->getStatus($orderId);
-        if ($gatewayStatus && is_array($gatewayStatus)) {
-            $transactionStatus = $gatewayStatus['transaction_status'] ?? $transactionStatus;
-            $fraudStatus = $gatewayStatus['fraud_status'] ?? ($payload['fraud_status'] ?? '');
-            $paymentType = $gatewayStatus['payment_type'] ?? ($payload['payment_type'] ?? 'Midtrans');
-        } else {
-            $fraudStatus = (string) ($payload['fraud_status'] ?? '');
-            $paymentType = (string) ($payload['payment_type'] ?? 'Midtrans');
-        }
-
-        if (!$payment) {
-            $payment = Payment::where('pg_transaction_id', $orderId)->first();
-        }
-
-        if (!$payment) {
-            Log::warning("Midtrans Notification: Transaksi {$orderId} tidak ditemukan");
-            $webhookEvent->update([
-                'process_status' => 'failed',
-                'error'          => "Transaksi {$orderId} tidak ditemukan",
-            ]);
-            return response()->json(['message' => 'Transaction not found'], 404);
-        }
-
-        if (!$webhookEvent->payment_id) {
-            $webhookEvent->update(['payment_id' => $payment->id]);
-        }
-
-        $booking = $payment->header ?? BookingHeader::with(['details', 'user'])->find($payment->header_id);
-
-        $tz = config('app.timezone', 'Asia/Makassar');
-        $now = Carbon::now($tz);
-
-        // 4. Ubah payments dan booking_headers
-        $isSuccess = ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept'));
-
-        if ($isSuccess) {
-            // Cek apakah pembayaran tiba setelah booking kedaluwarsa
-            $rawExpires = $booking?->getRawOriginal('expires_at');
-            $expiresAt = $rawExpires ? Carbon::parse($rawExpires, $tz) : null;
-            $isExpired = ($booking?->status === 'expired') || ($expiresAt && $now->gt($expiresAt));
-
-            if ($isExpired) {
-                // Periksa apakah slot masih kosong atau sudah dipesan orang lain
-                $slotTaken = false;
-                if ($booking && $booking->details->isNotEmpty()) {
-                    foreach ($booking->details as $detail) {
-                        $tgl = substr($detail->getRawOriginal('tanggal_sewa') ?? (string) $detail->tanggal_sewa, 0, 10);
-                        $mulai = substr($detail->getRawOriginal('jam_mulai') ?? (string) $detail->jam_mulai, 0, 8);
-                        $selesai = substr($detail->getRawOriginal('jam_selesai') ?? (string) $detail->jam_selesai, 0, 8);
-
-                        $conflict = BookingDetail::where('field_id', $detail->field_id)
-                            ->where('header_id', '!=', $booking->id)
-                            ->whereDate('tanggal_sewa', $tgl)
-                            ->where(function ($q) use ($mulai, $selesai) {
-                                $q->where('jam_mulai', '<', $selesai)
-                                  ->where('jam_selesai', '>', $mulai);
-                            })
-                            ->whereHas('header', function ($q) use ($now) {
-                                $q->where(function ($sub) use ($now) {
-                                    $sub->whereIn('status', ['payment', 'completed', 'confirmed'])
-                                        ->orWhere(function ($pendingQ) use ($now) {
-                                            $pendingQ->where('status', 'pending')
-                                                     ->where(function ($exp) use ($now) {
-                                                         $exp->where('expires_at', '>', $now)
-                                                             ->orWhere(function ($coalesce) use ($now) {
-                                                                 $coalesce->whereNull('expires_at')
-                                                                          ->where('created_at', '>', $now->copy()->subMinutes(15));
-                                                             });
-                                                     });
-                                        });
-                                });
-                            })
-                            ->exists();
-
-                        if ($conflict) {
-                            $slotTaken = true;
-                            break;
-                        }
-                    }
-                }
-
-                if ($slotTaken) {
-                    // Bila sudah dipesan orang lain: buat refund penuh (100%)
-                    $payment->update([
-                        'status_pembayaran' => 'succes',
-                        'paid_at'           => now(),
-                        'metode_pembayaran' => "Midtrans ({$paymentType})",
-                    ]);
-                    $booking?->update(['status' => 'expired']);
-
-                    $firstDetail = $booking?->details->first();
-                    Refund::create([
-                        'header_id'        => $booking->id,
-                        'detail_id'        => $firstDetail?->id,
-                        'payment_id'       => $payment->id,
-                        'alasan_refund'    => 'Pembayaran tiba setelah booking kedaluwarsa dan slot sudah dipesan pengguna lain (Full Refund)',
-                        'nominal_refund'   => (float) $payment->nominal_bayar,
-                        'metode_refund'    => "Midtrans ({$paymentType})",
-                        'rekening_tujuan'  => $booking?->user?->email ?? $booking?->user?->no_hp ?? 'Midtrans Refund',
-                        'status_refund'    => 'pending',
-                        'created_at'       => now(),
-                        'updated_at'       => now(),
-                    ]);
-
-                    Log::info("Midtrans Webhook: Booking {$booking->id} sudah kedaluwarsa & slot terisi orang lain. Dibuatkan refund penuh.");
-                } else {
-                    // Bila slot masih kosong: booking dihidupkan kembali!
-                    $payment->update([
-                        'status_pembayaran' => 'succes',
-                        'paid_at'           => now(),
-                        'metode_pembayaran' => "Midtrans ({$paymentType})",
-                    ]);
-                    $booking?->update(['status' => 'payment']);
-                    BookingDetail::where('header_id', $booking->id)->update(['status_item' => 'ongoing']);
-
-                    Log::info("Midtrans Webhook: Booking {$booking->id} kedaluwarsa tapi slot masih kosong. Booking dihidupkan kembali (status: payment).");
-                }
-            } else {
-                // Pembayaran normal sebelum kedaluwarsa
-                $payment->update([
-                    'status_pembayaran' => 'succes',
-                    'paid_at'           => now(),
-                    'metode_pembayaran' => "Midtrans ({$paymentType})",
-                ]);
-                $booking?->update(['status' => 'payment']);
-                BookingDetail::where('header_id', $booking->id)->update(['status_item' => 'ongoing']);
-            }
-        } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
-            $payment->update(['status_pembayaran' => 'failed']);
-            $booking?->update(['status' => 'canceled']);
-            BookingDetail::where('header_id', $booking->id)->update(['status_item' => 'no_show']);
-        } elseif ($transactionStatus === 'pending') {
-            $payment->update(['status_pembayaran' => 'pending']);
-            if ($booking && $booking->status !== 'payment') {
-                $booking->update(['status' => 'pending']);
-            }
-        }
-
-        $webhookEvent->update([
-            'process_status' => 'processed',
+        $event->update([
+            'payment_id'     => DB::table('payments')->where('pg_transaction_id', $orderId)->value('id'),
+            'process_status' => match ($result->outcome) {
+                SettlementResult::UNKNOWN, SettlementResult::IGNORED => 'ignored',
+                SettlementResult::DEFERRED, SettlementResult::MISMATCH, SettlementResult::REVIEW => 'failed',
+                default => 'processed',
+            },
+            'error'          => $result->needsAttention() ? $result->message : null,
             'processed_at'   => now(),
         ]);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Notification processed successfully',
-        ]);
+        // Midtrans mengulang kiriman bila balasan bukan 2xx. Hanya "belum bisa diverifikasi" yang pantas diulang.
+        return response()->json(['status' => $result->outcome, 'message' => $result->message], $result->shouldRetry() ? 503 : 200);
+    }
+
+    // ---- helpers
+
+    /** Booking milik penyewa yang sedang masuk. Milik orang lain dijawab 404 supaya nomor booking tidak bisa ditebak. */
+    private function ownedBooking(int $id, array $with = []): BookingHeader
+    {
+        $user = auth()->user();
+        abort_if(! $user, 401);
+
+        return BookingHeader::with($with)->where('id', $id)->where('penyewa_id', $user->id)->firstOrFail();
+    }
+
+    /** Bisa dipesan hanya bila lapangan, venue, dan mitra aktif, dan akun mitra tidak disanksi. */
+    private function isBookable(int $fieldId): bool
+    {
+        return DB::table('fields as f')
+            ->join('venues as v', 'v.id', '=', 'f.venue_id')
+            ->join('mitra_profiles as m', 'm.id', '=', 'v.mitra_id')
+            ->join('users as u', 'u.id', '=', 'm.user_id')
+            ->where('f.id', $fieldId)->where('f.status_lapangan', 'aktif')->where('v.status_vanue', 'aktif')
+            ->where('m.status', 'approved')->where('u.status_akun', 'aktif')
+            ->exists();
     }
 }

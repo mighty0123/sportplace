@@ -48,9 +48,18 @@ class ScheduleController extends Controller
             ]);
         }
 
-        // Tentukan lapangan aktif
+        // Tentukan lapangan aktif (bisa via field_id atau venue_id)
         $fieldId = $request->query('field_id');
-        $selectedField = $allFields->firstWhere('id', $fieldId) ?? $allFields->first();
+        $venueId = $request->query('venue_id');
+
+        if ($fieldId) {
+            $selectedField = $allFields->firstWhere('id', $fieldId) ?? $allFields->first();
+        } elseif ($venueId) {
+            $venueFields = $allFields->where('venue_id', $venueId);
+            $selectedField = $venueFields->first() ?? $allFields->first();
+        } else {
+            $selectedField = $allFields->first();
+        }
 
         // Pastikan relasi schedules, blocks, dan venue ter-load
         $selectedField->loadMissing(['venue', 'sport', 'schedules', 'blocks']);
