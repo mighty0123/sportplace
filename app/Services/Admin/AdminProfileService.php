@@ -7,7 +7,10 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
 /** Profil dan keamanan akun admin */
 class AdminProfileService
 {
@@ -59,6 +62,21 @@ class AdminProfileService
 
             return $labels;
         });
+    }
+
+    public function updateAvatar(User $user, UploadedFile $file): void
+    {
+        $old = DB::table('users')->where('id', $user->id)->value('foto_profil');
+        $path = $file->store('avatars', 'public');
+
+        DB::transaction(function () use ($user, $path) {
+            DB::table('users')->where('id', $user->id)->update(['foto_profil' => $path, 'updated_at' => now()]);
+            AuditLog::record($user, 'User', $user->id, 'ubah_profil', null, null, 'Mengubah foto profil.');
+        });
+
+        if ($old && str_starts_with((string) $old, 'avatars/')) {
+            Storage::disk('public')->delete($old);
+        }
     }
 
     /** @return int jumlah perangkat lain yang dikeluarkan */

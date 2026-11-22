@@ -20,7 +20,9 @@
 
     <x-ui.card>
         <div class="flex items-center gap-4">
-            <div class="grid size-14 shrink-0 place-items-center rounded-full bg-primary-100 text-h5 text-primary-700" aria-hidden="true">{{ $initials }}</div>
+            <div class="grid size-14 shrink-0 place-items-center rounded-full bg-primary-100 text-h5 text-primary-700" aria-hidden="true">
+                <x-ui.avatar :name="$user->name" :src="$user->avatar_url" size="size-14" class="text-h5" />
+            </div>
             <div class="min-w-0">
                 <p class="truncate text-h5 text-ink">{{ $user->name }}</p>
                 <p class="break-all text-body-sm text-ink-muted">{{ $user->email }}</p>
@@ -39,9 +41,20 @@
             {{-- Data akun --}}
             <x-ui.card class="min-w-0">
                 <h2 class="text-h6 text-ink">Data akun</h2>
-                <form method="POST" action="{{ route('admin.profile.update') }}" class="mt-3 space-y-4">
+                <form method="POST" action="{{ route('admin.profile.update') }}" enctype="multipart/form-data" class="mt-3 space-y-4">
                     @csrf
                     @method('PUT')
+                
+                    <div class="flex items-center gap-4">
+                        <x-ui.avatar :name="$user->name" :src="$user->avatar_url" size="size-16" class="text-h5" />
+                        <div class="min-w-0">
+                            <label for="foto_profil" class="text-label-md text-ink-strong">Foto profil</label>
+                            <input id="foto_profil" type="file" name="foto_profil" accept="image/jpeg,image/png,image/webp"
+                                    class="mt-1 block w-full text-body-sm text-ink">
+                            <p class="mt-0.5 text-caption text-ink-muted">JPG, PNG, atau WebP, maksimal 2 MB.</p>
+                            @error('foto_profil') <p class="mt-1 text-caption text-danger-700">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
 
                     <x-ui.input name="name" label="Nama lengkap" :required="true" maxlength="100"
                                 value="{{ old('name', $user->name) }}" autocomplete="name" />

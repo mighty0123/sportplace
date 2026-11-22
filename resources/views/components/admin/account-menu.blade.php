@@ -14,7 +14,7 @@
         {{-- Mobile: hanya avatar --}}
         <button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="menu" aria-label="Menu akun"
                 class="grid size-11 place-items-center rounded-lg hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-400">
-            <x-ui.avatar :name="$user?->name ?? 'Admin'" />
+            <x-ui.avatar :name="$user?->name ?? 'Admin'" :src="$user?->avatar_url" />
         </button>
     @else
         <button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="menu" aria-label="Menu akun"
