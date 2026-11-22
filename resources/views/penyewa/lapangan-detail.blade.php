@@ -43,16 +43,17 @@
 
             <!-- Card Foto Utama & Banner Lapangan -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div class="relative h-64 sm:h-80 md:h-96 w-full bg-slate-900 overflow-hidden">
+                <div class="relative h-64 sm:h-80 md:h-96 w-full bg-slate-900 overflow-hidden group select-none">
                     <img
+                        id="main-field-image"
                         src="{{ $photoUrl }}"
                         alt="{{ $field->nama_lapangan }}"
-                        class="w-full h-full object-cover"
+                        class="w-full h-full object-cover transition-opacity duration-200"
                     >
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none"></div>
 
-                    <!-- Badge Sport & Status -->
-                    <div class="absolute top-4 left-4 flex items-center gap-2">
+                    <!-- Badge Sport & Status (Kiri Atas) -->
+                    <div class="absolute top-4 left-4 flex items-center gap-2 z-10">
                         <span class="px-3 py-1 rounded-md text-xs font-extrabold uppercase tracking-wide bg-[#FACC15] text-slate-950 shadow-md">
                             {{ $field->sport?->nama_olahraga ?? 'OLAHRAGA' }}
                         </span>
@@ -62,8 +63,43 @@
                         </span>
                     </div>
 
+                    <!-- Counter Foto (Kanan Atas) -->
+                    @if(!empty($galleryPhotos) && count($galleryPhotos) > 1)
+                        <div class="absolute top-4 right-4 z-10">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-900/75 backdrop-blur-md text-white border border-white/20 shadow-md">
+                                <span id="slider-current-num">1</span> / {{ count($galleryPhotos) }}
+                            </span>
+                        </div>
+                    @endif
+
+                    <!-- Tombol Navigasi Geser Kiri / Kanan pada Gambar Besar -->
+                    @if(!empty($galleryPhotos) && count($galleryPhotos) > 1)
+                        <button
+                            type="button"
+                            onclick="prevPhoto()"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-black/40 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition cursor-pointer border border-white/20 shadow-lg active:scale-95 focus:outline-none z-10"
+                            aria-label="Foto sebelumnya"
+                            title="Foto sebelumnya"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button
+                            type="button"
+                            onclick="nextPhoto()"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-black/40 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition cursor-pointer border border-white/20 shadow-lg active:scale-95 focus:outline-none z-10"
+                            aria-label="Foto berikutnya"
+                            title="Foto berikutnya"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    @endif
+
                     <!-- Overlay Judul di Bawah Foto -->
-                    <div class="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-white">
+                    <div class="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-white pointer-events-none z-10">
                         <p class="text-xs sm:text-sm font-medium text-emerald-300">
                             {{ $field->venue?->nama_venue ?? 'Sport Arena' }}
                         </p>
@@ -72,6 +108,74 @@
                         </h1>
                     </div>
                 </div>
+
+                {{-- LIST GAMBAR DI BAWAHNYA (LANGSUNG TAMPIL TANPA TEKS HEADER) --}}
+                @if(!empty($galleryPhotos) && count($galleryPhotos) > 0)
+                    <div class="px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50/60 relative group/slider">
+                        <!-- Slider Container yang Bisa Digeser / Scroll Horizontal -->
+                        <div
+                            id="court-gallery-slider"
+                            class="flex items-center gap-2.5 sm:gap-3 overflow-x-auto scroll-smooth py-1 no-scrollbar cursor-grab active:cursor-grabbing select-none"
+                            style="scrollbar-width: none; -ms-overflow-style: none;"
+                        >
+                            @foreach($galleryPhotos as $index => $item)
+                                <button
+                                    type="button"
+                                    data-index="{{ $index }}"
+                                    data-url="{{ $item['url'] }}"
+                                    data-primary="{{ $item['is_primary'] ? '1' : '0' }}"
+                                    onclick="selectGalleryPhoto({{ $index }})"
+                                    class="gallery-thumb-btn group relative shrink-0 w-24 sm:w-32 h-16 sm:h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer focus:outline-none {{ $index === 0 ? 'border-[#0B7B69] ring-2 ring-[#0B7B69]/30 shadow-md scale-[1.02]' : 'border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100' }}"
+                                >
+                                    <img
+                                        src="{{ $item['url'] }}"
+                                        alt="Foto Lapangan {{ $index + 1 }}"
+                                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
+                                        loading="lazy"
+                                    >
+
+                                    <!-- Badge is_primary jika foto utama di database -->
+                                    @if($item['is_primary'])
+                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#0B7B69] text-white shadow-xs">
+                                            Utama
+                                        </span>
+                                    @endif
+
+                                    <!-- Indikator Aktif -->
+                                    <div class="thumb-active-check absolute top-1 right-1 w-4 h-4 rounded-full bg-[#0B7B69] text-white flex items-center justify-center text-[10px] font-bold shadow-xs {{ $index === 0 ? '' : 'hidden' }}">
+                                        ✓
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <!-- Tombol Geser Kiri / Kanan Melayang di Sisi Slider (jika foto lebih dari 3) -->
+                        @if(count($galleryPhotos) > 3)
+                            <button
+                                type="button"
+                                onclick="scrollGallerySlider('left')"
+                                class="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center transition active:scale-95 cursor-pointer z-10 opacity-0 group-hover/slider:opacity-100 sm:opacity-90"
+                                title="Geser ke kiri"
+                                aria-label="Geser ke kiri"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                onclick="scrollGallerySlider('right')"
+                                class="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center transition active:scale-95 cursor-pointer z-10 opacity-0 group-hover/slider:opacity-100 sm:opacity-90"
+                                title="Geser ke kanan"
+                                aria-label="Geser ke kanan"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7m0 0l-7 7"/>
+                                </svg>
+                            </button>
+                        @endif
+                    </div>
+                @endif
 
                 <!-- Info Cepat di Bawah Foto -->
                 <div class="p-5 sm:p-6 border-b border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50/50">
@@ -652,6 +756,149 @@
 
 {{-- SCRIPT: Interaktivitas Modal Review & Rating Lapangan --}}
 <script>
+    // =========================================================
+    // GALERI FOTO & SUDUT PANDANG LAPANGAN
+    // =========================================================
+    const galleryPhotos = @json($galleryPhotos ?? []);
+    let currentPhotoIndex = 0;
+
+    // Fungsi Pilih Foto dari Galeri (Thumbnail / Slider)
+    window.selectGalleryPhoto = function(index) {
+        if (!galleryPhotos || !galleryPhotos[index]) return;
+
+        currentPhotoIndex = index;
+        const photo = galleryPhotos[index];
+
+        const mainImg = document.getElementById('main-field-image');
+        const captionEl = document.getElementById('main-photo-caption');
+        const sliderNumEl = document.getElementById('slider-current-num');
+
+        if (mainImg) {
+            mainImg.classList.add('opacity-40');
+            setTimeout(() => {
+                mainImg.src = photo.url;
+                mainImg.classList.remove('opacity-40');
+            }, 120);
+        }
+
+        if (captionEl) {
+            captionEl.textContent = photo.caption;
+        }
+
+        if (sliderNumEl) {
+            sliderNumEl.textContent = index + 1;
+        }
+
+        // Update styling tombol thumbnail aktif
+        const thumbBtns = document.querySelectorAll('.gallery-thumb-btn');
+        thumbBtns.forEach((btn, idx) => {
+            const checkIcon = btn.querySelector('.thumb-active-check');
+            if (idx === index) {
+                btn.className = 'gallery-thumb-btn group relative shrink-0 w-28 sm:w-36 h-20 sm:h-24 rounded-xl overflow-hidden border-2 border-[#0B7B69] ring-2 ring-[#0B7B69]/30 shadow-md scale-[1.02] transition-all duration-200 cursor-pointer focus:outline-none';
+                if (checkIcon) checkIcon.classList.remove('hidden');
+
+                // Pastikan thumbnail yang terpilih terlihat di dalam scroll viewport
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else {
+                btn.className = 'gallery-thumb-btn group relative shrink-0 w-28 sm:w-36 h-20 sm:h-24 rounded-xl overflow-hidden border-2 border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100 transition-all duration-200 cursor-pointer focus:outline-none';
+                if (checkIcon) checkIcon.classList.add('hidden');
+            }
+        });
+    };
+
+    // Navigasi Foto Berikutnya
+    window.nextPhoto = function() {
+        if (!galleryPhotos || galleryPhotos.length <= 1) return;
+        const nextIdx = (currentPhotoIndex + 1) % galleryPhotos.length;
+        selectGalleryPhoto(nextIdx);
+    };
+
+    // Navigasi Foto Sebelumnya
+    window.prevPhoto = function() {
+        if (!galleryPhotos || galleryPhotos.length <= 1) return;
+        const prevIdx = (currentPhotoIndex - 1 + galleryPhotos.length) % galleryPhotos.length;
+        selectGalleryPhoto(prevIdx);
+    };
+
+    // Geser Slider Thumbnail secara horizontal
+    window.scrollGallerySlider = function(direction) {
+        const slider = document.getElementById('court-gallery-slider');
+        if (!slider) return;
+        const scrollDistance = 220;
+        slider.scrollBy({
+            left: direction === 'left' ? -scrollDistance : scrollDistance,
+            behavior: 'smooth'
+        });
+    };
+
+    // Inisialisasi Drag-to-Scroll & Touch Geser untuk Slider
+    document.addEventListener('DOMContentLoaded', function() {
+        const slider = document.getElementById('court-gallery-slider');
+        if (slider) {
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
+
+            slider.addEventListener('mouseleave', () => {
+                isDown = false;
+            });
+
+            slider.addEventListener('mouseup', () => {
+                isDown = false;
+            });
+
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 1.5; // multiplier geser
+                slider.scrollLeft = scrollLeft - walk;
+            });
+        }
+
+        // Touch Swipe Gesture pada Foto Utama
+        const mainImage = document.getElementById('main-field-image');
+        if (mainImage && mainImage.parentElement) {
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            mainImage.parentElement.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            mainImage.parentElement.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                const diff = touchStartX - touchEndX;
+                if (Math.abs(diff) > 45) {
+                    if (diff > 0) {
+                        nextPhoto(); // Swipe kiri -> foto berikutnya
+                    } else {
+                        prevPhoto(); // Swipe kanan -> foto sebelumnya
+                    }
+                }
+            }, { passive: true });
+        }
+
+        // Keyboard Shortcut Panah Kiri / Kanan
+        document.addEventListener('keydown', function(e) {
+            const reviewModal = document.getElementById('review-modal');
+            if (reviewModal && !reviewModal.classList.contains('hidden')) {
+                return; // Jangan geser foto jika modal review sedang terbuka
+            }
+            if (e.key === 'ArrowRight') {
+                nextPhoto();
+            } else if (e.key === 'ArrowLeft') {
+                prevPhoto();
+            }
+        });
+    });
+
     // Rating labels map
     const ratingLabels = {
         1: '1 Bintang — Perlu Perbaikan 👎',

@@ -186,7 +186,61 @@ class CourtListingController extends Controller
         ];
 
         $primaryPhoto = $field->photos->firstWhere('is_primary', 1) ?? $field->photos->first();
-        $photoUrl = $primaryPhoto ? asset($primaryPhoto->foto_url) : ($defaultImages[$sportSlug] ?? asset('images/courts/futsal.jpg'));
+        $primaryPhotoUrl = $primaryPhoto ? $primaryPhoto->url : ($defaultImages[$sportSlug] ?? asset('images/courts/futsal.jpg'));
+
+        // Urutkan foto agar foto dengan is_primary = 1 selalu tampil di index pertama
+        $sortedPhotos = $field->photos->sortByDesc('is_primary')->values();
+
+        $galleryPhotos = [];
+        if ($sortedPhotos->isNotEmpty()) {
+            foreach ($sortedPhotos as $idx => $photo) {
+                $caption = $photo->is_primary
+                    ? 'Foto Utama (Primary)'
+                    : ('Sudut Lapangan ' . ($idx + 1));
+
+                $galleryPhotos[] = [
+                    'id'         => $photo->id,
+                    'url'        => $photo->url,
+                    'caption'    => $caption,
+                    'is_primary' => (bool) $photo->is_primary,
+                ];
+            }
+        }
+
+        // Fallback jika foto kurang dari 2 (misal di test suite tanpa seeder foto)
+        if (count($galleryPhotos) < 2) {
+            $fallbackAngles = match ($sportSlug) {
+                'badminton' => [
+                    ['url' => asset('images/courts/badminton.jpg'), 'caption' => 'Tampak Utama Karpet Court', 'is_primary' => true],
+                    ['url' => asset('images/fields/arena-sport-center.jpg'), 'caption' => 'Sisi Net & Garis Servis', 'is_primary' => false],
+                    ['url' => asset('images/fields/green-court-arena.jpg'), 'caption' => 'Area Istirahat & Sirkulasi', 'is_primary' => false],
+                    ['url' => asset('images/courts/badminton.jpg'), 'caption' => 'Sudut Baseline Belakang', 'is_primary' => false],
+                ],
+                'tenis' => [
+                    ['url' => asset('images/courts/tennis.jpg'), 'caption' => 'Tampak Utama Garis Baseline', 'is_primary' => true],
+                    ['url' => asset('images/fields/sunrise-tennis-club.jpg'), 'caption' => 'Sisi Net & Kursi Wasit', 'is_primary' => false],
+                    ['url' => asset('images/fields/arena-sport-center.jpg'), 'caption' => 'Sudut Baseline Belakang', 'is_primary' => false],
+                    ['url' => asset('images/courts/tennis.jpg'), 'caption' => 'Sisi Servis Kanan', 'is_primary' => false],
+                ],
+                'basket' => [
+                    ['url' => asset('images/courts/basketball.jpg'), 'caption' => 'Tampak Utama Ring & Court', 'is_primary' => true],
+                    ['url' => asset('images/fields/bali-basket-hub.jpg'), 'caption' => 'Sisi Free Throw & Three Point', 'is_primary' => false],
+                    ['url' => asset('images/fields/arena-sport-center.jpg'), 'caption' => 'Area Bench & Penonton', 'is_primary' => false],
+                    ['url' => asset('images/courts/basketball.jpg'), 'caption' => 'Sudut Lapangan Penuh', 'is_primary' => false],
+                ],
+                default => [
+                    ['url' => asset('images/courts/futsal.jpg'), 'caption' => 'Tampak Utama Lapangan', 'is_primary' => true],
+                    ['url' => asset('images/fields/green-court-arena.jpg'), 'caption' => 'Sudut Gawang & Sisi Samping', 'is_primary' => false],
+                    ['url' => asset('images/fields/arena-sport-center.jpg'), 'caption' => 'Tribun Penonton & Bench', 'is_primary' => false],
+                    ['url' => asset('images/courts/futsal.jpg'), 'caption' => 'Area Tengah & Sirkulasi', 'is_primary' => false],
+                ],
+            };
+
+            if (!empty($galleryPhotos)) {
+                $fallbackAngles[0] = $galleryPhotos[0];
+            }
+            $galleryPhotos = $fallbackAngles;
+        }
 
         // Lapangan lain di venue yang sama sebagai rekomendasi
         $otherCourts = Field::with(['sport', 'photos'])
@@ -231,7 +285,9 @@ class CourtListingController extends Controller
 
         return view('penyewa.lapangan-detail', [
             'field'             => $field,
-            'photoUrl'          => $photoUrl,
+            'photoUrl'          => $primaryPhotoUrl,
+            'primaryPhoto'      => $primaryPhoto,
+            'galleryPhotos'     => $galleryPhotos,
             'sportSlug'         => $sportSlug,
             'otherCourts'       => $otherCourts,
             'reviews'           => $reviews,
