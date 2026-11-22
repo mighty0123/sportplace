@@ -1,4 +1,4 @@
-<x-layouts.public title="SportPlace — Cari Lapangan. Main Tanpa Ribet.">
+<x-layouts.public title="SportPlace — Cari Lapangan Main Tanpa Ribet">
 
     <!-- 1. Hero Section -->
     <x-public.hero />
@@ -50,20 +50,23 @@
             </a>
         </div>
 
-        <!-- Popular Field Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Popular Field Cards Grid (Menggunakan card yang sama dengan explore lapangan) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @foreach($popularFields as $card)
-                <x-public.field-card 
-                    :image="$card['image']"
+                <x-penyewa.court.card 
+                    :id="$card['id']"
+                    :venue-name="$card['venue_name'] ?? $card['name']"
+                    :field-name="$card['field_name'] ?? $card['name']"
                     :sport="$card['sport']"
-                    :city="$card['city']"
-                    :venue="$card['venue_name'] ?? null"
-                    :name="$card['name']"
-                    :rating="$card['rating']"
-                    :reviews="$card['reviews']"
-                    :facilities="$card['facilities']"
-                    :price="$card['price']"
-                    :href="$card['href']"
+                    :court-type="$card['court_type'] ?? $card['field_name'] ?? $card['name']"
+                    :location="$card['location'] ?? $card['city']"
+                    :rating="$card['rating'] ?? '4.8'"
+                    :reviews-count="(int) ($card['reviews_count'] ?? $card['reviews'] ?? 100)"
+                    :price-per-hour="(int) ($card['price_per_hour'] ?? $card['price'])"
+                    :facilities="$card['facilities'] ?? []"
+                    :open-hours="$card['open_hours'] ?? '08:00 - 23:00'"
+                    :image-src="$card['image_src'] ?? $card['image']"
+                    :booking-url="$card['href'] ?? url('/penyewa/lapangan/' . $card['id'])"
                 />
             @endforeach
         </div>

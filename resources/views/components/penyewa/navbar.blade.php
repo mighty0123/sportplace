@@ -33,21 +33,32 @@
 
             <!-- LEFT: Brand Logo & Navigation Links -->
             <div class="flex items-center gap-4 lg:gap-6 xl:gap-8 shrink-0">
-                <!-- Brand Logo -->
-                <a href="{{ url('/penyewa/dashboard') }}" class="flex items-center group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-xl" title="SportPlace Dashboard">
-                    <img src="{{ asset('images/logo.svg') }}" alt="SportPlace" class="h-8 sm:h-9 w-auto">
+                <!-- Brand Logo (SportPlace with Lime Accent) -->
+                <a href="{{ auth()->check() ? (auth()->user()->role === 'mitra' ? route('mitra.dashboard') : (auth()->user()->role === 'admin' ? route('admin.dashboard') : url('/penyewa/dashboard'))) : url('/') }}" class="flex items-center gap-2.5 sm:gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-xl" title="SportPlace — {{ auth()->check() ? 'Dashboard' : 'Beranda' }}">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#0A7660] to-[#0B604F] p-0.5 shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#DEEF25]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="4"/>
+                            <line x1="3" x2="21" y1="12" y2="12"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <span class="text-lg sm:text-xl font-bold tracking-tight text-white group-hover:text-emerald-100 transition-colors">
+                        Sport<span class="text-[#DEEF25]">Place</span>
+                    </span>
                 </a>
 
                 <!-- Desktop Navigation Links -->
                 <nav class="hidden lg:flex items-center gap-1.5">
-                    {{-- Beranda Link --}}
-                    <a href="{{ url('/') }}"
-                       class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs xl:text-sm transition duration-150 {{ $isBerandaActive ? 'bg-[#0B7B69] text-white font-bold shadow-xs' : 'text-emerald-100/75 hover:bg-[#082B24] hover:text-white font-medium' }}">
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                        </svg>
-                        <span>Beranda</span>
-                    </a>
+                    {{-- Beranda Link (Hanya untuk tamu/guest) --}}
+                    @guest
+                        <a href="{{ url('/') }}"
+                           class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs xl:text-sm transition duration-150 {{ $isBerandaActive ? 'bg-[#0B7B69] text-white font-bold shadow-xs' : 'text-emerald-100/75 hover:bg-[#082B24] hover:text-white font-medium' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            <span>Beranda</span>
+                        </a>
+                    @endguest
 
                     {{-- Dashboard Link (Hanya untuk pengguna login) --}}
                     @auth
@@ -190,6 +201,14 @@
                                         </svg>
                                         <span>Dashboard Admin</span>
                                     </a>
+                                @else
+                                    <a href="{{ url('/penyewa/dashboard') }}"
+                                       class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z"/>
+                                        </svg>
+                                        <span>Dashboard Saya</span>
+                                    </a>
                                 @endif
 
                                 <a href="{{ url('/penyewa/profil') }}"
@@ -259,14 +278,16 @@
         <div id="mobile-nav-menu" class="hidden lg:hidden border-t border-[#0A3025] py-3 space-y-2">
             <!-- Mobile Nav Links -->
             <nav class="space-y-1">
-                {{-- Beranda --}}
-                <a href="{{ url('/') }}"
-                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition {{ $isBerandaActive ? 'bg-[#0B7B69] text-white font-bold' : 'text-emerald-100/75 hover:bg-[#07261F] hover:text-white font-medium' }}">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                    </svg>
-                    <span>Beranda</span>
-                </a>
+                {{-- Beranda (Hanya untuk tamu/guest) --}}
+                @guest
+                    <a href="{{ url('/') }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition {{ $isBerandaActive ? 'bg-[#0B7B69] text-white font-bold' : 'text-emerald-100/75 hover:bg-[#07261F] hover:text-white font-medium' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span>Beranda</span>
+                    </a>
+                @endguest
 
                 {{-- Dashboard (Auth) --}}
                 @auth
