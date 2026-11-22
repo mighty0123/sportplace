@@ -671,7 +671,6 @@ class PaymentController extends Controller
         $serviceFee = (int) config('booking.service_fee', 2500);
         $totalBayar = (float) $booking->total_tagihan;
 
-<<<<<<< HEAD
         // Auto-sinkronisasi status pembayaran dengan Midtrans jika ada query ?paid=1 atau status masih pending
         if ($booking->payment) {
             $isPaidQuery = $request?->query('paid') == '1';
@@ -716,10 +715,6 @@ class PaymentController extends Controller
                 }
             }
         }
-=======
-        // Halaman detail hanya membaca. Status pembayaran ditulis oleh webhook dan checkPaymentStatus
-        // (yang memverifikasi ke Midtrans), bukan oleh query string seperti ?paid=1.
->>>>>>> 9d75d219becc37a3d5c33d4962e9641e71eb563e
 
         // Hitung batas waktu bayar 15 menit (persisten dihitung dari expires_at database)
         $tz = config('app.timezone', 'Asia/Makassar');
@@ -835,7 +830,6 @@ class PaymentController extends Controller
             $settlement->reconcileHeader($booking->id);
         }
 
-<<<<<<< HEAD
         // 1. Cek jika sudah lunas
         if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
             return response()->json([
@@ -903,9 +897,7 @@ class PaymentController extends Controller
                 'remaining_seconds' => 0,
             ]);
         }
-=======
         $snap = $settlement->snapshot($booking->id);
->>>>>>> 9d75d219becc37a3d5c33d4962e9641e71eb563e
 
         return response()->json([
             'success'              => true,

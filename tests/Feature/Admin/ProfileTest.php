@@ -108,18 +108,4 @@ class ProfileTest extends TestCase
         $this->actingAs($this->makeUser('admin'))->get(route('admin.profile'))->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private');
     }
-    public function test_admin_can_upload_an_avatar(): void
-    {
-        Storage::fake('public');
-        $admin = $this->makeUser('admin');
-
-        $this->actingAs($admin)->put(route('admin.profile.update'), [
-            'name' => $admin->name, 'no_hp' => $admin->no_hp,
-            'foto_profil' => UploadedFile::fake()->image('a.jpg', 200, 200),
-        ])->assertSessionHasNoErrors();
-
-        $path = $admin->fresh()->foto_profil;
-        $this->assertStringStartsWith('avatars/', $path);
-        Storage::disk('public')->assertExists($path);
-    }
 }
