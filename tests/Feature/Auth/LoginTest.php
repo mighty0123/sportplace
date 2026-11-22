@@ -34,6 +34,35 @@ class LoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_customer_login_dengan_remember_me(): void
+    {
+        $user = $this->makeUser(['role' => 'customer']);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+            'remember' => 'on',
+        ]);
+
+        $response->assertRedirect(route('penyewa.dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_customer_login_dengan_remember_me_berhasil(): void
+    {
+        $user = $this->makeUser(['role' => 'customer']);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+            'remember' => 'on',
+        ]);
+
+        $response->assertRedirect(route('penyewa.dashboard'));
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->remember_token);
+    }
+
     public function test_admin_login_berhasil_dan_diarahkan_ke_dashboard_admin(): void
     {
         $user = $this->makeUser(['role' => 'admin']);

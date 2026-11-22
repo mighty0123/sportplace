@@ -92,7 +92,13 @@ class MitraVerificationService
             AuditLog::record($admin, 'MitraProfile', $profile->id, $aksi, 'pending', $newStatus, $reason);
         });
 
-        return $profile->refresh();
+        $refreshed = $profile->refresh();
+
+        if ($refreshed->user) {
+            $refreshed->user->notify((new \App\Notifications\MitraVerificationStatusUpdated($newStatus, $reason))->afterCommit());
+        }
+
+        return $refreshed;
     }
 
     /** Foto pemeriksaan saat keputusan dibuat: centang manual dan hasil otomatis. */

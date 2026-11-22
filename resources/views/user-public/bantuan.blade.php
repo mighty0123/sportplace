@@ -12,7 +12,6 @@
         <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5">
             <!-- Badge -->
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0C4E40]/80 border border-[#43E5C5]/30 text-emerald-200 text-xs font-semibold backdrop-blur-sm">
-                <span class="w-2 h-2 rounded-full bg-[#DEEF25] animate-pulse"></span>
                 <span>Pusat Bantuan & Tanya Jawab Resmi</span>
             </div>
 
@@ -55,7 +54,12 @@
                 <!-- Quick Interactive Demo Simulation Trigger Banner -->
                 <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#082B24]/90 border border-emerald-600/30 text-left">
                     <div class="flex items-center gap-2.5">
-                        <span class="w-8 h-8 rounded-xl bg-[#DEEF25]/20 text-[#DEEF25] flex items-center justify-center shrink-0 text-sm">🎮</span>
+                        <span class="w-8 h-8 rounded-xl bg-[#DEEF25]/20 text-[#DEEF25] flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
                         <div>
                             <p class="text-xs font-bold text-white">Baru pertama kali menggunakan SportPlace?</p>
                             <p class="text-[11px] text-emerald-200/80">Coba simulasi interaktif alur sewa lapangan tanpa mengubah database.</p>
@@ -300,7 +304,7 @@
                     </div>
 
                     <a
-                        href="https://wa.me/6281234567890?text=Halo%20SportPlace,%20saya%20butuh%20bantuan%20terkait%20layanan."
+                        href="https://wa.me/6282264784108"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="inline-flex items-center justify-center gap-2 w-full py-3.5 px-5 rounded-2xl bg-[#239F50] hover:bg-[#1A7F3F] text-white text-sm font-bold shadow-xs transition"

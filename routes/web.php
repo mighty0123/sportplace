@@ -7,11 +7,13 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\Mitra\DashboardController as MitraDashboardController;
 use App\Http\Controllers\Mitra\FieldController;
+use App\Http\Controllers\Mitra\NotificationController;
 use App\Http\Controllers\Mitra\OnboardingController;
 use App\Http\Controllers\Mitra\OrderController;
 use App\Http\Controllers\Mitra\PricingController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
+use App\Http\Controllers\Mitra\WithdrawalController;
 use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
@@ -122,6 +124,11 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     // Akses Dokumen Privat Terproteksi
     Route::get('/dokumen/{type}', [OnboardingController::class, 'downloadDocument'])->name('document.download');
 
+    // T10.1: Notifikasi Mitra (FR-NOTIF-001, BR-027)
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifikasi/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::post('/notifikasi/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+
     Route::middleware('mitra.approved')->group(function () {
         Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
 
@@ -171,6 +178,9 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+
+        // MTR-13 / FR-FIN-003: Penarikan Dana Mitra (Wallet & Withdrawal)
+        Route::get('/penarikan', [WithdrawalController::class, 'index'])->name('withdrawals.index');
     });
 });
 
