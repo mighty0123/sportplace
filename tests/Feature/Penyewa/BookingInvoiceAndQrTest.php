@@ -170,4 +170,55 @@ class BookingInvoiceAndQrTest extends TestCase
         $responseVerify->assertSee('SUDAH CHECK-IN');
         $responseVerify->assertSee('Tiket Sudah Di-Check-In');
     }
+
+    public function test_instant_confirm_payment_updates_status_directly_with_clean_url(): void
+    {
+        $pendingBooking = BookingHeader::create([
+            'penyewa_id'    => $this->customer->id,
+            'kode_booking'  => 'SPPENDING1',
+            'total_tagihan' => 150000,
+            'status'        => 'pending',
+            'created_at'    => Carbon::now(),
+        ]);
+
+        $response = $this->actingAs($this->customer)->postJson("/penyewa/booking/{$pendingBooking->id}/confirm-payment", [
+            'payment_type' => 'qris',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'status'  => 'payment',
+            'is_paid' => true,
+        ]);
+
+        // URL redirect harus bersih tanpa ?paid=1
+        $this->assertStringNotContainsString('?paid=1', $response->json('redirect_url'));
+
+        // Status di database langsung terupdate
+        $this->assertEquals('payment', $pendingBooking->fresh()->status);
+        $this->assertEquals('succes', $pendingBooking->fresh()->payment?->status_pembayaran);
+    }
+
+    public function test_check_payment_status_returns_clean_url(): void
+    {
+        $response = $this->actingAs($this->customer)->getJson("/penyewa/booking/{$this->booking->id}/check-status");
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'status'  => 'payment',
+            'is_paid' => true,
+        ]);
+
+        $this->assertStringNotContainsString('?paid=1', $response->json('redirect'));
+    }
+
+    public function test_legacy_paid_query_auto_redirects_to_clean_url(): void
+    {
+        $response = $this->actingAs($this->customer)->get("/penyewa/booking/{$this->booking->id}?paid=1");
+
+        $response->assertStatus(302);
+        $response->assertRedirect("/penyewa/booking/{$this->booking->kode_booking}");
+    }
 }

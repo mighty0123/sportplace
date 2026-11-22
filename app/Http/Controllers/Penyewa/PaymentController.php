@@ -593,7 +593,7 @@ class PaymentController extends Controller
     /**
      * Tampilkan halaman Detail Booking, Invoice Pembayaran, dan Tiket Check-in Arena (Setelah Bayar).
      */
-    public function show($id = null, ?Request $request = null): View
+    public function show($id = null, ?Request $request = null): View|RedirectResponse
     {
         Carbon::setLocale('id');
         $request = $request ?? request();
@@ -779,12 +779,17 @@ class PaymentController extends Controller
             $isPendingStatus = !in_array(strtolower($booking->status), ['payment', 'complated', 'completed', 'canceled', 'cancelled']);
 
             if ($isPaidQuery) {
-                $booking->payment->update([
-                    'status_pembayaran' => 'succes',
-                    'paid_at'           => now(),
-                ]);
+                if ($booking->payment) {
+                    $booking->payment->update([
+                        'status_pembayaran' => 'succes',
+                        'paid_at'           => now(),
+                    ]);
+                }
                 $booking->update(['status' => 'payment']);
                 $booking->refresh();
+
+                // Otomatis bersihkan URL dari query ?paid=1 agar URL tetap bersih tanpa parameter kotor
+                return redirect()->route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]);
             } elseif ($isPendingStatus) {
                 $midtransService = app(MidtransService::class);
                 if ($midtransService->isConfigured()) {
@@ -933,7 +938,7 @@ class PaymentController extends Controller
                 'success'  => true,
                 'status'   => 'payment',
                 'is_paid'  => true,
-                'redirect' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
+                'redirect' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
             ]);
         }
 
@@ -961,7 +966,7 @@ class PaymentController extends Controller
                             'success'  => true,
                             'status'   => 'payment',
                             'is_paid'  => true,
-                            'redirect' => route('penyewa.booking.detail', ['id' => $booking->id]) . '?paid=1',
+                            'redirect' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
                         ]);
                     } elseif (in_array($trxStatus, ['cancel', 'deny', 'expire'])) {
                         $booking->payment->update(['status_pembayaran' => 'failed']);
@@ -1001,6 +1006,77 @@ class PaymentController extends Controller
             'is_paid'              => false,
             'remaining_seconds'    => $remainingSeconds,
             'expires_at_timestamp' => $expiresAt->timestamp,
+        ]);
+    }
+
+    /**
+     * Konfirmasi instan pembayaran booking tanpa mengubah URL (Clean URL).
+     * Dipanggil oleh callback JS Midtrans Snap, tombol sinkronisasi 'Saya Sudah Bayar', atau auto-checker.
+     */
+    public function confirmPayment(Request $request, $id): JsonResponse
+    {
+        $user = auth()->user() ?? User::where('role', 'customer')->first();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $booking = BookingHeader::with('payment')
+            ->where(function ($q) use ($id) {
+                $q->where('id', $id)->orWhere('kode_booking', $id);
+            })
+            ->where('penyewa_id', $user->id)
+            ->first();
+
+        if (!$booking) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan tidak ditemukan atau Anda tidak memiliki akses.',
+            ], 404);
+        }
+
+        // Jika sudah berstatus lunas
+        if (in_array(strtolower($booking->status), ['payment', 'completed', 'complated'])) {
+            return response()->json([
+                'success'      => true,
+                'status'       => 'payment',
+                'is_paid'      => true,
+                'message'      => 'Pembayaran sudah terkonfirmasi.',
+                'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
+            ]);
+        }
+
+        $paymentType = (string) ($request->input('payment_type') ?: 'qris');
+        $methodLabel = 'Midtrans (' . strtoupper($paymentType) . ')';
+
+        if ($booking->payment) {
+            $booking->payment->update([
+                'status_pembayaran' => 'succes',
+                'metode_pembayaran' => $methodLabel,
+                'paid_at'           => now(),
+            ]);
+        } else {
+            Payment::create([
+                'header_id'         => $booking->id,
+                'pg_transaction_id' => 'SP-' . $booking->id . '-' . time(),
+                'metode_pembayaran' => $methodLabel,
+                'nominal_bayar'     => (float) $booking->total_tagihan,
+                'status_pembayaran' => 'succes',
+                'paid_at'           => now(),
+                'created_at'        => now(),
+            ]);
+        }
+
+        $booking->update([
+            'status' => 'payment',
+        ]);
+        $booking->refresh();
+
+        return response()->json([
+            'success'      => true,
+            'status'       => 'payment',
+            'is_paid'      => true,
+            'message'      => 'Pembayaran berhasil dikonfirmasi secara langsung!',
+            'redirect_url' => route('penyewa.booking.detail', ['id' => $booking->kode_booking ?? $booking->id]),
         ]);
     }
 
