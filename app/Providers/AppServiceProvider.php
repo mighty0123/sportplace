@@ -9,6 +9,7 @@ use App\Support\PendingCounts;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // if (str_contains(request()->getHost(), 'ngrok')) {
+        //     URL::forceScheme('https');
+        // }
         View::composer('components.admin.sidebar', function ($view) {
             $view->with('navCounts', PendingCounts::all());
         });
