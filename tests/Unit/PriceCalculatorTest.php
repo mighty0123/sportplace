@@ -106,4 +106,32 @@ class PriceCalculatorTest extends TestCase
         $this->assertFalse($result['is_peak']);
         $this->assertSame('regular', $result['rate_type']);
     }
+
+    /**
+     * Pengujian skema tarif Siang (08:00 - 17:00) dan Malam (17:00 - 23:00) dari meta_harga.
+     */
+    public function test_siang_and_malam_meta_pricing(): void
+    {
+        $field = new Field;
+        $field->id = 1;
+        $field->harga_perjam = 180000;
+        $field->meta_harga = [
+            'siang' => 140000,
+            'malam' => 180000,
+        ];
+
+        $date = Carbon::parse('2026-11-24');
+
+        // Jam 10:00 -> Siang (Rp 140.000)
+        $siang = $this->calculator->calculateSlotPrice($field, $date, '10:00', '11:00');
+        $this->assertSame(140000.0, $siang['price']);
+        $this->assertFalse($siang['is_peak']);
+        $this->assertSame('off_peak', $siang['rate_type']);
+
+        // Jam 19:00 -> Malam (Rp 180.000)
+        $malam = $this->calculator->calculateSlotPrice($field, $date, '19:00', '20:00');
+        $this->assertSame(180000.0, $malam['price']);
+        $this->assertTrue($malam['is_peak']);
+        $this->assertSame('peak', $malam['rate_type']);
+    }
 }

@@ -149,19 +149,22 @@ class PaymentController extends Controller
             // Ambil jadwal slot yang dipilih di halaman kalender sebelumnya
             $slotsInput = $request?->input('slots') ?? $request?->query('slots') ?? session('selected_slots');
             $defaultPrice = (float) ($field->harga_perjam ?? 150000);
-            $parsedSlots = $this->parseSlots($slotsInput, $defaultPrice);
+            $parsedSlots = $this->parseSlots($slotsInput, $defaultPrice, $field, $tanggalSewaRaw);
 
             // Jika belum ada slot dipilih sama sekali (direct link), defaultkan ke 1 jam operasional pertama
             if (empty($parsedSlots)) {
                 $jamBuka = $field->venue?->jam_buka ? (int) substr($field->venue->jam_buka, 0, 2) : 8;
                 $startSlot = sprintf('%02d:00', $jamBuka);
                 $endSlot = sprintf('%02d:00', $jamBuka + 1);
+                $calc = app(\App\Services\Mitra\PriceCalculator::class);
+                $priceData = $calc->calculateSlotPrice($field, $tanggalSewaRaw, $startSlot, $endSlot);
+                $slotPrice = (float) ($priceData['price'] ?? $defaultPrice);
                 $parsedSlots = [
                     [
                         'start' => $startSlot,
                         'end' => $endSlot,
                         'time' => "{$startSlot} - {$endSlot}",
-                        'price' => $defaultPrice,
+                        'price' => $slotPrice,
                     ],
                 ];
             }
@@ -336,18 +339,21 @@ class PaymentController extends Controller
         // Ambil slot jadwal yang dipilih
         $slotsInput = $request?->input('slots') ?? session('selected_slots');
         $defaultPrice = (float) ($field->harga_perjam ?? 150000);
-        $parsedSlots = $this->parseSlots($slotsInput, $defaultPrice);
+        $parsedSlots = $this->parseSlots($slotsInput, $defaultPrice, $field, $tanggalSewa);
 
         if (empty($parsedSlots)) {
             $jamBuka = $field->venue?->jam_buka ? (int) substr($field->venue->jam_buka, 0, 2) : 8;
             $startSlot = sprintf('%02d:00', $jamBuka);
             $endSlot = sprintf('%02d:00', $jamBuka + 1);
+            $calc = app(\App\Services\Mitra\PriceCalculator::class);
+            $priceData = $calc->calculateSlotPrice($field, $tanggalSewa, $startSlot, $endSlot);
+            $slotPrice = (float) ($priceData['price'] ?? $defaultPrice);
             $parsedSlots = [
                 [
                     'start' => $startSlot,
                     'end' => $endSlot,
                     'time' => "{$startSlot} - {$endSlot}",
-                    'price' => $defaultPrice,
+                    'price' => $slotPrice,
                 ],
             ];
         }
@@ -1241,7 +1247,7 @@ class PaymentController extends Controller
     /**
      * Parse string / array / JSON input slot jam menjadi array terstruktur.
      */
-    protected function parseSlots($slotsInput, float $defaultPrice = 150000): array
+    protected function parseSlots($slotsInput, float $defaultPrice = 150000, ?Field $field = null, $tanggalSewa = null): array
     {
         if (empty($slotsInput)) {
             return [];
@@ -1295,11 +1301,19 @@ class PaymentController extends Controller
 
                 $hours = max(1, (strtotime($endNorm) - strtotime($startNorm)) / 3600);
 
+                // Hitung harga slot secara dinamis berdasarkan jam, tanggal, dan konfigurasi meta_harga
+                $slotPrice = $defaultPrice * $hours;
+                if ($field) {
+                    $calc = app(\App\Services\Mitra\PriceCalculator::class);
+                    $priceData = $calc->calculateSlotPrice($field, $tanggalSewa ?? now(), $startNorm, $endNorm);
+                    $slotPrice = (float) ($priceData['price'] * $hours);
+                }
+
                 $slots[] = [
                     'start' => $startNorm,
                     'end' => $endNorm,
                     'time' => "{$startNorm} - {$endNorm}",
-                    'price' => $defaultPrice * $hours,   // harga dari lapangan di database; masukan pengguna diabaikan
+                    'price' => $slotPrice,
                 ];
             }
         }

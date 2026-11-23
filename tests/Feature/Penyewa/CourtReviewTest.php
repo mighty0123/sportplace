@@ -157,4 +157,33 @@ class CourtReviewTest extends TestCase
         $pageResponse->assertSee('Budi Santoso');
         $pageResponse->assertSee('Main badminton di sini sangat menyenangkan, sirkulasi angin oke.');
     }
+
+    public function test_booking_detail_page_displays_court_review_modal_component(): void
+    {
+        $booking = \App\Models\BookingHeader::create([
+            'penyewa_id'    => $this->customer->id,
+            'kode_booking'  => 'SPREV123',
+            'total_tagihan' => 200000,
+            'status'        => 'payment',
+            'created_at'    => \Carbon\Carbon::now(),
+        ]);
+
+        \App\Models\BookingDetail::create([
+            'header_id'    => $booking->id,
+            'field_id'     => $this->field->id,
+            'tanggal_sewa' => now()->toDateString(),
+            'jam_mulai'    => '09:00:00',
+            'jam_selesai'  => '10:00:00',
+            'harga_slot'   => 200000,
+            'status_item'  => 'ongoing',
+            'created_at'   => now(),
+        ]);
+
+        $response = $this->actingAs($this->customer)->get("/penyewa/booking/{$booking->id}");
+
+        $response->assertStatus(200);
+        $response->assertSee('Beri Ulasan Lapangan');
+        $response->assertSee('review-modal');
+        $response->assertSee('btn-open-court-review');
+    }
 }

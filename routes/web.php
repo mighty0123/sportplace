@@ -18,6 +18,7 @@ use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
+use App\Http\Controllers\Penyewa\ProfileController as PenyewaProfileController;
 use App\Http\Controllers\WelcomeController;
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -27,7 +28,7 @@ use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\UserManagementController;
-use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Models\MitraProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -104,8 +105,8 @@ Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function
     Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
     Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');
     Route::get('/riwayat', [BookingHistoryController::class, 'index'])->name('riwayat');
-    Route::get('/profil', [ProfileController::class, 'index'])->name('profil');
-    Route::put('/profil', [ProfileController::class, 'update'])->name('profil.update');
+    Route::get('/profil', [PenyewaProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [PenyewaProfileController::class, 'update'])->name('profil.update');
 });
 
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.
@@ -238,8 +239,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
     });
 
-    Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
-    Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
-    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
-    Route::post('/profil/sesi/keluar', [ProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
+    Route::get('/profil', [AdminProfileController::class, 'show'])->name('profile');
+    Route::put('/profil', [AdminProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::put('/profil/password', [AdminProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/profil/sesi/keluar', [AdminProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
 });
