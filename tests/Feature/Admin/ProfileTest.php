@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\CreatesFixtures;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Storage;
-use Tests\Feature\Admin\UploadedFile;
+use Illuminate\Http\UploadedFile;
 
 class ProfileTest extends TestCase
 {

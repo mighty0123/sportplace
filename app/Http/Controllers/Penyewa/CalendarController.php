@@ -194,15 +194,10 @@ class CalendarController extends Controller
                 $label  = 'Available';
             }
 
-            // Hitung harga slot (cek meta harga siang/malam jika ada)
-            $slotPrice = (int) $field->harga_perjam;
-            if (!empty($field->meta_harga) && is_array($field->meta_harga)) {
-                if ($hour < 17 && isset($field->meta_harga['siang'])) {
-                    $slotPrice = (int) $field->meta_harga['siang'];
-                } elseif ($hour >= 17 && isset($field->meta_harga['malam'])) {
-                    $slotPrice = (int) $field->meta_harga['malam'];
-                }
-            }
+            // Hitung harga slot (menggunakan PriceCalculator dengan dukungan skema siang/malam & peak/off-peak)
+            $calc = app(\App\Services\Mitra\PriceCalculator::class);
+            $priceData = $calc->calculateSlotPrice($field, $selectedCarbon, $startStr, $endStr);
+            $slotPrice = (int) $priceData['price'];
 
             $timeSlots[] = [
                 'id'          => $slotId,
