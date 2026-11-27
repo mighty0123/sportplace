@@ -92,7 +92,7 @@ class CalendarTest extends TestCase
 
         $header = BookingHeader::create([
             'penyewa_id'    => $this->customer->id,
-            'kode_booking'  => 'BK-CONFIRMED-01',
+            'kode_booking'  => 'BK-CONF-01',
             'status'        => 'payment',
             'total_tagihan' => 150000,
             'expires_at'    => Carbon::now()->addHours(2),
@@ -127,7 +127,7 @@ class CalendarTest extends TestCase
 
         $header = BookingHeader::create([
             'penyewa_id'    => $otherUser->id,
-            'kode_booking'  => 'BK-PENDING-02',
+            'kode_booking'  => 'BK-PEND-02',
             'status'        => 'pending',
             'total_tagihan' => 150000,
             'expires_at'    => Carbon::now()->addMinutes(12),
@@ -162,7 +162,7 @@ class CalendarTest extends TestCase
 
         $header = BookingHeader::create([
             'penyewa_id'    => $otherUser->id,
-            'kode_booking'  => 'BK-EXPIRED-03',
+            'kode_booking'  => 'BK-EXP-03',
             'status'        => 'pending',
             'total_tagihan' => 150000,
             'expires_at'    => Carbon::now()->subMinutes(5), // Sudah lewat batas waktu

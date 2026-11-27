@@ -42,6 +42,23 @@ class PriceCalculator
             ];
         }
 
+        // Dukungan skema tarif Siang (08:00 - 17:00) dan Malam (17:00 - 23:00)
+        if (isset($meta['siang']) || isset($meta['malam'])) {
+            $hour = (int) substr($time, 0, 2);
+            $isMalam = ($hour >= 17);
+            $slotPrice = $isMalam
+                ? (float) ($meta['malam'] ?? $field->harga_perjam ?? 0)
+                : (float) ($meta['siang'] ?? $field->harga_perjam ?? 0);
+
+            return [
+                'price' => $slotPrice,
+                'rate_type' => $isMalam ? 'peak' : 'off_peak',
+                'formatted_price' => 'Rp '.number_format($slotPrice, 0, ',', '.'),
+                'is_peak' => $isMalam,
+                'rule_description' => $isMalam ? 'Tarif Malam (17:00 - 23:00)' : 'Tarif Siang (08:00 - 17:00)',
+            ];
+        }
+
         $hargaOffPeak = (float) ($meta['harga_off_peak'] ?? $field->harga_perjam ?? 0);
         $hargaPeak = (float) ($meta['harga_peak'] ?? $field->harga_perjam ?? 0);
         $peakRules = $meta['peak_rules'] ?? [];

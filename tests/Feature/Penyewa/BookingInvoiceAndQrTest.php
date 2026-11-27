@@ -221,4 +221,59 @@ class BookingInvoiceAndQrTest extends TestCase
         $response->assertStatus(302);
         $response->assertRedirect("/penyewa/booking/{$this->booking->kode_booking}");
     }
+
+    public function test_review_pembayaran_uses_dynamic_slot_price_for_daytime_slot(): void
+    {
+        $this->field->update([
+            'harga_perjam' => 180000,
+            'meta_harga'   => [
+                'siang' => 140000,
+                'malam' => 180000,
+            ],
+        ]);
+
+        $tomorrow = Carbon::tomorrow()->format('Y-m-d');
+
+        // Uji slot siang (10:00 - 11:00) -> Harus Rp 140.000, bukan Rp 180.000
+        $response = $this->actingAs($this->customer)->get("/penyewa/review-pembayaran?field_id={$this->field->id}&date={$tomorrow}&slots=10:00 - 11:00");
+
+        $response->assertStatus(200);
+        $response->assertSee('Rp 140.000');
+        $response->assertSee('Rp 142.500'); // Subtotal 140.000 + Biaya Layanan 2.500
+        $response->assertDontSee('Rp 180.000');
+    }
+
+    public function test_process_payment_stores_exact_slot_price_in_database(): void
+    {
+        $this->field->update([
+            'harga_perjam' => 180000,
+            'meta_harga'   => [
+                'siang' => 140000,
+                'malam' => 180000,
+            ],
+        ]);
+
+        $tomorrow = Carbon::tomorrow()->format('Y-m-d');
+
+        $response = $this->actingAs($this->customer)->post('/penyewa/bayar', [
+            'field_id'           => $this->field->id,
+            'tanggal_sewa'       => $tomorrow,
+            'slots'              => '10:00 - 11:00',
+            'metode_pembayaran'  => 'Midtrans',
+        ]);
+
+        $response->assertStatus(302);
+
+        $this->assertDatabaseHas('booking_details', [
+            'field_id'   => $this->field->id,
+            'jam_mulai'  => '10:00:00',
+            'harga_slot' => 140000,
+        ]);
+
+        $this->assertDatabaseHas('booking_headers', [
+            'penyewa_id'    => $this->customer->id,
+            'subtotal_slot' => 140000,
+            'total_tagihan' => 142500,
+        ]);
+    }
 }
