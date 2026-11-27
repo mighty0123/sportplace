@@ -27,9 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // if (str_contains(request()->getHost(), 'ngrok')) {
-        //     URL::forceScheme('https');
-        // }
+        if (str_contains(request()->getHost(), 'ngrok')) {
+            URL::forceScheme('https');
+        }
         View::composer('components.admin.sidebar', function ($view) {
             $view->with('navCounts', PendingCounts::all());
         });

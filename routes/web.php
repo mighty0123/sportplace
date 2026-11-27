@@ -14,20 +14,23 @@ use App\Http\Controllers\Mitra\PricingController;
 use App\Http\Controllers\Mitra\ScheduleController;
 use App\Http\Controllers\Mitra\VenueController;
 use App\Http\Controllers\Mitra\WithdrawalController;
+use App\Http\Controllers\Mitra\ReportController as MitraReportController;
+use App\Http\Controllers\Mitra\ProfileController as MitraProfileController;
 use App\Http\Controllers\Penyewa\BookingHistoryController;
 use App\Http\Controllers\Penyewa\CalendarController;
 use App\Http\Controllers\Penyewa\CourtListingController;
 use App\Http\Controllers\Penyewa\PaymentController;
+use App\Http\Controllers\Penyewa\ProfileController as PenyewaProfileController;
 use App\Http\Controllers\WelcomeController;
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\MitraVerificationController;
 use App\Http\Controllers\Admin\TransactionController;
-use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\UserManagementController;
-use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Models\MitraProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -104,8 +107,8 @@ Route::middleware(['auth'])->prefix('penyewa')->name('penyewa.')->group(function
     Route::post('/booking/{id}/cancel', [PaymentController::class, 'cancel'])->name('booking.cancel');
     Route::get('/booking/{id}/invoice', [PaymentController::class, 'invoice'])->name('booking.invoice');
     Route::get('/riwayat', [BookingHistoryController::class, 'index'])->name('riwayat');
-    Route::get('/profil', [ProfileController::class, 'index'])->name('profil');
-    Route::put('/profil', [ProfileController::class, 'update'])->name('profil.update');
+    Route::get('/profil', [PenyewaProfileController::class, 'index'])->name('profil');
+    Route::put('/profil', [PenyewaProfileController::class, 'update'])->name('profil.update');
 });
 
 // Area Mitra — Gerbang akses: MTR-01, MTR-02 terbuka untuk semua status mitra.
@@ -177,11 +180,14 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
         Route::post('/pesanan-bulk-complete', [OrderController::class, 'bulkComplete'])->name('orders.bulk-complete');
 
         // MTR-11: Laporan Pendapatan Mitra (FR-REPORT-002)
-        Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('/laporan/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+        Route::get('/laporan', [MitraReportController::class, 'index'])->name('reports.index');
+        Route::get('/laporan/export', [MitraReportController::class, 'exportCsv'])->name('reports.export');
 
         // MTR-13 / FR-FIN-003: Penarikan Dana Mitra (Wallet & Withdrawal)
         Route::get('/penarikan', [WithdrawalController::class, 'index'])->name('withdrawals.index');
+
+        // MTR-12 / FR-MITRA-004: Profil & Legalitas Mitra
+        Route::get('/profil', [MitraProfileController::class, 'index'])->name('profile');
     });
 });
 
@@ -222,9 +228,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
     Route::prefix('laporan')->name('laporan.')->middleware('can:view-reports')->group(function () {
-        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/', [AdminReportController::class, 'index'])->name('index');
         // POST: mengekspor mencatat audit dan mengirim data pribadi, jadi harus lewat CSRF, bukan tautan biasa.
-        Route::post('/unduh', [ReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
+        Route::post('/unduh', [AdminReportController::class, 'download'])->middleware('throttle:10,1')->name('download');
     });
 
     Route::prefix('komisi')->name('komisi.')->middleware('can:manage-commission')->group(function () {
@@ -238,8 +244,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/status', [UserManagementController::class, 'updateStatus'])->middleware('throttle:20,1')->name('status');
     });
 
-    Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
-    Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
-    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
-    Route::post('/profil/sesi/keluar', [ProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
+    Route::get('/profil', [AdminProfileController::class, 'show'])->name('profile');
+    Route::put('/profil', [AdminProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::put('/profil/password', [AdminProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
+    Route::post('/profil/sesi/keluar', [AdminProfileController::class, 'logoutOthers'])->middleware('throttle:5,1')->name('profile.sessions.logout');
 });
